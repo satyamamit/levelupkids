@@ -72,46 +72,42 @@
 
     // ─── ENHANCED REWARDS ───────────────────────────────────
     const REWARDS = {
-        gaming: [
-            { id: 'roblox_100', emoji: '🎮', name: '100 Robux', desc: 'Roblox digital currency!', cost: 300, tier: 'rare' },
-            { id: 'roblox_400', emoji: '🎮', name: '400 Robux', desc: 'Even more Roblox fun!', cost: 1000, tier: 'epic' },
-            { id: 'minecraft', emoji: '⛏️', name: 'Minecraft Skin Pack', desc: 'Cool skins for Minecraft', cost: 250, tier: 'rare' },
-            { id: 'vbucks_1000', emoji: '🎯', name: '1000 V-Bucks', desc: 'Fortnite V-Bucks card', cost: 800, tier: 'epic' },
-            { id: 'nintendo_eshop', emoji: '🕹️', name: '$10 Nintendo eShop', desc: 'Get new games!', cost: 500, tier: 'rare' },
+        activities: [
             { id: 'gaming_time', emoji: '🎮', name: '1 Hour Extra Gaming', desc: 'Extra gaming session!', cost: 150, tier: 'common' },
+            { id: 'bike_ride', emoji: '🚲', name: 'Bike Ride Adventure', desc: 'Go on a bike ride to the park!', cost: 120, tier: 'common' },
+            { id: 'baking_day', emoji: '🧁', name: 'Baking Day', desc: 'Bake cookies or a cake together!', cost: 200, tier: 'rare' },
+            { id: 'board_game', emoji: '🎲', name: 'Board Game Night', desc: 'Pick the game for family game night!', cost: 100, tier: 'common' },
+            { id: 'craft_time', emoji: '✂️', name: 'Craft Project', desc: 'Pick a fun craft to make!', cost: 150, tier: 'common' },
+            { id: 'science_exp', emoji: '🧪', name: 'Science Experiment', desc: 'Do a cool science experiment at home!', cost: 200, tier: 'rare' },
         ],
-        giftcards: [
-            { id: 'amazon_5', emoji: '📦', name: '$5 Amazon Gift Card', desc: 'Shop anything on Amazon!', cost: 200, tier: 'common' },
-            { id: 'amazon_10', emoji: '📦', name: '$10 Amazon Gift Card', desc: 'More shopping power!', cost: 400, tier: 'rare' },
-            { id: 'amazon_25', emoji: '📦', name: '$25 Amazon Gift Card', desc: 'Big shopping spree!', cost: 1000, tier: 'epic' },
-            { id: 'amazon_50', emoji: '📦', name: '$50 Amazon Gift Card', desc: 'The ultimate Amazon reward!', cost: 2000, tier: 'legendary' },
-            { id: 'target_10', emoji: '🎯', name: '$10 Target Gift Card', desc: 'Target shopping!', cost: 400, tier: 'rare' },
-            { id: 'walmart_10', emoji: '🛒', name: '$10 Walmart Gift Card', desc: 'Walmart goodies!', cost: 400, tier: 'rare' },
+        privileges: [
+            { id: 'extra_screen', emoji: '📱', name: '30 Min Extra Screen Time', desc: 'Extra screen time for a day!', cost: 100, tier: 'common' },
+            { id: 'no_chores', emoji: '🏖️', name: 'Skip Chores Day', desc: 'One day free from chores!', cost: 150, tier: 'common' },
+            { id: 'stay_up_late', emoji: '🌙', name: 'Stay Up 30 Min Late', desc: 'Push bedtime by 30 minutes!', cost: 100, tier: 'common' },
+            { id: 'movie_night', emoji: '🎬', name: 'Movie Night Pick', desc: 'You pick the family movie!', cost: 200, tier: 'rare' },
+            { id: 'restaurant', emoji: '🍕', name: 'Restaurant Choice', desc: 'Pick where the family eats!', cost: 250, tier: 'rare' },
+            { id: 'breakfast_bed', emoji: '🥞', name: 'Breakfast in Bed', desc: 'Get breakfast served in bed!', cost: 150, tier: 'common' },
+            { id: 'no_veggies', emoji: '🍩', name: 'No Veggies Dinner', desc: 'One dinner with no vegetables!', cost: 120, tier: 'common' },
+            { id: 'music_choice', emoji: '🎵', name: 'DJ for a Day', desc: 'Pick the music in the car all day!', cost: 100, tier: 'common' },
+            { id: 'homework_break', emoji: '📚', name: 'Homework-Free Evening', desc: 'One evening off from extra homework!', cost: 200, tier: 'rare' },
+            { id: 'sleepover', emoji: '🏕️', name: 'Sleepover Permission', desc: 'Invite a friend for a sleepover!', cost: 400, tier: 'epic' },
         ],
         toys: [
             { id: 'sticker_pack', emoji: '🌟', name: 'Sticker Pack', desc: 'A pack of 10 awesome stickers!', cost: 50, tier: 'common' },
             { id: 'pokemon_cards', emoji: '🃏', name: 'Pokémon Card Pack', desc: '5 random Pokémon cards!', cost: 200, tier: 'rare' },
             { id: 'puzzle_cube', emoji: '🧊', name: 'Speed Cube', desc: 'A competition-grade Rubik\'s cube', cost: 150, tier: 'common' },
-            { id: 'lego_set', emoji: '🧱', name: 'LEGO Mini Set', desc: 'Build & learn with LEGO!', cost: 500, tier: 'epic' },
-            { id: 'science_kit', emoji: '🔬', name: 'Science Kit', desc: 'Cool experiments at home!', cost: 750, tier: 'epic' },
             { id: 'art_supplies', emoji: '🎨', name: 'Art Supply Set', desc: 'Markers, crayons & more!', cost: 300, tier: 'rare' },
-        ],
-        privileges: [
-            { id: 'extra_screen', emoji: '📱', name: '30 Min Extra Screen Time', desc: 'Extra screen time for a day!', cost: 100, tier: 'common' },
-            { id: 'no_chores', emoji: '🏖️', name: 'Skip Chores Day', desc: 'One day free from chores!', cost: 150, tier: 'common' },
-            { id: 'movie_night', emoji: '🎬', name: 'Movie Night Pick', desc: 'You pick the family movie!', cost: 200, tier: 'rare' },
-            { id: 'restaurant', emoji: '🍕', name: 'Restaurant Choice', desc: 'Pick where the family eats!', cost: 250, tier: 'rare' },
-            { id: 'sleepover', emoji: '🏕️', name: 'Sleepover Permission', desc: 'Invite a friend for a sleepover!', cost: 400, tier: 'epic' },
-            { id: 'ice_cream', emoji: '🍦', name: 'Ice Cream Trip', desc: 'A trip to the ice cream shop!', cost: 120, tier: 'common' },
-            { id: 'stay_up_late', emoji: '🌙', name: 'Stay Up 30 Min Late', desc: 'Push bedtime by 30 minutes!', cost: 100, tier: 'common' },
+            { id: 'book_choice', emoji: '📖', name: 'Book of Your Choice', desc: 'Pick any book from the bookstore!', cost: 250, tier: 'rare' },
+            { id: 'lego_set', emoji: '🧱', name: 'LEGO Mini Set', desc: 'Build & learn with LEGO!', cost: 500, tier: 'epic' },
         ],
         legendary: [
-            { id: 'trip_choice', emoji: '🎢', name: 'Fun Trip Choice', desc: 'Choose a family outing!', cost: 1500, tier: 'legendary' },
+            { id: 'ice_cream', emoji: '🍦', name: 'Ice Cream Trip', desc: 'A trip to the ice cream shop!', cost: 120, tier: 'common' },
             { id: 'ipad_time', emoji: '📲', name: '1 Hour iPad Time', desc: 'Full hour of iPad freedom!', cost: 500, tier: 'epic' },
-            { id: 'pet_day', emoji: '🐶', name: 'Pet Store Visit', desc: 'Visit the pet store (just looking!)', cost: 600, tier: 'epic' },
+            { id: 'trip_choice', emoji: '🎢', name: 'Fun Trip Choice', desc: 'Choose a family outing!', cost: 1500, tier: 'legendary' },
             { id: 'trampoline', emoji: '🤸', name: 'Trampoline Park Visit', desc: 'Jump around for an hour!', cost: 1000, tier: 'legendary' },
             { id: 'pizza_party', emoji: '🍕', name: 'Pizza Party', desc: 'Invite friends for pizza!', cost: 2000, tier: 'legendary' },
-            { id: 'toy_store_50', emoji: '🏪', name: '$50 Toy Store Trip', desc: 'The ULTIMATE reward!', cost: 5000, tier: 'legendary' },
+            { id: 'water_park', emoji: '🌊', name: 'Water Park Day', desc: 'A full day at the water park!', cost: 3000, tier: 'legendary' },
+            { id: 'camping_trip', emoji: '⛺', name: 'Camping Adventure', desc: 'A family camping trip!', cost: 5000, tier: 'legendary' },
         ]
     };
 
@@ -1183,10 +1179,9 @@
         $('#rewards-points').textContent = p.points.toLocaleString();
         $('#rewards-balance').textContent = p.points.toLocaleString();
 
-        renderRewardSection('rewards-gaming', REWARDS.gaming);
-        renderRewardSection('rewards-giftcards', REWARDS.giftcards);
-        renderRewardSection('rewards-toys', REWARDS.toys);
+        renderRewardSection('rewards-activities', REWARDS.activities);
         renderRewardSection('rewards-privileges', REWARDS.privileges);
+        renderRewardSection('rewards-toys', REWARDS.toys);
         renderRewardSection('rewards-legendary', REWARDS.legendary);
         renderRedemptionHistory();
 
