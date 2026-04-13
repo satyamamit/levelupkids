@@ -12,13 +12,13 @@
 // =============================================
 
 const firebaseConfig = {
-    // ===>>> PASTE YOUR FIREBASE CONFIG HERE <<<===
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDG4NIyK2ynoEa6iwGN7J7u7yXjmBaP4BE",
+    authDomain: "mathchamp-fe813.firebaseapp.com",
+    projectId: "mathchamp-fe813",
+    storageBucket: "mathchamp-fe813.firebasestorage.app",
+    messagingSenderId: "10027016866",
+    appId: "1:10027016866:web:cc9740458f4b3c9daeadfb",
+    measurementId: "G-ZD96RYVD6M"
 };
 
 // ─── Initialize Firebase ────────────────────────────────────
