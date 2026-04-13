@@ -35,21 +35,14 @@ function initFirebase() {
         firebaseAuth = firebase.auth();
         firebaseDb = firebase.firestore();
 
-        // Enable offline persistence (using non-deprecated approach if available)
-        try {
-            if (firebaseDb.settings) {
-                firebaseDb.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+        // Enable offline persistence
+        firebaseDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
+            if (err.code === 'failed-precondition') {
+                console.warn('Firestore persistence: multiple tabs open, only one can use offline.');
+            } else if (err.code === 'unimplemented') {
+                console.warn('Firestore persistence not available in this browser');
             }
-            firebaseDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
-                if (err.code === 'failed-precondition') {
-                    console.warn('Firestore persistence: multiple tabs open, only one can use offline.');
-                } else if (err.code === 'unimplemented') {
-                    console.warn('Firestore persistence not available in this browser');
-                }
-            });
-        } catch (e) {
-            console.warn('Firestore persistence setup skipped:', e.message);
-        }
+        });
 
         firebaseReady = true;
         console.log('✅ Firebase initialized');
