@@ -507,6 +507,31 @@ body {
     color: white;
 }
 
+/* English category cards */
+.challenge-card-english {
+    border-left: 4px solid #10B981;
+}
+
+.challenge-card-english:hover {
+    border-color: #059669;
+}
+
+.challenge-card-english.challenge-card-special {
+    background: linear-gradient(135deg, #10B981 0%, #0EA5E9 100%);
+    color: white;
+    border-left: none;
+}
+
+.challenge-card-english.challenge-card-special h3,
+.challenge-card-english.challenge-card-special p {
+    color: white;
+}
+
+.challenge-card-english.challenge-card-special .points-badge {
+    background: rgba(255,255,255,0.25);
+    color: white;
+}
+
 .challenge-emoji {
     font-size: 3rem;
     margin-bottom: 12px;

@@ -20,7 +20,12 @@
         geometry: '📐 Shape Shifter',
         olympiad: '🏆 Olympiad Crusher',
         word: '📖 Word Wizard',
-        mixed: '🎲 Random Blitz'
+        mixed: '🎲 Random Blitz',
+        english_vocabulary: '📚 Vocabulary Builder',
+        english_grammar: '✏️ Grammar Pro',
+        english_reading: '📖 Reading Champ',
+        english_spelling: '🔤 Spelling Bee',
+        english_mixed: '🇦 English Blitz'
     };
 
     // ─── XP & LEVEL SYSTEM ─────────────────────────────────
@@ -609,18 +614,25 @@
         const count = isDaily ? DAILY_CHALLENGE_COUNT : QUESTIONS_PER_QUIZ;
 
         let questions;
+        const isEnglish = category.startsWith('english_');
         try {
-            // Use QuestionAPI for async questions
-            if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
+            if (isEnglish && typeof getEnglishQuestions === 'function') {
+                // Route English categories to English question bank
+                questions = getEnglishQuestions(state.player.grade, category, count);
+            } else if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
                 questions = await QuestionAPI.getQuestions(state.player.grade, category, count);
             } else {
                 questions = getQuestions(state.player.grade, category, count);
             }
         } catch (e) {
             console.warn('Question fetch error, using fallback:', e);
-            questions = typeof getLocalQuestions === 'function'
-                ? getLocalQuestions(state.player.grade, category, count)
-                : getQuestions(state.player.grade, category, count);
+            if (isEnglish && typeof getEnglishQuestions === 'function') {
+                questions = getEnglishQuestions(state.player.grade, category, count);
+            } else {
+                questions = typeof getLocalQuestions === 'function'
+                    ? getLocalQuestions(state.player.grade, category, count)
+                    : getQuestions(state.player.grade, category, count);
+            }
         }
 
         if (!questions || questions.length === 0) {
@@ -1323,7 +1335,7 @@
             sessContainer.innerHTML = `<div class="empty-state"><div class="empty-state-emoji">📊</div><p>No sessions yet. Start a challenge!</p></div>`;
         } else {
             sessContainer.innerHTML = '';
-            const catEmojis = { arithmetic: '🔢', logic: '🧩', geometry: '📐', olympiad: '🏆', word: '📖', mixed: '🎲' };
+            const catEmojis = { arithmetic: '🔢', logic: '🧩', geometry: '📐', olympiad: '🏆', word: '📖', mixed: '🎲', english_vocabulary: '📚', english_grammar: '✏️', english_reading: '📖', english_spelling: '🔤', english_mixed: '🇦' };
             sessions.slice(0, 15).forEach(s => {
                 const item = document.createElement('div');
                 item.className = 'session-item';
