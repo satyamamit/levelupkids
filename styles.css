@@ -4,9 +4,9 @@
 
 /* ---------- CSS Variables / Theme ---------- */
 :root {
-    --primary: #6C63FF;
-    --primary-dark: #5A52D5;
-    --primary-light: #8B83FF;
+    --primary: #7C73FF;
+    --primary-dark: #6C63FF;
+    --primary-light: #9B93FF;
     --secondary: #FF6B6B;
     --secondary-dark: #E55A5A;
     --accent-green: #2ED573;
@@ -16,16 +16,20 @@
     --accent-blue: #1E90FF;
     --accent-pink: #FF6B9D;
     --accent-purple: #A855F7;
-    --bg-main: #F0F4FF;
-    --bg-card: #FFFFFF;
-    --bg-dark: #1A1A2E;
-    --text-primary: #2D3436;
-    --text-secondary: #636E72;
-    --text-light: #B2BEC3;
-    --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
-    --shadow-glow: 0 0 20px rgba(108, 99, 255, 0.3);
+    --bg-main: #0F0F1A;
+    --bg-card: #1A1A2E;
+    --bg-card-hover: #242442;
+    --bg-dark: #0A0A14;
+    --bg-input: #242442;
+    --bg-highlight: #2A2A4A;
+    --border-color: #2E2E50;
+    --text-primary: #E8E8F0;
+    --text-secondary: #A0A0B8;
+    --text-light: #6B6B88;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+    --shadow-glow: 0 0 20px rgba(124, 115, 255, 0.3);
     --radius-sm: 10px;
     --radius-md: 16px;
     --radius-lg: 24px;
@@ -2322,4 +2326,386 @@ body {
     opacity: 1;
     background: #F8D7DA;
     color: #721C24;
+}
+
+/* =============================================
+   DARK THEME OVERRIDES
+   ============================================= */
+
+/* All hardcoded white backgrounds → dark card */
+.welcome-card,
+.welcome-container,
+.form-group input,
+.grade-btn,
+.stat-card,
+.challenge-card,
+.quiz-container,
+.quiz-card,
+.answer-btn,
+.result-card,
+.leaderboard-card,
+.leaderboard-content,
+.rewards-content,
+.rewards-balance-card,
+.reward-card,
+.achievements-content,
+.achievement-card,
+.progress-content,
+.session-item,
+.modal-box,
+.redemption-item,
+.xp-level-banner,
+.daily-challenge-card,
+.nav-user-avatar,
+.empty-state {
+    background: var(--bg-card) !important;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Input fields */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+input::placeholder {
+    color: var(--text-light) !important;
+}
+
+/* Grade buttons unselected */
+.grade-btn {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border: 2px solid var(--border-color) !important;
+}
+
+.grade-btn.selected {
+    background: var(--primary) !important;
+    color: white !important;
+    border-color: var(--primary) !important;
+}
+
+/* Nav bar */
+.top-nav {
+    background: var(--bg-dark) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nav-title, .nav-title-center {
+    color: var(--text-primary) !important;
+}
+
+/* Section titles */
+.section-title {
+    color: var(--text-primary) !important;
+}
+
+/* Challenge cards hover */
+.challenge-card:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: var(--primary-light) !important;
+}
+
+/* Answer buttons */
+.answer-btn {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border: 2px solid var(--border-color) !important;
+}
+
+.answer-btn:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: var(--primary-light) !important;
+}
+
+.answer-btn.correct {
+    background: rgba(46, 213, 115, 0.2) !important;
+    border-color: var(--accent-green) !important;
+    color: var(--accent-green) !important;
+}
+
+.answer-btn.wrong {
+    background: rgba(255, 107, 107, 0.2) !important;
+    border-color: var(--secondary) !important;
+    color: var(--secondary) !important;
+}
+
+/* Feedback area */
+.feedback-area,
+.hint-box {
+    background: var(--bg-highlight) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Stats cards */
+.stat-card {
+    border: 1px solid var(--border-color) !important;
+}
+
+.stat-label {
+    color: var(--text-secondary) !important;
+}
+
+/* Daily challenge */
+.daily-challenge-card {
+    border: 1px solid var(--border-color) !important;
+}
+
+.daily-progress-bar {
+    background: var(--bg-input) !important;
+}
+
+/* XP bar */
+.xp-bar-track {
+    background: var(--bg-input) !important;
+}
+
+.xp-bar-label,
+.xp-level-text {
+    color: var(--text-secondary) !important;
+}
+
+/* Leaderboard */
+.leaderboard-tabs .tab-btn {
+    background: var(--bg-input) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.leaderboard-tabs .tab-btn.active {
+    background: var(--primary) !important;
+    color: white !important;
+}
+
+.leaderboard-row {
+    background: var(--bg-card) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.leaderboard-row:hover,
+.leaderboard-row.you-row {
+    background: var(--bg-card-hover) !important;
+}
+
+.lb-name, .lb-xp, .lb-rank {
+    color: var(--text-primary) !important;
+}
+
+.lb-grade {
+    color: var(--text-secondary) !important;
+}
+
+/* Reward cards */
+.reward-card {
+    border: 1px solid var(--border-color) !important;
+}
+
+.reward-card:hover {
+    background: var(--bg-card-hover) !important;
+}
+
+.reward-desc {
+    color: var(--text-secondary) !important;
+}
+
+/* Achievement cards */
+.achievement-card {
+    border: 1px solid var(--border-color) !important;
+}
+
+.achievement-card.locked {
+    background: var(--bg-dark) !important;
+    opacity: 0.6;
+}
+
+.achievement-desc {
+    color: var(--text-secondary) !important;
+}
+
+/* Progress bars */
+.progress-row,
+.session-item {
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-sm);
+}
+
+.progress-bar-track {
+    background: var(--bg-input) !important;
+}
+
+/* Category labels, descriptions */
+.challenge-card p,
+.challenge-meta {
+    color: var(--text-secondary) !important;
+}
+
+.challenge-card h3 {
+    color: var(--text-primary) !important;
+}
+
+/* Points badge */
+.points-badge {
+    background: rgba(108, 99, 255, 0.2) !important;
+    color: var(--primary-light) !important;
+}
+
+/* Difficulty badges */
+.difficulty.easy {
+    color: var(--accent-green) !important;
+}
+
+.difficulty.medium {
+    color: var(--accent-yellow) !important;
+}
+
+.difficulty.hard {
+    color: var(--secondary) !important;
+}
+
+/* Modal */
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.modal-box {
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Buttons */
+.btn-secondary {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.btn-secondary:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: var(--primary) !important;
+}
+
+.btn-link {
+    color: var(--primary-light) !important;
+}
+
+/* Toast notifications */
+.toast {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Google sign-in button */
+.btn-google {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.btn-google:hover {
+    background: var(--bg-card-hover) !important;
+}
+
+/* Auth divider */
+.auth-divider span {
+    background: var(--bg-card) !important;
+    color: var(--text-secondary) !important;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    background: var(--border-color) !important;
+}
+
+/* Sync status dark overrides */
+.sync-status.syncing {
+    background: rgba(255, 165, 2, 0.2) !important;
+    color: var(--accent-yellow) !important;
+}
+
+.sync-status.synced {
+    background: rgba(46, 213, 115, 0.2) !important;
+    color: var(--accent-green) !important;
+}
+
+.sync-status.offline {
+    background: rgba(255, 107, 107, 0.2) !important;
+    color: var(--secondary) !important;
+}
+
+/* Special gradient cards keep their colors */
+.challenge-card-special h3,
+.challenge-card-special p {
+    color: white !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-light);
+}
+
+/* English card border in dark mode */
+.challenge-card-english {
+    border-left-color: #10B981 !important;
+}
+
+/* Body / main background */
+body {
+    background: var(--bg-main) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Screen containers */
+.screen {
+    background: var(--bg-main) !important;
+}
+
+/* Question text */
+.question-text {
+    color: var(--text-primary) !important;
+}
+
+/* Timer */
+.timer-bar {
+    background: var(--bg-input) !important;
+}
+
+/* Hint text */
+.hint-text {
+    color: var(--text-secondary) !important;
+}
+
+/* Footer / bottom nav */
+.bottom-nav {
+    background: var(--bg-dark) !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+.bottom-nav .nav-item {
+    color: var(--text-secondary) !important;
+}
+
+.bottom-nav .nav-item.active {
+    color: var(--primary-light) !important;
 }
