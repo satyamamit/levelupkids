@@ -206,7 +206,41 @@
         if (el) el.classList.add('active');
         state.currentScreen = screenId;
         window.scrollTo(0, 0);
+
+        // Update URL hash for routing (skip quiz/results — transient screens)
+        const routableScreens = ['dashboard', 'leaderboard', 'rewards', 'achievements', 'progress'];
+        if (routableScreens.includes(screenId)) {
+            const newHash = '#' + screenId;
+            if (window.location.hash !== newHash) {
+                history.pushState(null, '', newHash);
+            }
+        } else if (screenId === 'welcome') {
+            if (window.location.hash) {
+                history.pushState(null, '', window.location.pathname);
+            }
+        }
     }
+
+    // ─── Hash-based Router ──────────────────────────────────
+    function navigateToHash(hash) {
+        if (!state.player) return; // Can't route without a player
+        const route = (hash || '').replace('#', '');
+        switch (route) {
+            case 'dashboard':    showDashboard(); break;
+            case 'leaderboard':  showLeaderboard(); break;
+            case 'rewards':      showRewardsStore(); break;
+            case 'achievements': showAchievements(); break;
+            case 'progress':     showProgress(); break;
+            default:             showDashboard(); break;
+        }
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', () => {
+        if (state.player) {
+            navigateToHash(window.location.hash);
+        }
+    });
 
     // ===================== PLAYER DATA =====================
     function getDefaultPlayer(name, grade) {
@@ -233,6 +267,8 @@
             all['__uid__' + state.authUser.uid] = state.player;
         }
         localStorage.setItem('mathchamp_players', JSON.stringify(all));
+        // Remember last player for auto-login
+        localStorage.setItem('mathchamp_last_player', state.player.name);
 
         // Also save to Firestore if Firebase is active and user is signed in
         if (state.useFirebase && state.authUser && typeof FirestoreDB !== 'undefined') {
@@ -552,7 +588,12 @@
             state.bots = generateBotPlayers(selectedGrade);
             updateStreak();
             savePlayer();
-            showDashboard();
+            // Route to hash if present, otherwise dashboard
+            if (window.location.hash && window.location.hash !== '#') {
+                navigateToHash(window.location.hash);
+            } else {
+                showDashboard();
+            }
         });
 
         loadBtn.addEventListener('click', () => {
@@ -572,7 +613,11 @@
                     state.bots = generateBotPlayers(p.grade);
                     updateStreak();
                     savePlayer();
-                    showDashboard();
+                    if (window.location.hash && window.location.hash !== '#') {
+                        navigateToHash(window.location.hash);
+                    } else {
+                        showDashboard();
+                    }
                 } else { showToast('Profile not found!', 'error'); }
             }
         });
@@ -1538,6 +1583,24 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
+
+        // ─── Auto-login returning user from localStorage ───
+        // If user was previously logged in, try to restore their session
+        const savedPlayers = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+        const lastPlayerName = localStorage.getItem('mathchamp_last_player');
+        if (lastPlayerName && savedPlayers[lastPlayerName.toLowerCase()]) {
+            const p = savedPlayers[lastPlayerName.toLowerCase()];
+            migratePlayer(p);
+            state.player = p;
+            state.bots = generateBotPlayers(p.grade);
+            updateStreak();
+            // If there's a hash route, go directly there
+            if (window.location.hash && window.location.hash !== '#') {
+                navigateToHash(window.location.hash);
+            } else {
+                showDashboard();
+            }
+        }
     }
 
     document.addEventListener('DOMContentLoaded', init);
