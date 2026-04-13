@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 MathChamp - Challenge Your Brain!</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- ==================== WELCOME / GRADE SELECT SCREEN ==================== -->
+    <div id="screen-welcome" class="screen active">
+        <div class="welcome-container">
+            <div class="logo-area">
+                <div class="logo-icon">🧠</div>
+                <h1 class="app-title">MathChamp</h1>
+                <p class="app-tagline">Challenge Your Brain. Earn Rewards! 🏆</p>
+            </div>
+            <div class="welcome-card">
+                <h2>👋 Welcome, Math Champion!</h2>
+
+                <!-- Google Sign-In Section -->
+                <div class="auth-section" id="auth-section">
+                    <button id="btn-google-signin" class="btn-google">
+                        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                        Sign in with Google
+                    </button>
+                    <div class="auth-divider">
+                        <span>or play as guest</span>
+                    </div>
+                </div>
+
+                <!-- Signed-in user info (hidden initially) -->
+                <div class="auth-user-info" id="auth-user-info" style="display:none;">
+                    <img id="auth-user-photo" class="auth-user-photo" src="" alt="">
+                    <span id="auth-user-name" class="auth-user-name"></span>
+                    <button id="btn-auth-signout" class="btn-link btn-signout">Sign out</button>
+                </div>
+
+                <div class="form-group">
+                    <label for="player-name">What's your name?</label>
+                    <input type="text" id="player-name" placeholder="Enter your name..." maxlength="20" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Select your grade:</label>
+                    <div class="grade-grid">
+                        <button class="grade-btn" data-grade="1">Grade 1</button>
+                        <button class="grade-btn" data-grade="2">Grade 2</button>
+                        <button class="grade-btn" data-grade="3">Grade 3</button>
+                        <button class="grade-btn" data-grade="4">Grade 4</button>
+                        <button class="grade-btn" data-grade="5">Grade 5</button>
+                        <button class="grade-btn" data-grade="6">Grade 6</button>
+                        <button class="grade-btn" data-grade="7">Grade 7</button>
+                        <button class="grade-btn" data-grade="8">Grade 8</button>
+                    </div>
+                </div>
+                <button id="btn-start" class="btn-primary btn-large" disabled>
+                    🚀 Let's Go!
+                </button>
+            </div>
+            <div class="returning-player">
+                <p>Returning player? <button id="btn-load-profile" class="btn-link">Load your profile</button></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DASHBOARD SCREEN ==================== -->
+    <div id="screen-dashboard" class="screen">
+        <nav class="top-nav">
+            <div class="nav-left">
+                <span class="nav-logo">🧠</span>
+                <span class="nav-title">MathChamp</span>
+            </div>
+            <div class="nav-center">
+                <span id="nav-player-name" class="nav-player"></span>
+                <span id="nav-grade-badge" class="grade-badge"></span>
+            </div>
+            <div class="nav-right">
+                <img id="nav-user-avatar" class="nav-user-avatar" src="" alt="" style="display:none;">
+                <div class="points-display">
+                    <span class="coin-icon">🪙</span>
+                    <span id="nav-points">0</span> pts
+                </div>
+                <button id="btn-logout" class="btn-icon" title="Switch Player">🔄</button>
+            </div>
+        </nav>
+
+        <div class="dashboard-content">
+            <!-- XP Level Banner -->
+            <div class="xp-level-banner">
+                <div class="xp-level-left">
+                    <div class="rank-tier-badge" id="dash-rank-badge">🥉</div>
+                    <div class="xp-info">
+                        <div class="xp-level-text">Level <span id="dash-level">1</span> — <span id="dash-rank-title">Bronze</span></div>
+                        <div class="xp-bar-track">
+                            <div class="xp-bar-fill" id="dash-xp-bar" style="width:0%"></div>
+                        </div>
+                        <div class="xp-bar-label"><span id="dash-xp">0</span> / <span id="dash-xp-next">100</span> XP</div>
+                    </div>
+                </div>
+                <div class="xp-level-right">
+                    <div class="multiplier-badge" id="dash-multiplier" title="Current point multiplier">×1</div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-row">
+                <div class="stat-card stat-points">
+                    <div class="stat-icon">🪙</div>
+                    <div class="stat-value" id="dash-points">0</div>
+                    <div class="stat-label">Total Points</div>
+                </div>
+                <div class="stat-card stat-streak">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-value" id="dash-streak">0</div>
+                    <div class="stat-label">Day Streak</div>
+                </div>
+                <div class="stat-card stat-solved">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="dash-solved">0</div>
+                    <div class="stat-label">Problems Solved</div>
+                </div>
+                <div class="stat-card stat-accuracy">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-value" id="dash-accuracy">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+            </div>
+
+            <!-- Daily Challenge Card -->
+            <div class="daily-challenge-card" id="daily-challenge-card">
+                <div class="daily-challenge-header">
+                    <span class="daily-fire">🔥</span>
+                    <h3>Daily Challenge</h3>
+                    <span class="daily-bonus-badge" id="daily-bonus-badge">+2× Bonus</span>
+                </div>
+                <div class="daily-challenge-body">
+                    <p id="daily-challenge-desc">Complete today's challenge for bonus XP and points!</p>
+                    <div class="daily-challenge-progress">
+                        <div class="daily-progress-bar">
+                            <div class="daily-progress-fill" id="daily-progress-fill" style="width:0%"></div>
+                        </div>
+                        <span id="daily-progress-text">0 / 5 completed</span>
+                    </div>
+                    <button id="btn-daily-challenge" class="btn-daily-challenge">⚡ Start Daily Challenge</button>
+                </div>
+                <div class="daily-streak-calendar" id="daily-streak-calendar"></div>
+            </div>
+
+            <!-- Challenge Categories -->
+            <h2 class="section-title">🎮 Choose Your Challenge</h2>
+            <div class="challenge-grid">
+                <div class="challenge-card" data-category="arithmetic" data-difficulty="easy">
+                    <div class="challenge-emoji">🔢</div>
+                    <h3>Number Ninja</h3>
+                    <p>Arithmetic & Number Sense</p>
+                    <div class="challenge-meta">
+                        <span class="difficulty easy">⭐ Warm Up</span>
+                        <span class="points-badge">+5 pts each</span>
+                    </div>
+                </div>
+                <div class="challenge-card" data-category="logic" data-difficulty="medium">
+                    <div class="challenge-emoji">🧩</div>
+                    <h3>Logic Legend</h3>
+                    <p>Puzzles & Logical Thinking</p>
+                    <div class="challenge-meta">
+                        <span class="difficulty medium">⭐⭐ Challenging</span>
+                        <span class="points-badge">+10 pts each</span>
+                    </div>
+                </div>
+                <div class="challenge-card" data-category="geometry" data-difficulty="medium">
+                    <div class="challenge-emoji">📐</div>
+                    <h3>Shape Shifter</h3>
+                    <p>Geometry & Spatial Reasoning</p>
+                    <div class="challenge-meta">
+                        <span class="difficulty medium">⭐⭐ Challenging</span>
+                        <span class="points-badge">+10 pts each</span>
+                    </div>
+                </div>
+                <div class="challenge-card" data-category="olympiad" data-difficulty="hard">
+                    <div class="challenge-emoji">🏆</div>
+                    <h3>Olympiad Crusher</h3>
+                    <p>AMC 8 · AOPS · Kangaroo · RSM</p>
+                    <div class="challenge-meta">
+                        <span class="difficulty hard">⭐⭐⭐ Extreme</span>
+                        <span class="points-badge">+20 pts each</span>
+                    </div>
+                </div>
+                <div class="challenge-card" data-category="word" data-difficulty="medium">
+                    <div class="challenge-emoji">📖</div>
+                    <h3>Word Wizard</h3>
+                    <p>Word Problems & Real Life Math</p>
+                    <div class="challenge-meta">
+                        <span class="difficulty medium">⭐⭐ Challenging</span>
+                        <span class="points-badge">+10 pts each</span>
+                    </div>
+                </div>
+                <div class="challenge-card challenge-card-special" data-category="mixed" data-difficulty="mixed">
+                    <div class="challenge-emoji">🎲</div>
+                    <h3>Random Blitz</h3>
+                    <p>Mixed questions, timed challenge!</p>
+                    <div class="challenge-meta">
+                        <span class="difficulty hard">⚡ Timed</span>
+                        <span class="points-badge">+5-25 pts each</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="bottom-actions">
+                <button id="btn-leaderboard" class="btn-secondary btn-large">
+                    🏆 Leaderboard
+                </button>
+                <button id="btn-rewards" class="btn-secondary btn-large">
+                    🎁 Rewards Store
+                </button>
+                <button id="btn-achievements" class="btn-secondary btn-large">
+                    🏅 Achievements
+                </button>
+                <button id="btn-history" class="btn-secondary btn-large">
+                    📊 My Progress
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== QUIZ SCREEN ==================== -->
+    <div id="screen-quiz" class="screen">
+        <nav class="top-nav quiz-nav">
+            <button id="btn-quit-quiz" class="btn-icon" title="Quit Quiz">✖</button>
+            <div class="quiz-info">
+                <span id="quiz-category-label" class="quiz-cat-label"></span>
+                <span id="quiz-progress">1 / 10</span>
+            </div>
+            <div class="quiz-points-live">
+                <span class="coin-icon">🪙</span>
+                <span id="quiz-live-points">0</span>
+            </div>
+        </nav>
+
+        <div class="quiz-container">
+            <!-- Timer Bar -->
+            <div class="timer-bar-container" id="timer-container" style="display:none;">
+                <div class="timer-bar" id="timer-bar"></div>
+                <span class="timer-text" id="timer-text">60s</span>
+            </div>
+
+            <!-- Difficulty Badge -->
+            <div class="question-difficulty" id="question-difficulty"></div>
+
+            <!-- Question Area -->
+            <div class="question-area">
+                <div class="question-header">
+                    <div class="question-number" id="question-number">Question 1</div>
+                    <div class="source-badge" id="source-badge" title="Question source"></div>
+                </div>
+                <div class="question-text" id="question-text"></div>
+                <div class="question-image" id="question-image"></div>
+            </div>
+
+            <!-- Answer Options -->
+            <div class="answers-grid" id="answers-grid"></div>
+
+            <!-- Hint Area -->
+            <div class="hint-area" id="hint-area" style="display:none;">
+                <div class="hint-box">
+                    <span class="hint-icon">💡</span>
+                    <span class="hint-text" id="hint-text"></span>
+                </div>
+            </div>
+
+            <!-- Feedback -->
+            <div class="feedback-area" id="feedback-area" style="display:none;">
+                <div class="feedback-box" id="feedback-box">
+                    <div class="feedback-icon" id="feedback-icon"></div>
+                    <div class="feedback-message" id="feedback-message"></div>
+                    <div class="feedback-explanation" id="feedback-explanation"></div>
+                    <div class="feedback-points" id="feedback-points"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Quiz Actions -->
+            <div class="quiz-actions">
+                <button id="btn-hint" class="btn-hint">
+                    💡 Use Hint (-2 pts)
+                </button>
+                <button id="btn-next" class="btn-primary" style="display:none;">
+                    Next Question ➡️
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== RESULTS SCREEN ==================== -->
+    <div id="screen-results" class="screen">
+        <div class="results-container">
+            <div class="results-header">
+                <div class="results-emoji" id="results-emoji">🎉</div>
+                <h1 id="results-title">Awesome Job!</h1>
+                <p id="results-subtitle">Here's how you did:</p>
+            </div>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <div class="result-stat-value" id="result-correct">0</div>
+                    <div class="result-stat-label">Correct</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="result-total">0</div>
+                    <div class="result-stat-label">Total</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="result-points-earned">0</div>
+                    <div class="result-stat-label">Points Earned</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="result-accuracy">0%</div>
+                    <div class="result-stat-label">Accuracy</div>
+                </div>
+            </div>
+            <div class="results-breakdown" id="results-breakdown"></div>
+            <div class="results-actions">
+                <button id="btn-play-again" class="btn-primary btn-large">🔄 Play Again</button>
+                <button id="btn-back-dashboard" class="btn-secondary btn-large">🏠 Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== REWARDS STORE SCREEN ==================== -->
+    <div id="screen-rewards" class="screen">
+        <nav class="top-nav">
+            <button id="btn-back-from-rewards" class="btn-icon" title="Back">⬅️</button>
+            <h2 class="nav-title-center">🎁 Rewards Store</h2>
+            <div class="points-display">
+                <span class="coin-icon">🪙</span>
+                <span id="rewards-points">0</span> pts
+            </div>
+        </nav>
+        <div class="rewards-content">
+            <div class="rewards-balance-card">
+                <h2>Your Balance</h2>
+                <div class="big-points">
+                    <span class="coin-icon-big">🪙</span>
+                    <span id="rewards-balance">0</span>
+                    <span>points</span>
+                </div>
+                <p class="rewards-hint">Solve more problems to earn more points!</p>
+            </div>
+
+            <h3 class="section-title">🎮 Gaming & Fun</h3>
+            <div class="rewards-grid" id="rewards-gaming"></div>
+
+            <h3 class="section-title">🎁 Gift Cards</h3>
+            <div class="rewards-grid" id="rewards-giftcards"></div>
+
+            <h3 class="section-title">🧸 Toys & Collectibles</h3>
+            <div class="rewards-grid" id="rewards-toys"></div>
+
+            <h3 class="section-title">🌟 Special Privileges</h3>
+            <div class="rewards-grid" id="rewards-privileges"></div>
+
+            <h3 class="section-title">👑 Legendary Rewards</h3>
+            <div class="rewards-grid" id="rewards-legendary"></div>
+
+            <h3 class="section-title">📜 Redemption History</h3>
+            <div id="redemption-history" class="redemption-history"></div>
+        </div>
+    </div>
+
+    <!-- ==================== ACHIEVEMENTS SCREEN ==================== -->
+    <div id="screen-achievements" class="screen">
+        <nav class="top-nav">
+            <button id="btn-back-from-achievements" class="btn-icon" title="Back">⬅️</button>
+            <h2 class="nav-title-center">🏅 Achievements</h2>
+            <div class="points-display">
+                <span class="coin-icon">🪙</span>
+                <span id="ach-points">0</span> pts
+            </div>
+        </nav>
+        <div class="achievements-content">
+            <div class="achievements-grid" id="achievements-grid"></div>
+        </div>
+    </div>
+
+    <!-- ==================== PROGRESS SCREEN ==================== -->
+    <div id="screen-progress" class="screen">
+        <nav class="top-nav">
+            <button id="btn-back-from-progress" class="btn-icon" title="Back">⬅️</button>
+            <h2 class="nav-title-center">📊 My Progress</h2>
+            <div class="points-display">
+                <span class="coin-icon">🪙</span>
+                <span id="prog-points">0</span> pts
+            </div>
+        </nav>
+        <div class="progress-content">
+            <div class="progress-chart-area">
+                <h3>Category Performance</h3>
+                <div id="category-bars" class="category-bars"></div>
+            </div>
+            <div class="progress-chart-area">
+                <h3>Recent Sessions</h3>
+                <div id="session-history" class="session-history"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LEADERBOARD SCREEN ==================== -->
+    <div id="screen-leaderboard" class="screen">
+        <nav class="top-nav">
+            <button id="btn-back-from-leaderboard" class="btn-icon" title="Back">⬅️</button>
+            <h2 class="nav-title-center">🏆 Leaderboard</h2>
+            <div class="points-display">
+                <span class="coin-icon">🪙</span>
+                <span id="lb-points">0</span> pts
+            </div>
+        </nav>
+        <div class="leaderboard-content">
+            <!-- Tab Switcher -->
+            <div class="lb-tabs">
+                <button class="lb-tab active" data-lb-tab="global">🌍 Global</button>
+                <button class="lb-tab" data-lb-tab="grade">📚 My Grade</button>
+                <button class="lb-tab" data-lb-tab="weekly">📅 This Week</button>
+            </div>
+
+            <!-- Your Rank Card -->
+            <div class="lb-your-rank-card">
+                <div class="lb-your-rank-left">
+                    <div class="lb-your-rank-pos" id="lb-your-rank">#1</div>
+                    <div class="lb-your-rank-info">
+                        <div class="lb-your-name" id="lb-your-name">You</div>
+                        <div class="lb-your-tier" id="lb-your-tier">🥉 Bronze</div>
+                    </div>
+                </div>
+                <div class="lb-your-rank-right">
+                    <div class="lb-your-xp" id="lb-your-xp">0 XP</div>
+                    <div class="lb-your-level" id="lb-your-level">Level 1</div>
+                </div>
+            </div>
+
+            <!-- Leaderboard List -->
+            <div class="lb-list" id="lb-list"></div>
+
+            <!-- Your Stats Breakdown -->
+            <div class="lb-stats-grid">
+                <div class="lb-stat-card">
+                    <div class="lb-stat-value" id="lb-stat-quizzes">0</div>
+                    <div class="lb-stat-label">Quizzes</div>
+                </div>
+                <div class="lb-stat-card">
+                    <div class="lb-stat-value" id="lb-stat-accuracy">0%</div>
+                    <div class="lb-stat-label">Accuracy</div>
+                </div>
+                <div class="lb-stat-card">
+                    <div class="lb-stat-value" id="lb-stat-streak">0</div>
+                    <div class="lb-stat-label">Best Streak</div>
+                </div>
+                <div class="lb-stat-card">
+                    <div class="lb-stat-value" id="lb-stat-level">1</div>
+                    <div class="lb-stat-label">Level</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== CONFIRM DIALOG ==================== -->
+    <div id="modal-overlay" class="modal-overlay" style="display:none;">
+        <div class="modal-box" id="modal-box">
+            <div class="modal-icon" id="modal-icon">🎁</div>
+            <h3 id="modal-title">Confirm</h3>
+            <p id="modal-message">Are you sure?</p>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="btn-secondary">Cancel</button>
+                <button id="modal-confirm" class="btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST NOTIFICATIONS ==================== -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <script src="questions.js"></script>
+    <script src="questions-extra.js"></script>
+    <script src="questions-extra2.js"></script>
+    <script src="question-api.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
