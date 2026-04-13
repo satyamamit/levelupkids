@@ -120,31 +120,61 @@ const FirebaseAuthHelper = {
 const FirestoreDB = {
     // Save player data to Firestore
     async savePlayer(player) {
-        if (!firebaseReady || !firebaseAuth.currentUser) return false;
+        if (!firebaseReady || !firebaseAuth.currentUser) {
+            console.warn('Firestore save skipped: firebaseReady=', firebaseReady, 'currentUser=', !!firebaseAuth?.currentUser);
+            return false;
+        }
         try {
             const uid = firebaseAuth.currentUser.uid;
             const docRef = firebaseDb.collection('players').doc(uid);
+            // Clean the data — remove undefined values and non-serializable fields
+            const cleanData = {};
+            for (const [key, value] of Object.entries(player)) {
+                if (value !== undefined && key !== 'updatedAt') {
+                    cleanData[key] = value;
+                }
+            }
             await docRef.set({
-                ...player,
+                ...cleanData,
                 uid,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
+            console.log('✅ Firestore save successful for uid:', uid);
             return true;
         } catch (err) {
-            console.error('Firestore save error:', err);
+            console.error('❌ Firestore save error:', err.code, err.message);
+            // Check for common issues
+            if (err.code === 'permission-denied') {
+                console.error('🔒 Firestore security rules are blocking writes! Update rules in Firebase Console → Firestore → Rules');
+            }
             return false;
         }
     },
 
     // Load player data from Firestore
     async loadPlayer(uid) {
-        if (!firebaseReady) return null;
+        if (!firebaseReady) {
+            console.warn('Firestore load skipped: not ready');
+            return null;
+        }
         try {
             const doc = await firebaseDb.collection('players').doc(uid).get();
-            if (doc.exists) return doc.data();
+            if (doc.exists) {
+                const data = doc.data();
+                console.log('✅ Firestore load successful for uid:', uid);
+                // Convert Firestore Timestamp to string for serialization
+                if (data.updatedAt && data.updatedAt.toDate) {
+                    data.updatedAt = data.updatedAt.toDate().toISOString();
+                }
+                return data;
+            }
+            console.log('ℹ️ No Firestore data found for uid:', uid);
             return null;
         } catch (err) {
-            console.error('Firestore load error:', err);
+            console.error('❌ Firestore load error:', err.code, err.message);
+            if (err.code === 'permission-denied') {
+                console.error('🔒 Firestore security rules are blocking reads! Update rules in Firebase Console → Firestore → Rules');
+            }
             return null;
         }
     },

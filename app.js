@@ -225,19 +225,36 @@
 
     function savePlayer() {
         if (!state.player) return;
-        // Always save to localStorage as fallback
+        // Always save to localStorage as fallback (keyed by name AND uid if available)
         const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
         all[state.player.name.toLowerCase()] = state.player;
+        // Also store by uid so we can find it on reload
+        if (state.authUser && state.authUser.uid) {
+            all['__uid__' + state.authUser.uid] = state.player;
+        }
         localStorage.setItem('mathchamp_players', JSON.stringify(all));
 
-        // Also save to Firestore if Firebase is active
-        if (state.useFirebase && typeof FirestoreDB !== 'undefined') {
+        // Also save to Firestore if Firebase is active and user is signed in
+        if (state.useFirebase && state.authUser && typeof FirestoreDB !== 'undefined') {
+            showSyncStatus('syncing');
+            // Clean out non-serializable fields before saving
+            const cleanPlayer = { ...state.player };
+            delete cleanPlayer.updatedAt; // Firestore will set this via serverTimestamp
+            delete cleanPlayer._priority;
             FirestoreDB.savePlayer({
-                ...state.player,
+                ...cleanPlayer,
                 photoURL: state.authUser?.photoURL || null
             }).then(ok => {
-                if (ok) showSyncStatus('synced');
-            }).catch(() => showSyncStatus('offline'));
+                if (ok) {
+                    showSyncStatus('synced');
+                    console.log('☁️ Player data synced to cloud');
+                } else {
+                    showSyncStatus('offline');
+                }
+            }).catch(err => {
+                console.error('Sync error:', err);
+                showSyncStatus('offline');
+            });
         }
     }
 
@@ -257,7 +274,12 @@
 
     function loadPlayer(name) {
         const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
-        return all[name.toLowerCase()] || null;
+        // Check by name first, then by uid if authUser exists
+        let player = all[name.toLowerCase()] || null;
+        if (!player && state.authUser) {
+            player = all['__uid__' + state.authUser.uid] || null;
+        }
+        return player;
     }
 
     function getAllPlayerNames() {
@@ -371,25 +393,102 @@
             nameInput.dispatchEvent(new Event('input'));
 
             // Try to load existing profile from Firestore
-            const cloudPlayer = await FirestoreDB.loadPlayer(user.uid);
-            if (cloudPlayer) {
-                migratePlayer(cloudPlayer);
+            let cloudPlayer = null;
+            try {
+                cloudPlayer = await FirestoreDB.loadPlayer(user.uid);
+            } catch (e) {
+                console.warn('Failed to load cloud data:', e);
+            }
+
+            // Also check localStorage for existing data (by uid or name)
+            const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+            const localByUid = all['__uid__' + user.uid] || null;
+            const localByName = all[(displayName.split(' ')[0]).toLowerCase()] || null;
+            const localPlayer = localByUid || localByName;
+
+            if (cloudPlayer && localPlayer) {
+                // Merge: keep the higher value for each stat
+                state.player = mergePlayerData(cloudPlayer, localPlayer);
+                showToast(`Welcome back, ${state.player.name}! ☁️ Data synced & merged.`, 'success');
+            } else if (cloudPlayer) {
                 state.player = cloudPlayer;
-                nameInput.value = cloudPlayer.name;
+                showToast(`Welcome back, ${cloudPlayer.name}! ☁️ Data loaded from cloud.`, 'success');
+            } else if (localPlayer) {
+                state.player = localPlayer;
+                showToast(`Welcome back, ${localPlayer.name}! Local data found.`, 'success');
+            } else {
+                // No data anywhere — will create fresh on "Let's Go"
+                showToast(`Welcome! Sign in successful. Choose your grade to start.`, 'success');
+            }
+
+            if (state.player) {
+                // Remove Firestore Timestamp objects that can't be serialized
+                delete state.player.updatedAt;
+                migratePlayer(state.player);
+                nameInput.value = state.player.name;
                 nameInput.dispatchEvent(new Event('input'));
                 // Auto-select grade
-                if (cloudPlayer.grade) {
+                if (state.player.grade) {
                     gradeButtons.forEach(b => {
                         b.classList.remove('selected');
-                        if (parseInt(b.dataset.grade) === cloudPlayer.grade) {
+                        if (parseInt(b.dataset.grade) === state.player.grade) {
                             b.classList.add('selected');
-                            selectedGrade = cloudPlayer.grade;
+                            selectedGrade = state.player.grade;
                         }
                     });
                     checkReady();
                 }
-                showToast(`Welcome back, ${cloudPlayer.name}! ☁️ Data synced from cloud.`, 'success');
+                // Save merged data back to both localStorage AND Firestore
+                savePlayer();
             }
+        }
+
+        // Merge two player data objects, keeping the best of each
+        function mergePlayerData(a, b) {
+            const merged = { ...a };
+            // Keep higher numeric stats
+            const maxFields = [
+                'points', 'totalXP', 'totalQuizzes', 'totalCorrect', 'totalAttempted',
+                'totalPointsEarned', 'streak', 'maxStreak', 'perfectScores',
+                'quizzesWithNoHints', 'blitzHighAccuracy', 'hardCorrect', 'maxCombo',
+                'dailyChallengesCompleted', 'totalRedemptions'
+            ];
+            for (const key of maxFields) {
+                merged[key] = Math.max(a[key] || 0, b[key] || 0);
+            }
+            // Merge achievements (union)
+            const achieveA = new Set(a.achievements || []);
+            const achieveB = new Set(b.achievements || []);
+            merged.achievements = [...new Set([...achieveA, ...achieveB])];
+            // Merge categoriesPlayed (union)
+            merged.categoriesPlayed = { ...(a.categoriesPlayed || {}), ...(b.categoriesPlayed || {}) };
+            // Merge categoryHighScores (max of each)
+            merged.categoryHighScores = { ...(a.categoryHighScores || {}) };
+            for (const cat in (b.categoryHighScores || {})) {
+                merged.categoryHighScores[cat] = Math.max(merged.categoryHighScores[cat] || 0, b.categoryHighScores[cat]);
+            }
+            // Merge dailyStreakDates (union, sorted)
+            const datesA = new Set(a.dailyStreakDates || []);
+            const datesB = new Set(b.dailyStreakDates || []);
+            merged.dailyStreakDates = [...new Set([...datesA, ...datesB])].sort();
+            // Merge redeemed rewards (union)
+            const redeemedA = new Set((a.redeemedRewards || []).map(r => typeof r === 'string' ? r : r.id));
+            const redeemedB = new Set((b.redeemedRewards || []).map(r => typeof r === 'string' ? r : r.id));
+            // Keep the longer redeemed array with more info
+            merged.redeemedRewards = (a.redeemedRewards || []).length >= (b.redeemedRewards || []).length
+                ? (a.redeemedRewards || []) : (b.redeemedRewards || []);
+            // Keep more recent session history (longer array)
+            merged.sessions = (a.sessions || []).length >= (b.sessions || []).length
+                ? (a.sessions || []) : (b.sessions || []);
+            // Use most recent name and grade (prefer non-default)
+            merged.name = a.name || b.name;
+            merged.grade = a.grade || b.grade;
+            // Use the most recent lastPlayedDate
+            if (a.lastPlayedDate && b.lastPlayedDate) {
+                merged.lastPlayedDate = new Date(a.lastPlayedDate) > new Date(b.lastPlayedDate)
+                    ? a.lastPlayedDate : b.lastPlayedDate;
+            }
+            return merged;
         }
 
         // ─── Sign-out button ───
