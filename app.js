@@ -683,6 +683,8 @@
         $('#btn-logout').onclick = async () => {
             savePlayer();
             state.player = null;
+            // Clear auto-login so user sees welcome screen next time
+            localStorage.removeItem('mathchamp_last_player');
             if (state.useFirebase && typeof FirebaseAuthHelper !== 'undefined') {
                 await FirebaseAuthHelper.signOut();
             }
@@ -694,6 +696,8 @@
             if (authUserInfo) authUserInfo.style.display = 'none';
             const googleBtn = $('#btn-google-signin');
             if (googleBtn) { googleBtn.disabled = false; }
+            // Clear hash and go to welcome
+            history.pushState(null, '', window.location.pathname);
             showScreen('welcome');
         };
     }

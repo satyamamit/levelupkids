@@ -300,6 +300,26 @@ body {
     transform: scale(1.1);
 }
 
+.btn-signout-nav {
+    background: rgba(255, 107, 107, 0.15);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: var(--radius-full);
+    padding: 8px 16px;
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #FF6B6B;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.btn-signout-nav:hover {
+    background: rgba(255, 107, 107, 0.25);
+    border-color: #FF6B6B;
+    transform: translateY(-1px);
+}
+
 .btn-link {
     background: none;
     border: none;
