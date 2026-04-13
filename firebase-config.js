@@ -61,35 +61,24 @@ const FirebaseAuthHelper = {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
-            // Try popup first
             const result = await firebaseAuth.signInWithPopup(provider);
             return result.user;
         } catch (err) {
             console.error('Google sign-in error:', err);
             if (err.code === 'auth/popup-closed-by-user') return null;
             if (err.code === 'auth/cancelled-popup-request') return null;
-            // If popup is blocked, fall back to redirect
-            if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-                console.log('Popup blocked, falling back to redirect...');
-                const provider = new firebase.auth.GoogleAuthProvider();
-                provider.setCustomParameters({ prompt: 'select_account' });
-                await firebaseAuth.signInWithRedirect(provider);
+            if (err.code === 'auth/popup-blocked') {
+                // Show a helpful message instead of using redirect (which breaks in partitioned browsers)
+                alert('Pop-up was blocked! Please allow pop-ups for this site and try again.\n\nIn Chrome: click the pop-up blocked icon in the address bar → Always allow.');
                 return null;
             }
             throw err;
         }
     },
 
-    // Handle redirect result (called on page load)
+    // No longer using redirect — removed to avoid storage-partitioned browser errors
     async getRedirectResult() {
-        if (!firebaseReady) return null;
-        try {
-            const result = await firebaseAuth.getRedirectResult();
-            return result?.user || null;
-        } catch (err) {
-            console.error('Redirect result error:', err);
-            return null;
-        }
+        return null;
     },
 
     // Sign out
