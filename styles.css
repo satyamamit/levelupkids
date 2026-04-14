@@ -2412,6 +2412,7 @@ body {
 .achievements-content,
 .achievement-card,
 .progress-content,
+.progress-chart-area,
 .session-item,
 .modal-box,
 .redemption-item,
@@ -2760,6 +2761,36 @@ input::placeholder {
 
 .progress-bar-track {
     background: var(--bg-input) !important;
+}
+
+/* Category bar track in progress screen */
+.bar-track {
+    background: var(--bg-input) !important;
+}
+
+.bar-label {
+    color: var(--text-secondary) !important;
+}
+
+.progress-chart-area h3 {
+    color: var(--text-primary) !important;
+}
+
+/* Session items inside progress */
+.session-history .session-item {
+    border-bottom-color: var(--border-color) !important;
+}
+
+.session-cat-name {
+    color: var(--text-primary) !important;
+}
+
+.session-score {
+    color: var(--primary-light) !important;
+}
+
+.session-pts {
+    color: var(--accent-yellow) !important;
 }
 
 /* Category labels, descriptions */
@@ -3937,6 +3968,40 @@ body {
 [data-theme="light"] .review-answer-wrong {
     background: rgba(239, 68, 68, 0.08);
     color: #DC2626;
+}
+
+/* ── Progress chart areas — light ── */
+[data-theme="light"] .progress-chart-area {
+    background: #FFFFFF !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .progress-chart-area h3 {
+    color: #1A1A2E !important;
+}
+
+[data-theme="light"] .bar-track {
+    background: #E8EAF0 !important;
+}
+
+[data-theme="light"] .bar-label {
+    color: #555570 !important;
+}
+
+[data-theme="light"] .session-history .session-item {
+    border-bottom-color: #E8EAF0 !important;
+}
+
+[data-theme="light"] .session-cat-name {
+    color: #1A1A2E !important;
+}
+
+[data-theme="light"] .session-score {
+    color: #6C63FF !important;
+}
+
+[data-theme="light"] .session-pts {
+    color: #E89400 !important;
 }
 
 /* ── Empty state ── */
