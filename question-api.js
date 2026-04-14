@@ -97,39 +97,39 @@ const QuestionAPI = (function () {
 
     // ── ARITHMETIC ──────────────────────────────────────────
     addition(grade) {
-      const max = [10, 50, 200, 1000, 5000, 10000, 50000, 100000][grade - 1] || 100;
-      const a = rand(1, max), b = rand(1, max);
+      const max = [20, 100, 500, 2000, 10000, 50000, 100000, 500000][grade - 1] || 200;
+      const a = rand(Math.floor(max * 0.1), max), b = rand(Math.floor(max * 0.1), max);
       const correct = a + b;
-      return { q: `What is ${a.toLocaleString()} + ${b.toLocaleString()}?`, ...makeOptions(correct, Math.max(5, Math.floor(max * 0.1))), hint: 'Add the numbers step by step.', explanation: `${a.toLocaleString()} + ${b.toLocaleString()} = ${correct.toLocaleString()}`, difficulty: grade <= 3 ? 'easy' : 'medium', source: 'Generated' };
+      return { q: `What is ${a.toLocaleString()} + ${b.toLocaleString()}?`, ...makeOptions(correct, Math.max(5, Math.floor(max * 0.1))), hint: 'Add the numbers step by step.', explanation: `${a.toLocaleString()} + ${b.toLocaleString()} = ${correct.toLocaleString()}`, difficulty: grade <= 2 ? 'easy' : 'medium', source: 'Generated' };
     },
 
     subtraction(grade) {
-      const max = [10, 50, 200, 1000, 5000, 10000, 50000, 100000][grade - 1] || 100;
-      let a = rand(1, max), b = rand(1, max);
+      const max = [20, 100, 500, 2000, 10000, 50000, 100000, 500000][grade - 1] || 200;
+      let a = rand(Math.floor(max * 0.2), max), b = rand(Math.floor(max * 0.1), max);
       if (b > a) [a, b] = [b, a];
       const correct = a - b;
-      return { q: `What is ${a.toLocaleString()} − ${b.toLocaleString()}?`, ...makeOptions(correct, Math.max(5, Math.floor(max * 0.05))), hint: 'Subtract carefully.', explanation: `${a.toLocaleString()} − ${b.toLocaleString()} = ${correct.toLocaleString()}`, difficulty: grade <= 3 ? 'easy' : 'medium', source: 'Generated' };
+      return { q: `What is ${a.toLocaleString()} − ${b.toLocaleString()}?`, ...makeOptions(correct, Math.max(5, Math.floor(max * 0.05))), hint: 'Subtract carefully.', explanation: `${a.toLocaleString()} − ${b.toLocaleString()} = ${correct.toLocaleString()}`, difficulty: grade <= 2 ? 'easy' : 'medium', source: 'Generated' };
     },
 
     multiplication(grade) {
-      const maxA = [5, 10, 12, 15, 20, 25, 50, 100][grade - 1] || 12;
-      const maxB = [5, 10, 12, 12, 15, 20, 30, 50][grade - 1] || 12;
+      const maxA = [5, 12, 15, 20, 25, 50, 100, 200][grade - 1] || 15;
+      const maxB = [5, 12, 15, 15, 20, 25, 50, 100][grade - 1] || 15;
       const a = rand(2, maxA), b = rand(2, maxB);
       const correct = a * b;
-      return { q: `What is ${a} × ${b}?`, ...makeOptions(correct, Math.max(5, Math.floor(correct * 0.2))), hint: 'Use your times tables or break it into smaller parts.', explanation: `${a} × ${b} = ${correct}`, difficulty: grade <= 4 ? 'easy' : 'medium', source: 'Generated' };
+      return { q: `What is ${a} × ${b}?`, ...makeOptions(correct, Math.max(5, Math.floor(correct * 0.2))), hint: 'Use your times tables or break it into smaller parts.', explanation: `${a} × ${b} = ${correct}`, difficulty: grade <= 3 ? 'easy' : 'medium', source: 'Generated' };
     },
 
     division(grade) {
-      const maxD = [5, 10, 12, 15, 20, 25, 50, 100][grade - 1] || 12;
+      const maxD = [5, 12, 15, 20, 25, 50, 100, 150][grade - 1] || 15;
       const divisor = rand(2, maxD);
-      const quotient = rand(1, maxD);
+      const quotient = rand(2, maxD);
       const dividend = divisor * quotient;
-      return { q: `What is ${dividend} ÷ ${divisor}?`, ...makeOptions(quotient, Math.max(3, Math.floor(quotient * 0.3))), hint: 'Think about what times the divisor gives the dividend.', explanation: `${dividend} ÷ ${divisor} = ${quotient}`, difficulty: grade <= 4 ? 'easy' : 'medium', source: 'Generated' };
+      return { q: `What is ${dividend} ÷ ${divisor}?`, ...makeOptions(quotient, Math.max(3, Math.floor(quotient * 0.3))), hint: 'Think about what times the divisor gives the dividend.', explanation: `${dividend} ÷ ${divisor} = ${quotient}`, difficulty: grade <= 3 ? 'easy' : 'medium', source: 'Generated' };
     },
 
     remainderDivision(grade) {
-      const maxD = [0, 5, 10, 12, 15, 20, 25, 50][grade - 1] || 10;
-      if (grade < 3) return Gen.division(grade);
+      const maxD = [3, 8, 12, 15, 20, 25, 50, 80][grade - 1] || 12;
+      if (grade < 2) return Gen.division(grade);
       const divisor = rand(3, maxD);
       const quotient = rand(1, maxD);
       const remainder = rand(1, divisor - 1);
@@ -138,7 +138,7 @@ const QuestionAPI = (function () {
     },
 
     orderOfOperations(grade) {
-      if (grade < 3) return Gen.addition(grade);
+      if (grade < 2) return Gen.addition(grade);
       const a = rand(2, 10), b = rand(2, 10), c = rand(1, 10);
       const templates = [
         { q: `${a} + ${b} × ${c} = ?`, ans: a + b * c },
@@ -153,7 +153,7 @@ const QuestionAPI = (function () {
 
     // ── FRACTIONS & DECIMALS ────────────────────────────────
     fractionAddition(grade) {
-      if (grade < 3) return Gen.addition(grade);
+      if (grade < 2) return Gen.addition(grade);
       const d = pick([2, 3, 4, 5, 6, 8, 10]);
       const n1 = rand(1, d - 1), n2 = rand(1, d - 1);
       const sum = n1 + n2;
@@ -164,7 +164,7 @@ const QuestionAPI = (function () {
     },
 
     fractionComparison(grade) {
-      if (grade < 3) return Gen.addition(grade);
+      if (grade < 2) return Gen.addition(grade);
       const d1 = pick([2, 3, 4, 5, 6, 8]);
       const d2 = pick([2, 3, 4, 5, 6, 8].filter(x => x !== d1));
       const n1 = rand(1, d1 - 1), n2 = rand(1, d2 - 1);
@@ -177,7 +177,7 @@ const QuestionAPI = (function () {
     },
 
     decimalArithmetic(grade) {
-      if (grade < 4) return Gen.addition(grade);
+      if (grade < 3) return Gen.addition(grade);
       const places = grade <= 5 ? 1 : 2;
       const mul = Math.pow(10, places);
       const a = rand(1, 50 * mul) / mul;
@@ -191,7 +191,7 @@ const QuestionAPI = (function () {
     },
 
     percentages(grade) {
-      if (grade < 4) return Gen.multiplication(grade);
+      if (grade < 3) return Gen.multiplication(grade);
       const pct = pick([10, 15, 20, 25, 30, 40, 50, 75]);
       const base = pick([20, 40, 50, 60, 80, 100, 120, 200, 250, 500]);
       const correct = (pct / 100) * base;
@@ -203,17 +203,17 @@ const QuestionAPI = (function () {
       const shapes = ['rectangle', 'square', 'triangle'];
       const shape = pick(shapes);
       if (shape === 'rectangle') {
-        const l = rand(3, 20 + grade * 5), w = rand(2, 15 + grade * 3);
+        const l = rand(5, 25 + grade * 8), w = rand(3, 20 + grade * 5);
         const correct = 2 * (l + w);
-        return { q: `What is the perimeter of a rectangle with length ${l} and width ${w}?`, ...makeOptions(correct, Math.max(5, Math.floor(correct * 0.15))), hint: 'Perimeter of rectangle = 2 × (length + width)', explanation: `P = 2 × (${l} + ${w}) = 2 × ${l + w} = ${correct}`, difficulty: 'easy', source: 'Generated' };
+        return { q: `What is the perimeter of a rectangle with length ${l} and width ${w}?`, ...makeOptions(correct, Math.max(5, Math.floor(correct * 0.15))), hint: 'Perimeter of rectangle = 2 × (length + width)', explanation: `P = 2 × (${l} + ${w}) = 2 × ${l + w} = ${correct}`, difficulty: 'medium', source: 'Generated' };
       } else if (shape === 'square') {
-        const s = rand(3, 15 + grade * 3);
+        const s = rand(4, 20 + grade * 5);
         const correct = 4 * s;
-        return { q: `What is the perimeter of a square with side ${s}?`, ...makeOptions(correct, Math.max(4, Math.floor(correct * 0.15))), hint: 'Perimeter of square = 4 × side', explanation: `P = 4 × ${s} = ${correct}`, difficulty: 'easy', source: 'Generated' };
+        return { q: `What is the perimeter of a square with side ${s}?`, ...makeOptions(correct, Math.max(4, Math.floor(correct * 0.15))), hint: 'Perimeter of square = 4 × side', explanation: `P = 4 × ${s} = ${correct}`, difficulty: 'medium', source: 'Generated' };
       } else {
-        const a = rand(3, 15), b = rand(3, 15), c = rand(Math.abs(a - b) + 1, a + b - 1);
+        const a = rand(5, 20 + grade * 2), b = rand(5, 20 + grade * 2), c = rand(Math.abs(a - b) + 1, a + b - 1);
         const correct = a + b + c;
-        return { q: `A triangle has sides ${a}, ${b}, and ${c}. What is its perimeter?`, ...makeOptions(correct, Math.max(4, 6)), hint: 'Add all three sides.', explanation: `P = ${a} + ${b} + ${c} = ${correct}`, difficulty: 'easy', source: 'Generated' };
+        return { q: `A triangle has sides ${a}, ${b}, and ${c}. What is its perimeter?`, ...makeOptions(correct, Math.max(4, 8)), hint: 'Add all three sides.', explanation: `P = ${a} + ${b} + ${c} = ${correct}`, difficulty: 'medium', source: 'Generated' };
       }
     },
 
@@ -235,7 +235,7 @@ const QuestionAPI = (function () {
     },
 
     circleGeometry(grade) {
-      if (grade < 5) return Gen.area(grade);
+      if (grade < 4) return Gen.area(grade);
       const r = rand(2, 15);
       const type = pick(['circumference', 'area']);
       if (type === 'circumference') {
@@ -250,7 +250,7 @@ const QuestionAPI = (function () {
     },
 
     angles(grade) {
-      if (grade < 3) return Gen.perimeter(grade);
+      if (grade < 2) return Gen.perimeter(grade);
       const types = [
         () => { const a = rand(20, 160); return { q: `If one angle of a triangle is ${a}° and another is ${rand(10, 170 - a)}°, what is the third angle?`, ans: 180 - a - parseInt(arguments), hint: 'Angles in a triangle add up to 180°.' }; },
       ];
@@ -260,7 +260,7 @@ const QuestionAPI = (function () {
     },
 
     volume(grade) {
-      if (grade < 5) return Gen.area(grade);
+      if (grade < 4) return Gen.area(grade);
       const shape = pick(['cube', 'rectangular prism']);
       if (shape === 'cube') {
         const s = rand(2, 10);
@@ -283,9 +283,9 @@ const QuestionAPI = (function () {
         () => { const seq = [1, 4, 9, 16, 25]; return { seq, next: 36, hint: 'These are perfect squares.' }; },
         () => { const s = rand(1, 5); const seq = Array.from({ length: 5 }, (_, i) => s + i * (i + 1)); return { seq, next: s + 5 * 6, hint: 'Look at the differences between terms — they increase!' }; },
       ];
-      const p = pick(grade <= 3 ? patterns.slice(0, 2) : patterns);
+      const p = pick(grade <= 2 ? patterns.slice(0, 2) : grade <= 4 ? patterns.slice(0, 4) : patterns);
       const { seq, next, hint } = p();
-      return { q: `What comes next: ${seq.join(', ')}, ?`, ...makeOptions(next, Math.max(5, Math.floor(next * 0.2))), hint, explanation: `The next number is ${next}.`, difficulty: grade <= 3 ? 'easy' : 'medium', source: 'Competition Style' };
+      return { q: `What comes next: ${seq.join(', ')}, ?`, ...makeOptions(next, Math.max(5, Math.floor(next * 0.2))), hint, explanation: `The next number is ${next}.`, difficulty: grade <= 2 ? 'easy' : 'medium', source: 'Competition Style' };
     },
 
     missingNumber(grade) {
@@ -303,11 +303,11 @@ const QuestionAPI = (function () {
     digitSum(grade) {
       const n = rand(100, 10000 + grade * 5000);
       const correct = String(n).split('').reduce((s, d) => s + +d, 0);
-      return { q: `What is the sum of the digits of ${n.toLocaleString()}?`, ...makeOptions(correct, Math.max(5, 8)), hint: 'Add each digit: ' + String(n).split('').join(' + '), explanation: `${String(n).split('').join(' + ')} = ${correct}`, difficulty: 'easy', source: 'Competition Style' };
+      return { q: `What is the sum of the digits of ${n.toLocaleString()}?`, ...makeOptions(correct, Math.max(5, 8)), hint: 'Add each digit: ' + String(n).split('').join(' + '), explanation: `${String(n).split('').join(' + ')} = ${correct}`, difficulty: 'medium', source: 'Competition Style' };
     },
 
     divisibility(grade) {
-      if (grade < 3) return Gen.addition(grade);
+      if (grade < 2) return Gen.addition(grade);
       const divBy = pick([2, 3, 4, 5, 6, 8, 9, 10, 11]);
       const mult = rand(10, 100);
       const correct = divBy * mult;
@@ -319,16 +319,16 @@ const QuestionAPI = (function () {
 
     // ── EXPONENTS & ROOTS ───────────────────────────────────
     exponents(grade) {
-      if (grade < 4) return Gen.multiplication(grade);
-      const base = rand(2, grade <= 5 ? 10 : 12);
+      if (grade < 3) return Gen.multiplication(grade);
+      const base = rand(2, grade <= 4 ? 10 : 12);
       const exp = rand(2, grade <= 5 ? 3 : 4);
       const correct = Math.pow(base, exp);
       return { q: `What is ${base}${toSuperscript(exp)}?`, ...makeOptions(correct, Math.max(10, Math.floor(correct * 0.2))), hint: `Multiply ${base} by itself ${exp} times.`, explanation: `${base}${toSuperscript(exp)} = ${correct}`, difficulty: 'medium', source: 'Generated' };
     },
 
     squareRoots(grade) {
-      if (grade < 4) return Gen.multiplication(grade);
-      const root = rand(2, grade <= 5 ? 12 : 20);
+      if (grade < 3) return Gen.multiplication(grade);
+      const root = rand(2, grade <= 4 ? 12 : 20);
       const correct = root;
       const square = root * root;
       return { q: `What is √${square}?`, ...makeOptions(correct, Math.max(3, Math.floor(correct * 0.3))), hint: 'What number multiplied by itself gives ' + square + '?', explanation: `√${square} = ${correct} because ${correct} × ${correct} = ${square}`, difficulty: 'medium', source: 'Generated' };
@@ -336,7 +336,7 @@ const QuestionAPI = (function () {
 
     // ── NUMBER THEORY (Competition) ─────────────────────────
     primeCheck(grade) {
-      if (grade < 3) return Gen.addition(grade);
+      if (grade < 2) return Gen.addition(grade);
       const candidates = [];
       for (let i = 10; i < 100 + grade * 20; i++) candidates.push(i);
       const primes = candidates.filter(isPrime);
@@ -346,7 +346,7 @@ const QuestionAPI = (function () {
     },
 
     gcdLcm(grade) {
-      if (grade < 4) return Gen.multiplication(grade);
+      if (grade < 3) return Gen.multiplication(grade);
       const a = rand(6, 30 + grade * 5), b = rand(6, 30 + grade * 5);
       const type = pick(['GCD', 'LCM']);
       const correct = type === 'GCD' ? gcd(a, b) : lcm(a, b);
@@ -354,7 +354,7 @@ const QuestionAPI = (function () {
     },
 
     factorCount(grade) {
-      if (grade < 3) return Gen.multiplication(grade);
+      if (grade < 2) return Gen.multiplication(grade);
       const n = pick([12, 18, 20, 24, 28, 30, 36, 42, 48, 56, 60, 72, 84, 96, 100, 120]);
       let count = 0;
       for (let i = 1; i <= n; i++) if (n % i === 0) count++;
@@ -399,13 +399,13 @@ const QuestionAPI = (function () {
         },
       ];
 
-      const t = pick(grade <= 2 ? templates.slice(0, 3) : templates)();
+      const t = pick(grade <= 1 ? templates.slice(0, 3) : templates)();
       const spread = Math.max(3, Math.floor(t.ans * 0.2));
-      return { q: t.q, ...makeOptions(t.ans, spread), hint: t.hint, explanation: `The answer is ${t.ans}.`, difficulty: grade <= 3 ? 'easy' : 'medium', source: 'Word Problem' };
+      return { q: t.q, ...makeOptions(t.ans, spread), hint: t.hint, explanation: `The answer is ${t.ans}.`, difficulty: grade <= 2 ? 'easy' : 'medium', source: 'Word Problem' };
     },
 
     ageWordProblem(grade) {
-      if (grade < 3) return Gen.wordProblem(grade);
+      if (grade < 2) return Gen.wordProblem(grade);
       const names = ['Alex', 'Maya', 'Sam', 'Priya'];
       const n1 = pick(names), n2 = pick(names.filter(n => n !== n1));
       const age1 = rand(8, 15), diff = rand(2, 8);
@@ -417,7 +417,7 @@ const QuestionAPI = (function () {
 
     // ── ALGEBRA (Upper Grades) ──────────────────────────────
     simpleEquation(grade) {
-      if (grade < 4) return Gen.missingNumber(grade);
+      if (grade < 3) return Gen.missingNumber(grade);
       const a = rand(2, 8), b = rand(1, 15), c = rand(10, 50);
       const x = (c - b) / a;
       if (!Number.isInteger(x) || x < 0) return Gen.missingNumber(grade);
@@ -425,7 +425,7 @@ const QuestionAPI = (function () {
     },
 
     inequality(grade) {
-      if (grade < 5) return Gen.simpleEquation(grade);
+      if (grade < 4) return Gen.simpleEquation(grade);
       const a = rand(2, 6), b = rand(1, 10), c = rand(15, 40);
       const x = Math.floor((c - b) / a);
       return { q: `What is the largest whole number x such that ${a}x + ${b} ≤ ${c}?`, ...makeOptions(x, 3), hint: `Solve ${a}x + ${b} = ${c} and round down.`, explanation: `${a}x ≤ ${c - b} → x ≤ ${(c - b) / a}. Largest integer = ${x}`, difficulty: 'hard', source: 'Competition Style' };
@@ -433,7 +433,7 @@ const QuestionAPI = (function () {
 
     // ── COMBINATORICS & PROBABILITY ─────────────────────────
     countingPrinciple(grade) {
-      if (grade < 3) return Gen.wordProblem(grade);
+      if (grade < 2) return Gen.wordProblem(grade);
       const a = rand(2, 6), b = rand(2, 6);
       const itemA = pick(['shirts', 'tops', 'hats']), itemB = pick(['pants', 'shorts', 'shoes']);
       const correct = a * b;
@@ -441,7 +441,7 @@ const QuestionAPI = (function () {
     },
 
     simpleProbability(grade) {
-      if (grade < 4) return Gen.countingPrinciple(grade);
+      if (grade < 3) return Gen.countingPrinciple(grade);
       const total = pick([6, 8, 10, 12, 20]);
       const favorable = rand(1, total - 1);
       const g = gcd(favorable, total);
@@ -451,7 +451,7 @@ const QuestionAPI = (function () {
     },
 
     permutationCombo(grade) {
-      if (grade < 5) return Gen.countingPrinciple(grade);
+      if (grade < 4) return Gen.countingPrinciple(grade);
       const n = rand(4, 8), r = rand(2, Math.min(4, n));
       const type = pick(['arrangement', 'selection']);
       if (type === 'arrangement') {
@@ -466,7 +466,7 @@ const QuestionAPI = (function () {
 
     // ── RATIOS & PROPORTIONS ────────────────────────────────
     ratio(grade) {
-      if (grade < 3) return Gen.multiplication(grade);
+      if (grade < 2) return Gen.multiplication(grade);
       const a = rand(2, 8), b = rand(2, 8);
       const mult = rand(2, 6);
       const totalA = a * mult, totalB = b * mult;
@@ -474,7 +474,7 @@ const QuestionAPI = (function () {
     },
 
     proportion(grade) {
-      if (grade < 4) return Gen.ratio(grade);
+      if (grade < 3) return Gen.ratio(grade);
       const a = rand(2, 10), b = rand(2, 10), c = rand(2, 10);
       const correct = (b * c) / a;
       if (!Number.isInteger(correct)) return Gen.ratio(grade);
@@ -491,7 +491,7 @@ const QuestionAPI = (function () {
       const counts = {};
       selected.forEach(c => { counts[coinNames[c]] = (counts[coinNames[c]] || 0) + 1; });
       const desc = Object.entries(counts).map(([name, ct]) => `${ct} ${ct > 1 ? name + (name === 'penny' ? '' : 's').replace('pennys', 'pennies') : name}`).join(', ');
-      return { q: `You have ${desc}. How many cents is that in total?`, ...makeOptions(correct, Math.max(10, Math.floor(correct * 0.15))), hint: 'Add up the value of each coin.', explanation: `Total = ${correct} cents`, difficulty: 'easy', source: 'Generated' };
+      return { q: `You have ${desc}. How many cents is that in total?`, ...makeOptions(correct, Math.max(10, Math.floor(correct * 0.15))), hint: 'Add up the value of each coin.', explanation: `Total = ${correct} cents`, difficulty: 'medium', source: 'Generated' };
     },
 
     timeProblem(grade) {
@@ -501,12 +501,12 @@ const QuestionAPI = (function () {
       if (endM >= 60) { endH++; endM -= 60; }
       const ampm = endH >= 12 ? 'PM' : 'AM';
       const displayEnd = `${endH > 12 ? endH - 12 : endH}:${String(endM).padStart(2, '0')} ${ampm}`;
-      return { q: `A movie starts at ${startH}:${String(startM).padStart(2, '0')} AM and lasts ${durH} hour${durH > 1 ? 's' : ''} and ${durM} minutes. What time does it end?`, ...makeStringOptions(displayEnd, [`${endH > 12 ? endH - 12 : endH}:${String((endM + 15) % 60).padStart(2, '0')} ${ampm}`, `${(endH > 12 ? endH - 12 : endH) + 1}:${String(endM).padStart(2, '0')} ${ampm}`, `${endH > 12 ? endH - 12 : endH}:${String((endM + 30) % 60).padStart(2, '0')} ${ampm}`]), hint: 'Add the hours first, then the minutes.', explanation: `${startH}:${String(startM).padStart(2, '0')} + ${durH}h ${durM}m = ${displayEnd}`, difficulty: 'easy', source: 'Generated' };
+      return { q: `A movie starts at ${startH}:${String(startM).padStart(2, '0')} AM and lasts ${durH} hour${durH > 1 ? 's' : ''} and ${durM} minutes. What time does it end?`, ...makeStringOptions(displayEnd, [`${endH > 12 ? endH - 12 : endH}:${String((endM + 15) % 60).padStart(2, '0')} ${ampm}`, `${(endH > 12 ? endH - 12 : endH) + 1}:${String(endM).padStart(2, '0')} ${ampm}`, `${endH > 12 ? endH - 12 : endH}:${String((endM + 30) % 60).padStart(2, '0')} ${ampm}`]), hint: 'Add the hours first, then the minutes.', explanation: `${startH}:${String(startM).padStart(2, '0')} + ${durH}h ${durM}m = ${displayEnd}`, difficulty: 'medium', source: 'Generated' };
     },
 
     // ── MEAN / MEDIAN / MODE ────────────────────────────────
     averageProblem(grade) {
-      if (grade < 4) return Gen.wordProblem(grade);
+      if (grade < 3) return Gen.wordProblem(grade);
       const count = rand(4, 7);
       const nums = Array.from({ length: count }, () => rand(50, 100));
       const sum = nums.reduce((a, b) => a + b, 0);
@@ -523,7 +523,7 @@ const QuestionAPI = (function () {
 
     // ── COMPETITION OLYMPIAD STYLE ──────────────────────────
     magicSquare(grade) {
-      if (grade < 3) return Gen.missingNumber(grade);
+      if (grade < 2) return Gen.missingNumber(grade);
       const base = rand(1, 5);
       const grid = [
         base + 2, base + 7, base + 6,
@@ -539,21 +539,21 @@ const QuestionAPI = (function () {
     },
 
     logicPuzzle(grade) {
-      if (grade < 3) return Gen.missingNumber(grade);
+      if (grade < 2) return Gen.missingNumber(grade);
       const puzzles = [
         () => { const n = rand(2, 5); const correct = n * (n + 1) / 2; return { q: `What is 1 + 2 + 3 + ... + ${n * 2}?`, ans: (n * 2) * (n * 2 + 1) / 2, hint: 'Use the formula: n(n+1)/2' }; },
         () => { const a = rand(10, 99); return { q: `How many two-digit numbers are there between 10 and ${a} (inclusive)?`, ans: a - 10 + 1, hint: 'Count: last - first + 1' }; },
         () => { const n = rand(3, 8); return { q: `A polygon has ${n} sides. How many diagonals does it have?`, ans: n * (n - 3) / 2, hint: 'Formula: n(n-3)/2' }; },
         () => { const people = rand(3, 6); return { q: `${people} people shake hands with each other once. How many handshakes total?`, ans: people * (people - 1) / 2, hint: 'Each pair shakes hands once. Count the pairs!' }; },
       ];
-      const p = pick(grade <= 4 ? puzzles.slice(0, 2) : puzzles)();
+      const p = pick(grade <= 3 ? puzzles.slice(0, 2) : puzzles)();
       if (!Number.isInteger(p.ans) || p.ans < 0) return Gen.missingNumber(grade);
       return { q: p.q, ...makeOptions(p.ans, Math.max(4, Math.floor(p.ans * 0.25))), hint: p.hint, explanation: `The answer is ${p.ans}.`, difficulty: 'hard', source: 'Olympiad Style' };
     },
 
     // ── NEGATIVE NUMBERS ────────────────────────────────────
     negativeNumbers(grade) {
-      if (grade < 5) return Gen.subtraction(grade);
+      if (grade < 4) return Gen.subtraction(grade);
       const a = rand(-20, 20), b = rand(-20, 20);
       const op = pick(['+', '−', '×']);
       let correct, qText;
@@ -570,7 +570,7 @@ const QuestionAPI = (function () {
       const places = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands', 'hundred-thousands', 'millions'];
       const placeIdx = rand(0, Math.min(digits - 1, places.length - 1));
       const correct = Math.floor(n / Math.pow(10, placeIdx)) % 10;
-      return { q: `What digit is in the ${places[placeIdx]} place of ${n.toLocaleString()}?`, ...makeOptions(correct, 4), hint: `Count from the right: ${places.slice(0, placeIdx + 1).join(', ')}`, explanation: `The ${places[placeIdx]} digit of ${n.toLocaleString()} is ${correct}.`, difficulty: 'easy', source: 'Generated' };
+      return { q: `What digit is in the ${places[placeIdx]} place of ${n.toLocaleString()}?`, ...makeOptions(correct, 4), hint: `Count from the right: ${places.slice(0, placeIdx + 1).join(', ')}`, explanation: `The ${places[placeIdx]} digit of ${n.toLocaleString()} is ${correct}.`, difficulty: grade <= 2 ? 'easy' : 'medium', source: 'Generated' };
     },
 
     // ── ROUNDING ────────────────────────────────────────────
@@ -578,12 +578,12 @@ const QuestionAPI = (function () {
       const n = rand(100, 10000);
       const roundTo = pick([10, 100, 1000]);
       const correct = Math.round(n / roundTo) * roundTo;
-      return { q: `Round ${n.toLocaleString()} to the nearest ${roundTo.toLocaleString()}.`, ...makeOptions(correct, roundTo * 2), hint: `Look at the digit to the right of the ${roundTo.toLocaleString()}s place.`, explanation: `${n.toLocaleString()} rounded to the nearest ${roundTo.toLocaleString()} is ${correct.toLocaleString()}.`, difficulty: 'easy', source: 'Generated' };
+      return { q: `Round ${n.toLocaleString()} to the nearest ${roundTo.toLocaleString()}.`, ...makeOptions(correct, roundTo * 2), hint: `Look at the digit to the right of the ${roundTo.toLocaleString()}s place.`, explanation: `${n.toLocaleString()} rounded to the nearest ${roundTo.toLocaleString()} is ${correct.toLocaleString()}.`, difficulty: 'medium', source: 'Generated' };
     },
 
     // ── COORDINATE GEOMETRY ─────────────────────────────────
     coordinateDistance(grade) {
-      if (grade < 5) return Gen.area(grade);
+      if (grade < 4) return Gen.area(grade);
       const x1 = rand(0, 10), y1 = rand(0, 10), x2 = rand(0, 10), y2 = rand(0, 10);
       const dx = x2 - x1, dy = y2 - y1;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -718,7 +718,7 @@ const QuestionAPI = (function () {
 
     // ── FRACTION MULTIPLY / DIVIDE (FastBridge) ─────────────
     fractionMultDiv(grade) {
-      if (grade < 3) return Gen.fractionAddition(grade);
+      if (grade < 2) return Gen.fractionAddition(grade);
       const op = pick(['multiply', 'divide']);
       const a_n = rand(1, 6), a_d = rand(2, 8);
       let b_n = rand(1, 6), b_d = rand(2, 8);
@@ -743,7 +743,7 @@ const QuestionAPI = (function () {
 
     // ── PERCENT CHANGE (FastBridge) ─────────────────────────
     percentChange(grade) {
-      if (grade < 4) return Gen.percentages(grade);
+      if (grade < 3) return Gen.percentages(grade);
       const types = [
         () => { const orig = rand(20, 200) * 5; const pct = pick([10, 15, 20, 25, 30, 50]); const increase = orig * pct / 100; const newPrice = orig + increase; return { q: `A $${orig} item's price increased by ${pct}%. New price?`, correct: newPrice, hint: `Find ${pct}% of $${orig}, then add.`, explanation: `${pct}% of ${orig} = ${increase}. New: $${orig} + $${increase} = $${newPrice}` }; },
         () => { const orig = rand(20, 200) * 5; const pct = pick([10, 15, 20, 25, 30, 40, 50]); const discount = orig * pct / 100; const salePrice = orig - discount; return { q: `A $${orig} item is ${pct}% off. Sale price?`, correct: salePrice, hint: `Find ${pct}% of $${orig}, then subtract.`, explanation: `${pct}% of ${orig} = ${discount}. Sale: $${orig} − $${discount} = $${salePrice}` }; },
@@ -756,7 +756,7 @@ const QuestionAPI = (function () {
 
     // ── COORDINATE PLANE (FastBridge / HCP) ─────────────────
     coordinatePlane(grade) {
-      if (grade < 4) return Gen.area(grade);
+      if (grade < 3) return Gen.area(grade);
       const types = [
         () => {
           const x = rand(-10, 10), y = rand(-10, 10);
@@ -841,7 +841,7 @@ const QuestionAPI = (function () {
 
     // ── AIME-STYLE PROBLEMS ─────────────────────────────────
     aimeNumberTheory(grade) {
-      if (grade < 5) return Gen.gcdLcm(grade);
+      if (grade < 4) return Gen.gcdLcm(grade);
       const types = [
         () => {
           const a = rand(2, 9), b = rand(2, 9);
@@ -881,7 +881,7 @@ const QuestionAPI = (function () {
     },
 
     aimeAlgebra(grade) {
-      if (grade < 5) return Gen.simpleEquation(grade);
+      if (grade < 4) return Gen.simpleEquation(grade);
       const types = [
         () => {
           const a = rand(2, 8), b = rand(2, 8);
@@ -921,7 +921,7 @@ const QuestionAPI = (function () {
     },
 
     aimeCombinatorics(grade) {
-      if (grade < 4) return Gen.countingPrinciple(grade);
+      if (grade < 3) return Gen.countingPrinciple(grade);
       const types = [
         () => {
           const n = rand(4, 8);
@@ -959,7 +959,7 @@ const QuestionAPI = (function () {
     },
 
     aimeGeometry(grade) {
-      if (grade < 5) return Gen.area(grade);
+      if (grade < 4) return Gen.area(grade);
       const types = [
         () => {
           const a = rand(3, 12), b = rand(3, 12);
@@ -1079,20 +1079,20 @@ const QuestionAPI = (function () {
 
     let questions = [];
 
-    // 1) Start with local curated bank (40% of count)
-    const localCount = Math.ceil(count * 0.4);
+    // 1) Start with local curated bank (50% of count — competition-quality questions)
+    const localCount = Math.ceil(count * 0.5);
     const localQs = getLocalQuestions(grade, category, localCount);
     questions.push(...localQs);
 
-    // 2) Generate dynamic questions (40% of count)
-    const genCount = Math.ceil(count * 0.4);
+    // 2) Generate dynamic questions (30% of count — grade-pushed generators)
+    const genCount = Math.ceil(count * 0.3);
     const genQs = generateQuestions(grade, category, genCount);
     questions.push(...genQs);
 
     // 3) Try external APIs for remaining (20% of count)
     const apiCount = Math.max(2, count - questions.length);
     try {
-      const diff = grade <= 3 ? 'easy' : grade <= 6 ? 'medium' : 'hard';
+      const diff = grade <= 2 ? 'easy' : grade <= 5 ? 'medium' : 'hard';
       const apiQs = await fetchOpenTDB(apiCount, diff);
       questions.push(...apiQs);
     } catch (e) { /* API failed, no problem */ }
