@@ -922,29 +922,6 @@ body {
     box-shadow: 0 2px 8px rgba(108, 99, 255, 0.25);
 }
 
-/* Mobile: compact tabs — icons only, active tab shows label */
-@media (max-width: 600px) {
-    .top-tab-strip {
-        justify-content: space-around;
-        gap: 2px;
-        padding: 6px 4px;
-    }
-    .tab-item {
-        flex-direction: column;
-        padding: 6px 8px;
-        gap: 2px;
-        min-width: 0;
-        flex: 1;
-    }
-    .tab-item .tab-icon {
-        font-size: 1.15rem;
-    }
-    .tab-item .tab-label {
-        font-size: 0.6rem;
-        letter-spacing: 0;
-    }
-}
-
 /* ---------- Quiz Screen ---------- */
 .quiz-nav {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -1866,12 +1843,31 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .tab-item .tab-label {
-        font-size: 0.7rem;
+    .top-tab-strip {
+        justify-content: space-around;
+        gap: 2px;
+        padding: 6px 4px;
+        flex-wrap: nowrap;
     }
 
     .tab-item {
-        padding: 6px 10px;
+        flex-direction: column;
+        padding: 6px 4px;
+        gap: 2px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .tab-item .tab-icon {
+        font-size: 1.15rem;
+    }
+
+    .tab-item .tab-label {
+        font-size: 0.58rem;
+        letter-spacing: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
 
     .results-stats {
