@@ -1268,7 +1268,7 @@
             // Negative marking — deduct points for wrong answer
             const penalty = WRONG_PENALTY_MAP[diff] || -2;
             pointsEarned = penalty;
-            quiz.pointsEarned = Math.max(0, quiz.pointsEarned + penalty);
+            quiz.pointsEarned += penalty;
         }
 
         state.player.totalAttempted++;
@@ -1384,8 +1384,8 @@
         const p = state.player;
 
         // Update stats
-        p.points += quiz.pointsEarned;
-        p.totalPointsEarned += quiz.pointsEarned;
+        p.points = Math.max(0, p.points + quiz.pointsEarned);
+        p.totalPointsEarned = Math.max(0, p.totalPointsEarned + quiz.pointsEarned);
         p.totalQuizzes++;
 
         // XP
@@ -1480,7 +1480,7 @@
         $('#results-subtitle').textContent = `${CATEGORY_NAMES[quiz.category]} • Grade ${state.player.grade}${quiz.isDaily ? ' • Daily Challenge' : ''}`;
         $('#result-correct').textContent = correct;
         $('#result-total').textContent = total;
-        $('#result-points-earned').textContent = `+${quiz.pointsEarned}`;
+        $('#result-points-earned').textContent = `${quiz.pointsEarned >= 0 ? '+' : ''}${quiz.pointsEarned}`;
         $('#result-accuracy').textContent = accuracy + '%';
 
         // Breakdown
