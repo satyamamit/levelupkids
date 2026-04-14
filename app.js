@@ -539,21 +539,48 @@
     // ─── Merge two player data objects, keeping the best of each ──
     function mergePlayerData(a, b) {
         const merged = { ...a };
+
+        // Additive stats — take the max (both are cumulative totals, so higher is more up-to-date)
         const maxFields = [
-            'points', 'totalXP', 'totalQuizzes', 'totalCorrect', 'totalAttempted',
-            'totalPointsEarned', 'streak', 'maxStreak', 'perfectScores',
+            'totalXP', 'totalQuizzes', 'totalCorrect', 'totalAttempted',
+            'totalPointsEarned', 'maxStreak', 'perfectScores',
             'quizzesWithNoHints', 'blitzHighAccuracy', 'hardCorrect', 'maxCombo',
             'dailyChallengesCompleted', 'totalRedemptions'
         ];
         for (const key of maxFields) {
             merged[key] = Math.max(a[key] || 0, b[key] || 0);
         }
+
+        // Spendable points: pick from whichever side has done more total activity
+        // (more quizzes = more recent state of truth)
+        const aActivity = (a.totalQuizzes || 0) + (a.totalRedemptions || 0);
+        const bActivity = (b.totalQuizzes || 0) + (b.totalRedemptions || 0);
+        if (bActivity > aActivity) {
+            merged.points = b.points || 0;
+            merged.streak = b.streak || 0;
+        } else {
+            merged.points = a.points || 0;
+            merged.streak = a.streak || 0;
+        }
+
         merged.achievements = [...new Set([...(a.achievements || []), ...(b.achievements || [])])];
         merged.categoriesPlayed = { ...(a.categoriesPlayed || {}), ...(b.categoriesPlayed || {}) };
         merged.categoryHighScores = { ...(a.categoryHighScores || {}) };
         for (const cat in (b.categoryHighScores || {})) {
             merged.categoryHighScores[cat] = Math.max(merged.categoryHighScores[cat] || 0, b.categoryHighScores[cat]);
         }
+
+        // Merge categoryStats — take the max for each category
+        merged.categoryStats = { ...(a.categoryStats || {}) };
+        for (const cat in (b.categoryStats || {})) {
+            const aStat = merged.categoryStats[cat] || { correct: 0, attempted: 0 };
+            const bStat = b.categoryStats[cat] || { correct: 0, attempted: 0 };
+            merged.categoryStats[cat] = {
+                correct: Math.max(aStat.correct || 0, bStat.correct || 0),
+                attempted: Math.max(aStat.attempted || 0, bStat.attempted || 0)
+            };
+        }
+
         merged.dailyStreakDates = [...new Set([...(a.dailyStreakDates || []), ...(b.dailyStreakDates || [])])].sort();
         merged.redeemedRewards = (a.redeemedRewards || []).length >= (b.redeemedRewards || []).length
             ? (a.redeemedRewards || []) : (b.redeemedRewards || []);
@@ -1964,10 +1991,7 @@
                                 migratePlayer(merged);
                                 state.player = merged;
                                 savePlayer(); // This will push merged data to both localStorage AND Firestore
-                                // Refresh current screen if on dashboard/leaderboard
-                                if (state.currentScreen === 'dashboard') showDashboard();
-                                else if (state.currentScreen === 'leaderboard') showLeaderboard();
-                            } else {
+                            } else if ((state.player.totalXP || 0) > 0) {
                                 console.log('ℹ️ No cloud data found, pushing local data to cloud');
                                 savePlayer(); // Push local data to cloud for the first time
                             }
@@ -1975,8 +1999,11 @@
                             console.warn('Cloud sync on auto-login failed:', e);
                         }
 
-                        // If any saves happened before auth was ready, the merge above already incorporated them
-                        // Just clear the pending flag
+                        // Always refresh the current screen after sync so UI shows correct data
+                        if (state.currentScreen === 'dashboard') showDashboard();
+                        else if (state.currentScreen === 'leaderboard') showLeaderboard();
+                        else if (state.currentScreen === 'progress') showProgress();
+
                         state._pendingCloudSync = false;
                     }
                 });
