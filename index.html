@@ -206,185 +206,193 @@
                 <div class="daily-streak-calendar" id="daily-streak-calendar"></div>
             </div>
 
-            <!-- ===== MATH SECTION ===== -->
-            <h2 class="section-title">🧮 Math</h2>
-            <div class="challenge-grid">
-                <div class="challenge-card" data-category="arithmetic" data-difficulty="easy">
-                    <div class="challenge-emoji">🔢</div>
-                    <h3>Number Ninja</h3>
-                    <p>Arithmetic & Number Sense</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty easy">⭐ Warm Up</span>
-                        <span class="points-badge">+5 pts each</span>
+            <!-- Subject Tabs -->
+            <div class="subject-tabs">
+                <button class="subject-tab active" data-subject="math">🧮 Math</button>
+                <button class="subject-tab" data-subject="english">📚 English</button>
+            </div>
+
+            <!-- ===== MATH PANEL ===== -->
+            <div class="subject-panel active" id="panel-math" data-subject="math">
+                <div class="challenge-grid">
+                    <div class="challenge-card" data-category="arithmetic" data-difficulty="easy">
+                        <div class="challenge-emoji">🔢</div>
+                        <h3>Number Ninja</h3>
+                        <p>Arithmetic & Number Sense</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty easy">⭐ Warm Up</span>
+                            <span class="points-badge">+5 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card" data-category="logic" data-difficulty="medium">
-                    <div class="challenge-emoji">🧩</div>
-                    <h3>Logic Legend</h3>
-                    <p>Puzzles & Logical Thinking</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ Challenging</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card" data-category="logic" data-difficulty="medium">
+                        <div class="challenge-emoji">🧩</div>
+                        <h3>Logic Legend</h3>
+                        <p>Puzzles & Logical Thinking</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ Challenging</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card" data-category="geometry" data-difficulty="medium">
-                    <div class="challenge-emoji">📐</div>
-                    <h3>Shape Shifter</h3>
-                    <p>Geometry & Spatial Reasoning</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ Challenging</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card" data-category="geometry" data-difficulty="medium">
+                        <div class="challenge-emoji">📐</div>
+                        <h3>Shape Shifter</h3>
+                        <p>Geometry & Spatial Reasoning</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ Challenging</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card" data-category="olympiad" data-difficulty="hard">
-                    <div class="challenge-emoji">🏆</div>
-                    <h3>Olympiad Crusher</h3>
-                    <p>AMC 8 · AOPS · Kangaroo · RSM</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty hard">⭐⭐⭐ Extreme</span>
-                        <span class="points-badge">+20 pts each</span>
+                    <div class="challenge-card" data-category="olympiad" data-difficulty="hard">
+                        <div class="challenge-emoji">🏆</div>
+                        <h3>Olympiad Crusher</h3>
+                        <p>AMC 8 · AOPS · Kangaroo · RSM</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty hard">⭐⭐⭐ Extreme</span>
+                            <span class="points-badge">+20 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-aime" data-category="aime" data-difficulty="hard">
-                    <div class="challenge-emoji">🔥</div>
-                    <h3>AIME Challenge</h3>
-                    <p>Number theory, algebra, combinatorics & geometry</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty hard">⭐⭐⭐ AIME</span>
-                        <span class="points-badge">+25 pts each</span>
+                    <div class="challenge-card challenge-card-aime" data-category="aime" data-difficulty="hard">
+                        <div class="challenge-emoji">🔥</div>
+                        <h3>AIME Challenge</h3>
+                        <p>Number theory, algebra, combinatorics & geometry</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty hard">⭐⭐⭐ AIME</span>
+                            <span class="points-badge">+25 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card" data-category="word" data-difficulty="medium">
-                    <div class="challenge-emoji">📖</div>
-                    <h3>Word Wizard</h3>
-                    <p>Word Problems & Real Life Math</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ Challenging</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card" data-category="word" data-difficulty="medium">
+                        <div class="challenge-emoji">📖</div>
+                        <h3>Word Wizard</h3>
+                        <p>Word Problems & Real Life Math</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ Challenging</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-special" data-category="mixed" data-difficulty="mixed">
-                    <div class="challenge-emoji">🎲</div>
-                    <h3>Random Blitz</h3>
-                    <p>Mixed questions, timed challenge!</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty hard">⚡ Timed</span>
-                        <span class="points-badge">+5-25 pts each</span>
+                    <div class="challenge-card challenge-card-special" data-category="mixed" data-difficulty="mixed">
+                        <div class="challenge-emoji">🎲</div>
+                        <h3>Random Blitz</h3>
+                        <p>Mixed questions, timed challenge!</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty hard">⚡ Timed</span>
+                            <span class="points-badge">+5-25 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-fastbridge" data-category="fb_estimation" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">🎯</div>
-                    <h3>Estimation Station</h3>
-                    <p>Rounding, estimating sums & products</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aMath</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card challenge-card-fastbridge" data-category="fb_estimation" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">🎯</div>
+                        <h3>Estimation Station</h3>
+                        <p>Rounding, estimating sums & products</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aMath</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-fastbridge" data-category="fb_data" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">📊</div>
-                    <h3>Data Detective</h3>
-                    <p>Mean, median, mode, graphs & tables</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aMath</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card challenge-card-fastbridge" data-category="fb_data" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">📊</div>
+                        <h3>Data Detective</h3>
+                        <p>Mean, median, mode, graphs & tables</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aMath</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-fastbridge" data-category="fb_measurement" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">📏</div>
-                    <h3>Measurement Master</h3>
-                    <p>Units, conversions & scale</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aMath</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card challenge-card-fastbridge" data-category="fb_measurement" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">📏</div>
+                        <h3>Measurement Master</h3>
+                        <p>Units, conversions & scale</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aMath</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-fastbridge" data-category="fb_number_sense" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">🧠</div>
-                    <h3>Number Sense</h3>
-                    <p>Patterns, analogies & mental math</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aMath</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card challenge-card-fastbridge" data-category="fb_number_sense" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">🧠</div>
+                        <h3>Number Sense</h3>
+                        <p>Patterns, analogies & mental math</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aMath</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-fastbridge" data-category="fb_probability" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">🎲</div>
-                    <h3>Probability Pro</h3>
-                    <p>Chance, outcomes & counting</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aMath</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card challenge-card-fastbridge" data-category="fb_probability" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">🎲</div>
+                        <h3>Probability Pro</h3>
+                        <p>Chance, outcomes & counting</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aMath</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-fastbridge challenge-card-special" data-category="fb_math_mixed" data-difficulty="mixed">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">⚡</div>
-                    <h3>aMath Blitz</h3>
-                    <p>Full FastBridge aMath practice test!</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty hard">⚡ Timed</span>
-                        <span class="points-badge">+5-20 pts each</span>
+                    <div class="challenge-card challenge-card-fastbridge challenge-card-special" data-category="fb_math_mixed" data-difficulty="mixed">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">⚡</div>
+                        <h3>aMath Blitz</h3>
+                        <p>Full FastBridge aMath practice test!</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty hard">⚡ Timed</span>
+                            <span class="points-badge">+5-20 pts each</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== ENGLISH SECTION ===== -->
-            <h2 class="section-title">📚 English</h2>
-            <div class="challenge-grid">
-                <div class="challenge-card challenge-card-english" data-category="english_vocabulary" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">📚</div>
-                    <h3>Vocabulary Builder</h3>
-                    <p>Word meanings, synonyms & antonyms</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aReading</span>
-                        <span class="points-badge">+10 pts each</span>
+            <!-- ===== ENGLISH PANEL ===== -->
+            <div class="subject-panel" id="panel-english" data-subject="english">
+                <div class="challenge-grid">
+                    <div class="challenge-card challenge-card-english" data-category="english_vocabulary" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">📚</div>
+                        <h3>Vocabulary Builder</h3>
+                        <p>Word meanings, synonyms & antonyms</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aReading</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-english" data-category="english_grammar" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">✏️</div>
-                    <h3>Grammar Pro</h3>
-                    <p>Sentences, parts of speech & punctuation</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aReading</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card challenge-card-english" data-category="english_grammar" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">✏️</div>
+                        <h3>Grammar Pro</h3>
+                        <p>Sentences, parts of speech & punctuation</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aReading</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-english" data-category="english_reading" data-difficulty="medium">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">📖</div>
-                    <h3>Reading Champ</h3>
-                    <p>Comprehension, main idea & inference</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty medium">⭐⭐ aReading</span>
-                        <span class="points-badge">+10 pts each</span>
+                    <div class="challenge-card challenge-card-english" data-category="english_reading" data-difficulty="medium">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">📖</div>
+                        <h3>Reading Champ</h3>
+                        <p>Comprehension, main idea & inference</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty medium">⭐⭐ aReading</span>
+                            <span class="points-badge">+10 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-english" data-category="english_spelling" data-difficulty="easy">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">🔤</div>
-                    <h3>Spelling Bee</h3>
-                    <p>Commonly misspelled words</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty easy">⭐ aReading</span>
-                        <span class="points-badge">+5 pts each</span>
+                    <div class="challenge-card challenge-card-english" data-category="english_spelling" data-difficulty="easy">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">🔤</div>
+                        <h3>Spelling Bee</h3>
+                        <p>Commonly misspelled words</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty easy">⭐ aReading</span>
+                            <span class="points-badge">+5 pts each</span>
+                        </div>
                     </div>
-                </div>
-                <div class="challenge-card challenge-card-english challenge-card-special" data-category="english_mixed" data-difficulty="mixed">
-                    <span class="fb-tag">FastBridge</span>
-                    <div class="challenge-emoji">🇦</div>
-                    <h3>English Blitz</h3>
-                    <p>Mixed English questions!</p>
-                    <div class="challenge-meta">
-                        <span class="difficulty hard">⚡ Mixed</span>
-                        <span class="points-badge">+5-20 pts each</span>
+                    <div class="challenge-card challenge-card-english challenge-card-special" data-category="english_mixed" data-difficulty="mixed">
+                        <span class="fb-tag">FastBridge</span>
+                        <div class="challenge-emoji">🇦</div>
+                        <h3>English Blitz</h3>
+                        <p>Mixed English questions!</p>
+                        <div class="challenge-meta">
+                            <span class="difficulty hard">⚡ Mixed</span>
+                            <span class="points-badge">+5-20 pts each</span>
+                        </div>
                     </div>
                 </div>
             </div>

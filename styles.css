@@ -635,6 +635,73 @@ body {
     margin-bottom: 20px;
 }
 
+/* ---------- Subject Tabs ---------- */
+.subject-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg-dark);
+    border-radius: var(--radius-full);
+    padding: 4px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.subject-tab {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    font-family: var(--font-main);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-light);
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: all 0.25s ease;
+    text-align: center;
+}
+
+.subject-tab:hover {
+    color: var(--text-secondary);
+}
+
+.subject-tab.active {
+    background: var(--primary);
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(108, 99, 255, 0.35);
+}
+
+/* Subject panels */
+.subject-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.subject-panel.active {
+    display: block;
+}
+
+/* Light theme subject tabs */
+[data-theme="light"] .subject-tabs {
+    background: #FFFFFF;
+    border-color: #D0D0E0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .subject-tab {
+    color: #888898;
+}
+
+[data-theme="light"] .subject-tab:hover {
+    color: #555570;
+}
+
+[data-theme="light"] .subject-tab.active {
+    background: #6C63FF;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(108, 99, 255, 0.25);
+}
+
 .challenge-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
