@@ -937,12 +937,16 @@
             : 'Local mode — sign in with Google to sync across devices';
         showSyncStatus(state.useFirebase && state.authUser ? 'synced' : 'offline');
 
-        // Sync button visibility
+        // Sync button visibility — dashboard + all shared sync buttons
+        const syncVisible = (state.useFirebase && state.authUser) ? 'inline-block' : 'none';
         const syncBtn = $('#btn-sync-now');
         if (syncBtn) {
-            syncBtn.style.display = (state.useFirebase && state.authUser) ? 'inline-block' : 'none';
+            syncBtn.style.display = syncVisible;
             syncBtn.onclick = () => forceCloudSync(false);
         }
+        document.querySelectorAll('.shared-sync-btn').forEach(btn => {
+            btn.style.display = syncVisible;
+        });
 
         // XP Banner
         $('#dash-rank-badge').textContent = tier.emoji;
@@ -1006,6 +1010,14 @@
             history.pushState(null, '', window.location.pathname);
             showScreen('welcome');
         };
+
+        // Wire up shared nav buttons on all screens (sign-out, sync)
+        document.querySelectorAll('.shared-signout-btn').forEach(btn => {
+            btn.onclick = () => $('#btn-logout').click();
+        });
+        document.querySelectorAll('.shared-sync-btn').forEach(btn => {
+            btn.onclick = () => forceCloudSync(false);
+        });
     }
 
     // ===================== DAILY CHALLENGE =====================
