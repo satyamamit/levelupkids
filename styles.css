@@ -2975,6 +2975,7 @@ body {
 /* FastBridge aMath cards */
 .challenge-card-fastbridge {
     border-left: 4px solid #F59E0B !important;
+    position: relative;
 }
 
 .challenge-card-fastbridge:hover {
@@ -2983,6 +2984,39 @@ body {
 
 .challenge-card-fastbridge .difficulty {
     color: #F59E0B !important;
+}
+
+/* FastBridge aReading (English) cards */
+.challenge-card-english {
+    position: relative;
+}
+
+/* FastBridge tag badge */
+.fb-tag {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: #000;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    line-height: 1.4;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+    z-index: 2;
+}
+
+.challenge-card-english .fb-tag {
+    background: linear-gradient(135deg, #10B981, #059669);
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+}
+
+/* Make cards relative for the tag positioning */
+.challenge-card {
+    position: relative;
 }
 
 /* ── Enhanced Dark Theme Polish ────────────────────────── */
