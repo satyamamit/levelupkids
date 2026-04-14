@@ -1072,36 +1072,71 @@ const QuestionAPI = (function () {
   }
 
   // ─── Main entry point ────────────────────────────────────
-  async function getQuestions(grade, category, count) {
+  async function getQuestions(grade, category, count, playerName) {
     grade = parseInt(grade) || 4;
     category = category || 'mixed';
     count = count || 10;
 
     let questions = [];
 
-    // 1) Start with local curated bank (40% of count)
-    const localCount = Math.ceil(count * 0.4);
-    const localQs = getLocalQuestions(grade, category, localCount);
-    questions.push(...localQs);
+    // 🤖 PRIORITY 1: Try AI-generated questions (unique, never repeated!)
+    if (typeof AIQuestionEngine !== 'undefined' && AIQuestionEngine.isEnabled()) {
+      try {
+        console.log('🤖 Requesting AI questions...');
+        const aiQs = await AIQuestionEngine.getQuestions(grade, category, count, playerName);
+        if (aiQs && aiQs.length > 0) {
+          questions.push(...aiQs);
+          console.log(`🤖 Got ${aiQs.length} AI questions`);
+        }
+      } catch (e) {
+        console.warn('AI generation failed, falling back:', e);
+      }
+    }
 
-    // 2) Generate dynamic questions (40% of count)
-    const genCount = Math.ceil(count * 0.4);
+    // If AI provided enough questions, return them
+    if (questions.length >= count) {
+      return shuffle(questions).slice(0, count);
+    }
+
+    // FALLBACK: Fill remaining with local + generated questions
+    const remaining = count - questions.length;
+
+    // 2) Local curated bank (40% of remaining)
+    const localCount = Math.ceil(remaining * 0.4);
+    const localQs = getLocalQuestions(grade, category, localCount);
+    // Filter out questions already seen (if AI dedup is available)
+    if (playerName && typeof AIQuestionEngine !== 'undefined') {
+      const freshLocal = localQs.filter(q => AIQuestionEngine.isNewQuestion(playerName, q.q));
+      questions.push(...freshLocal);
+    } else {
+      questions.push(...localQs);
+    }
+
+    // 3) Generate dynamic questions (40% of remaining)
+    const genCount = Math.ceil(remaining * 0.4);
     const genQs = generateQuestions(grade, category, genCount);
     questions.push(...genQs);
 
-    // 3) Try external APIs for remaining (20% of count)
-    const apiCount = Math.max(2, count - questions.length);
-    try {
-      const diff = grade <= 3 ? 'easy' : grade <= 6 ? 'medium' : 'hard';
-      const apiQs = await fetchOpenTDB(apiCount, diff);
-      questions.push(...apiQs);
-    } catch (e) { /* API failed, no problem */ }
+    // 4) Try external APIs for remaining (20% of count)
+    if (questions.length < count) {
+      const apiCount = Math.max(2, count - questions.length);
+      try {
+        const diff = grade <= 3 ? 'easy' : grade <= 6 ? 'medium' : 'hard';
+        const apiQs = await fetchOpenTDB(apiCount, diff);
+        questions.push(...apiQs);
+      } catch (e) { /* API failed, no problem */ }
+    }
 
-    // 4) If still short, generate more
+    // 5) If still short, generate more
     while (questions.length < count) {
       const extra = generateQuestions(grade, category, count - questions.length);
       questions.push(...extra);
       if (extra.length === 0) break; // safety valve
+    }
+
+    // Mark all served questions as seen (for dedup)
+    if (playerName && typeof AIQuestionEngine !== 'undefined' && questions.length > 0) {
+      AIQuestionEngine.markSeen(playerName, questions);
     }
 
     // Shuffle final set and return exactly count

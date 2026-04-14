@@ -979,6 +979,13 @@
             };
         });
 
+        // AI Settings panel
+        const aiSection = $('#ai-settings-section');
+        if (aiSection && typeof AIQuestionEngine !== 'undefined') {
+            aiSection.innerHTML = AIQuestionEngine.getSettingsHTML();
+            AIQuestionEngine.bindSettingsEvents();
+        }
+
         // Bottom tab bar
         $('#btn-tab-home').onclick = showDashboard;
         $('#btn-leaderboard').onclick = showLeaderboard;
@@ -1076,7 +1083,8 @@
         showScreen('quiz');
         $('#quiz-category-label').textContent = CATEGORY_NAMES[category] || category;
         $('#quiz-progress').textContent = 'Loading...';
-        $('#question-text').textContent = '⏳ Generating questions...';
+        const aiActive = typeof AIQuestionEngine !== 'undefined' && AIQuestionEngine.isEnabled();
+        $('#question-text').textContent = aiActive ? '🤖 AI is crafting unique questions for you...' : '⏳ Generating questions...';
         $('#answers-grid').innerHTML = '';
 
         const count = isDaily ? DAILY_CHALLENGE_COUNT : QUESTIONS_PER_QUIZ;
@@ -1084,15 +1092,36 @@
         let questions;
         const isEnglish = category.startsWith('english_');
         const isFastBridgeMath = category.startsWith('fb_');
+        const pName = state.player.name || '';
         try {
-            if (isEnglish && typeof getEnglishQuestions === 'function') {
-                // Route English categories to English question bank
+            // 🤖 PRIORITY: Try AI for ALL categories when enabled
+            if (typeof AIQuestionEngine !== 'undefined' && AIQuestionEngine.isEnabled()) {
+                questions = await AIQuestionEngine.getQuestions(state.player.grade, category, count, pName);
+                if (questions && questions.length >= count) {
+                    console.log(`🤖 AI provided all ${questions.length} questions`);
+                } else {
+                    // AI didn't return enough — supplement with local
+                    const aiCount = questions ? questions.length : 0;
+                    const need = count - aiCount;
+                    console.log(`🤖 AI provided ${aiCount}, need ${need} more from local`);
+                    let localQs = [];
+                    if (isEnglish && typeof getEnglishQuestions === 'function') {
+                        localQs = getEnglishQuestions(state.player.grade, category, need);
+                    } else if (isFastBridgeMath && typeof getFastBridgeMathQuestions === 'function') {
+                        localQs = await getFastBridgeMathQuestions(state.player.grade, category, need);
+                    } else if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
+                        localQs = await QuestionAPI.getQuestions(state.player.grade, category, need, pName);
+                    }
+                    questions = [...(questions || []), ...localQs];
+                }
+            }
+            // Fallback: no AI, use local sources
+            else if (isEnglish && typeof getEnglishQuestions === 'function') {
                 questions = getEnglishQuestions(state.player.grade, category, count);
             } else if (isFastBridgeMath && typeof getFastBridgeMathQuestions === 'function') {
-                // Route FastBridge Math categories to dedicated handler
                 questions = await getFastBridgeMathQuestions(state.player.grade, category, count);
             } else if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
-                questions = await QuestionAPI.getQuestions(state.player.grade, category, count);
+                questions = await QuestionAPI.getQuestions(state.player.grade, category, count, pName);
             } else {
                 questions = getQuestions(state.player.grade, category, count);
             }
@@ -1162,7 +1191,8 @@
                 'Math Kangaroo': '🦘', 'RSM': '🧮', 'Primefactor': '🔢',
                 'Singapore Math': '🇸🇬', 'MOEMS': '🏅', 'Mathcounts': '📐', 'IMC': '🌍',
                 'OpenTDB': '📚', 'Generated': '🧮', 'Competition Style': '🏆',
-                'Olympiad Style': '🥇', 'Word Problem': '📖', 'NumbersAPI': '🔢'
+                'Olympiad Style': '🥇', 'Word Problem': '📖', 'NumbersAPI': '🔢',
+                '🤖 AI Generated': '🤖', 'AIME Style': '🔥'
             };
             const icon = sourceIcons[q.source] || '📚';
             sourceBadge.innerHTML = `${icon} ${q.source}`;
