@@ -1480,6 +1480,13 @@
         $('#rewards-points').textContent = p.points.toLocaleString();
         $('#rewards-balance').textContent = p.points.toLocaleString();
 
+        // Hint text
+        const hintEl = $('.rewards-hint');
+        if (hintEl) {
+            hintEl.textContent = 'Solve more problems to earn coins for rewards!';
+            hintEl.style.color = '';
+        }
+
         renderRewardSection('rewards-activities', REWARDS.activities);
         renderRewardSection('rewards-privileges', REWARDS.privileges);
         renderRewardSection('rewards-toys', REWARDS.toys);
@@ -1505,7 +1512,7 @@
                 <div class="reward-emoji">${item.emoji}</div>
                 <h4>${item.name}</h4>
                 <p>${item.desc}</p>
-                <div class="reward-cost">🪙 ${item.cost.toLocaleString()} pts</div>
+                <div class="reward-cost">🪙 ${item.cost.toLocaleString()} coins</div>
                 <button class="btn-redeem" ${canAfford ? '' : 'disabled'}>
                     ${canAfford ? '🎁 Redeem' : '🔒 Need ' + (item.cost - state.player.points).toLocaleString() + ' more'}
                 </button>
@@ -1525,6 +1532,11 @@
         $('#modal-message').textContent = `Spend ${item.cost.toLocaleString()} points to get "${item.name}"?`;
         $('#modal-cancel').onclick = () => { overlay.style.display = 'none'; };
         $('#modal-confirm').onclick = () => { overlay.style.display = 'none'; redeemReward(item); };
+    }
+
+    function getRedemptionsToday() {
+        const today = new Date().toDateString();
+        return (state.player.redemptions || []).filter(r => new Date(r.date).toDateString() === today).length;
     }
 
     function redeemReward(item) {
