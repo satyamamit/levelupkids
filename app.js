@@ -734,6 +734,18 @@
                 }
                 // Save merged data back to both localStorage AND Firestore
                 savePlayer();
+
+                // Auto-navigate to dashboard if we have a complete profile from cloud
+                if (state.player.name && state.player.grade && (state.player.totalXP || 0) > 0) {
+                    state.bots = generateBotPlayers(state.player.grade);
+                    updateStreak();
+                    if (window.location.hash && window.location.hash !== '#') {
+                        navigateToHash(window.location.hash);
+                    } else {
+                        showDashboard();
+                    }
+                    return; // Skip the welcome form — go straight to dashboard
+                }
             }
         }
 
