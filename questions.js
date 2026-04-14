@@ -1,5 +1,5 @@
 // =============================================
-// MathChamp — MEGA Question Bank (1000+ Questions)
+// LevelUpKids — MEGA Question Bank (1000+ Questions)
 // AMC 8/AOPS · Math Kangaroo · RSM · Primefactor
 // Singapore Math · MOEMS · Mathcounts · IMC
 // =============================================

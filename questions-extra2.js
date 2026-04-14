@@ -1,5 +1,5 @@
 // =============================================
-// MathChamp — EXTRA Question Bank (Batch 3)
+// LevelUpKids — EXTRA Question Bank (Batch 3)
 // Competition-style problems, advanced
 // =============================================
 

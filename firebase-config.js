@@ -3,7 +3,7 @@
 // =============================================
 // HOW TO SET UP:
 // 1. Go to https://console.firebase.google.com
-// 2. Create a new project (e.g., "MathChamp")
+// 2. Create a new project (e.g., "LevelUpKids")
 // 3. Enable Authentication → Sign-in method → Google → Enable
 // 4. Enable Cloud Firestore → Create database → Start in test mode
 // 5. Go to Project Settings → Your apps → Web app → Register app
@@ -103,7 +103,7 @@ const FirebaseAuthHelper = {
         if (!user) return null;
         return {
             uid: user.uid,
-            name: user.displayName || 'Math Champion',
+            name: user.displayName || 'LevelUp Kid',
             email: user.email,
             photoURL: user.photoURL,
             isAnonymous: false

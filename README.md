@@ -1,6 +1,6 @@
-# MathChamp 🧠
+# LevelUpKids 🚀
 
-A **LeetCode-style competitive math practice platform** for kids (Grades 1–8).
+A **LeetCode-style competitive math & English practice platform** for kids (Grades 1–8).
 
 ## Features
 - 🎮 **Unlimited Math Questions** — 40+ dynamic generators + OpenTDB API + 725 curated competition problems
@@ -27,7 +27,7 @@ AMC 8 · AOPS · Math Kangaroo · RSM · Primefactor · Singapore Math · MOEMS 
 ## Firebase Setup (Optional — for Google Sign-In & Cloud Leaderboard)
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create a new project → **MathChamp**
+2. Create a new project → **LevelUpKids**
 3. Enable **Authentication** → Sign-in method → **Google** → Enable
 4. Enable **Cloud Firestore** → Create database → Start in **test mode**
 5. Go to Project Settings → Your apps → **Web app** → Register

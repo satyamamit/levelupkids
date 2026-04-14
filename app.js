@@ -1,5 +1,5 @@
 // =============================================
-// MathChamp v2 — Full Game Engine
+// LevelUpKids v2 — Full Game Engine
 // Leaderboard · XP & Levels · Daily Challenges
 // Combo Streaks · Enhanced Rewards · Unlimited Questions
 // =============================================
@@ -8,7 +8,7 @@
     'use strict';
 
     // ===================== THEME TOGGLE =====================
-    const THEME_KEY = 'mathchamp_theme';
+    const THEME_KEY = 'levelupkids_theme';
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
@@ -355,7 +355,7 @@
         window.location.href = window.location.pathname; // Clean URL, no hash
     }
     // Expose globally for console access
-    window.resetMathChamp = resetAllData;
+    window.resetLevelUpKids = resetAllData;
 
     // Handle browser back/forward
     window.addEventListener('popstate', () => {
@@ -382,15 +382,15 @@
     function savePlayer() {
         if (!state.player || state._resetting) return;
         // Always save to localStorage as fallback (keyed by name AND uid if available)
-        const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+        const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
         all[state.player.name.toLowerCase()] = state.player;
         // Also store by uid so we can find it on reload
         if (state.authUser && state.authUser.uid) {
             all['__uid__' + state.authUser.uid] = state.player;
         }
-        localStorage.setItem('mathchamp_players', JSON.stringify(all));
+        localStorage.setItem('levelupkids_players', JSON.stringify(all));
         // Remember last player for auto-login
-        localStorage.setItem('mathchamp_last_player', state.player.name);
+        localStorage.setItem('levelupkids_last_player', state.player.name);
 
         // Also save to Firestore if Firebase is active and user is signed in
         if (state.useFirebase && state.authUser && typeof FirestoreDB !== 'undefined') {
@@ -508,7 +508,7 @@
     });
 
     function loadPlayer(name) {
-        const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+        const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
         // Check by name first, then by uid if authUser exists
         let player = all[name.toLowerCase()] || null;
         if (!player && state.authUser) {
@@ -518,7 +518,7 @@
     }
 
     function getAllPlayerNames() {
-        const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+        const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
         return Object.keys(all).map(k => all[k].name);
     }
 
@@ -682,7 +682,7 @@
             }
 
             // Pre-fill name
-            const displayName = user.displayName || 'Math Champion';
+            const displayName = user.displayName || 'LevelUp Kid';
             nameInput.value = displayName.split(' ')[0]; // Use first name
             nameInput.dispatchEvent(new Event('input'));
 
@@ -696,7 +696,7 @@
 
             // Also check localStorage for existing data — ONLY by uid (not by name,
             // because name-based lookup can cross-contaminate between different Google accounts)
-            const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+            const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
             const localByUid = all['__uid__' + user.uid] || null;
 
             if (cloudPlayer && localByUid) {
@@ -886,11 +886,11 @@
 
             // Update localStorage key if name changed
             if (oldName && oldName.toLowerCase() !== newName.toLowerCase()) {
-                const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+                const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
                 delete all[oldName.toLowerCase()];
                 all[newName.toLowerCase()] = state.player;
-                localStorage.setItem('mathchamp_players', JSON.stringify(all));
-                localStorage.setItem('mathchamp_last_player', newName);
+                localStorage.setItem('levelupkids_players', JSON.stringify(all));
+                localStorage.setItem('levelupkids_last_player', newName);
             }
 
             savePlayer();
@@ -990,7 +990,7 @@
             savePlayer();
             state.player = null;
             // Clear auto-login so user sees welcome screen next time
-            localStorage.removeItem('mathchamp_last_player');
+            localStorage.removeItem('levelupkids_last_player');
             if (state.useFirebase && typeof FirebaseAuthHelper !== 'undefined') {
                 await FirebaseAuthHelper.signOut();
             }
@@ -1980,8 +1980,8 @@
         });
 
         // ─── Auto-login returning user from localStorage ───
-        const savedPlayers = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
-        const lastPlayerName = localStorage.getItem('mathchamp_last_player');
+        const savedPlayers = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
+        const lastPlayerName = localStorage.getItem('levelupkids_last_player');
         if (lastPlayerName && savedPlayers[lastPlayerName.toLowerCase()]) {
             const p = savedPlayers[lastPlayerName.toLowerCase()];
             migratePlayer(p);

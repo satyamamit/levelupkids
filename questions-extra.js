@@ -1,5 +1,5 @@
 // =============================================
-// MathChamp — EXTRA Question Bank (Batch 2)
+// LevelUpKids — EXTRA Question Bank (Batch 2)
 // Merged into QUESTIONS on load
 // =============================================
 
