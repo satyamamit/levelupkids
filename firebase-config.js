@@ -35,14 +35,9 @@ function initFirebase() {
         firebaseAuth = firebase.auth();
         firebaseDb = firebase.firestore();
 
-        // Enable offline persistence
-        firebaseDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            if (err.code === 'failed-precondition') {
-                console.warn('Firestore persistence: multiple tabs open, only one can use offline.');
-            } else if (err.code === 'unimplemented') {
-                console.warn('Firestore persistence not available in this browser');
-            }
-        });
+        // Note: Skipping enablePersistence() — it's deprecated in SDK 10.12+ 
+        // and causes "client is offline" errors. Firestore works fine without it
+        // for this app since we already have localStorage as a fallback.
 
         firebaseReady = true;
         console.log('✅ Firebase initialized');
