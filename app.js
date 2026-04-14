@@ -57,6 +57,7 @@
 
     // ===================== CONSTANTS =====================
     const POINTS_MAP = { easy: 5, medium: 10, hard: 20 };
+    const WRONG_PENALTY_MAP = { easy: -1, medium: -2, hard: -5 };
     const HINT_PENALTY = 2;
     const QUESTIONS_PER_QUIZ = 10;
     const TIMED_SECONDS = 90;
@@ -1263,6 +1264,11 @@
         } else {
             // Reset combo
             quiz.combo = 0;
+
+            // Negative marking — deduct points for wrong answer
+            const penalty = WRONG_PENALTY_MAP[diff] || -2;
+            pointsEarned = penalty;
+            quiz.pointsEarned = Math.max(0, quiz.pointsEarned + penalty);
         }
 
         state.player.totalAttempted++;
@@ -1302,7 +1308,7 @@
             const phrases = ['😮 Not quite!', '🤔 Close one!', '💡 Good try!', '📚 Keep learning!'];
             $('#feedback-icon').textContent = '❌';
             $('#feedback-message').textContent = phrases[Math.floor(Math.random() * phrases.length)];
-            $('#feedback-points').textContent = 'No points this time';
+            $('#feedback-points').textContent = `${points} points ⚠️`;
             $('#feedback-points').style.color = '#C62828';
         }
 
@@ -1490,7 +1496,7 @@
             item.innerHTML = `
                 <span class="result-item-status">${r.correct ? '✅' : '❌'}</span>
                 <span class="result-item-text">Q${i + 1}: ${truncate(r.question, 60)}</span>
-                <span class="result-item-pts">${r.correct ? '+' + r.pointsEarned : '0'} pts</span>
+                <span class="result-item-pts">${r.correct ? '+' + r.pointsEarned : r.pointsEarned} pts</span>
             `;
             breakdown.appendChild(item);
         });
