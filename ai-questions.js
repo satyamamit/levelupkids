@@ -8,12 +8,12 @@ const AIQuestionEngine = (function () {
 
   // ─── Config ────────────────────────────────────────────────
   // Models to try in order — auto-fallback if one fails
+  // Updated April 2026: Gemini 2.0 models are deprecated!
   const GEMINI_MODELS = [
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-flash-8b',
+    'gemini-2.5-flash',          // Stable, best price-performance (free tier)
+    'gemini-2.5-flash-lite',     // Fastest, most budget-friendly (free tier)
+    'gemini-2.5-pro',            // Most advanced (free tier w/ limits)
+    'gemini-3-flash-preview',    // Latest preview
   ];
   const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 
@@ -192,20 +192,29 @@ Do NOT wrap in markdown code blocks. Return ONLY the JSON array.`;
       : [...GEMINI_MODELS];
 
     for (const model of modelsToTry) {
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 3; attempt++) {
         try {
           console.log(`🤖 Trying ${model} (attempt ${attempt + 1})...`);
           const response = await callGemini(model, prompt, 4096);
 
-          if (response.status === 429) {
-            console.warn(`⏳ Rate limited on ${model}, waiting ${(attempt + 1) * 3}s...`);
-            await sleep((attempt + 1) * 3000);
+          if (response.status === 429 || response.status === 503) {
+            const waitTime = (attempt + 1) * 5000; // 5s, 10s, 15s
+            console.warn(`⏳ Rate limited on ${model} (${response.status}), waiting ${waitTime/1000}s...`);
+            await sleep(waitTime);
             continue; // retry same model
           }
 
           if (response.status === 404 || response.status === 400) {
             console.warn(`❌ Model ${model} not available (${response.status}), trying next...`);
             break; // try next model
+          }
+
+          if (response.status === 403) {
+            const errText = await response.text();
+            console.warn(`🔒 Access denied on ${model} (403):`, errText.slice(0, 200));
+            // Could be temporary — retry once, then move on
+            if (attempt === 0) { await sleep(3000); continue; }
+            break;
           }
 
           if (!response.ok) {
@@ -365,53 +374,40 @@ Do NOT wrap in markdown code blocks. Return ONLY the JSON array.`;
         const tempKey = keyInput.value.trim();
         const testPrompt = 'Generate 1 fun math question for a 4th grader. Return only JSON: {"q":"question","options":["A","B","C","D"],"answer":0}';
         let found = false;
+        const modelResults = []; // track status of each model tried
 
         for (const model of GEMINI_MODELS) {
           try {
-            testBtn.textContent = `⏳ Trying ${model.split('-').slice(1).join('-')}...`;
+            const shortName = model.replace('gemini-', '');
+            testBtn.textContent = `⏳ Trying ${shortName}...`;
+            if (resultEl) {
+              resultEl.style.display = 'block';
+              resultEl.className = 'ai-test-result ai-info';
+              resultEl.innerHTML = `⏳ Testing <strong>${model}</strong>...` +
+                (modelResults.length ? '<br><small>' + modelResults.join('<br>') + '</small>' : '');
+            }
+
             const url = `${GEMINI_BASE}${model}:generateContent?key=${tempKey}`;
-            const res = await fetch(url, {
+            const fetchOpts = {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: testPrompt }] }],
                 generationConfig: { temperature: 0.8, maxOutputTokens: 256 }
               })
-            });
+            };
 
-            if (res.status === 429) {
-              // Rate limited — wait 3s and retry once
+            let res = await fetch(url, fetchOpts);
+
+            // If rate limited, wait and retry once
+            if (res.status === 429 || res.status === 503) {
+              modelResults.push(`${model}: rate limited (${res.status}), retrying in 5s...`);
               if (resultEl) {
-                resultEl.style.display = 'block';
-                resultEl.className = 'ai-test-result ai-info';
-                resultEl.textContent = `⏳ Rate limited on ${model}, waiting 3s to retry...`;
+                resultEl.innerHTML = `⏳ Rate limited on <strong>${model}</strong>, retrying in 5s...` +
+                  '<br><small>' + modelResults.join('<br>') + '</small>';
               }
-              await sleep(3000);
-              const retry = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contents: [{ parts: [{ text: testPrompt }] }],
-                  generationConfig: { temperature: 0.8, maxOutputTokens: 256 }
-                })
-              });
-              if (retry.ok) {
-                const data = await retry.json();
-                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                saveWorkingModel(model);
-                found = true;
-                if (resultEl) {
-                  resultEl.style.display = 'block';
-                  resultEl.className = 'ai-test-result ai-success';
-                  resultEl.innerHTML = `✅ Connected! Model: <strong>${model}</strong><br><small>Sample: ${text.slice(0, 120)}...</small>`;
-                }
-                break;
-              }
-              continue; // try next model
-            }
-
-            if (res.status === 404 || res.status === 400) {
-              continue; // model not available, try next
+              await sleep(5000);
+              res = await fetch(url, fetchOpts);
             }
 
             if (res.ok) {
@@ -425,9 +421,13 @@ Do NOT wrap in markdown code blocks. Return ONLY the JSON array.`;
                 resultEl.innerHTML = `✅ Connected! Model: <strong>${model}</strong><br><small>Sample: ${text.slice(0, 120)}...</small>`;
               }
               break;
+            } else {
+              let errDetail = '';
+              try { errDetail = (await res.text()).slice(0, 80); } catch(e) {}
+              modelResults.push(`${model}: ${res.status} ${errDetail}`);
             }
           } catch (e) {
-            continue; // try next model
+            modelResults.push(`${model}: network error — ${e.message}`);
           }
         }
 
@@ -435,7 +435,12 @@ Do NOT wrap in markdown code blocks. Return ONLY the JSON array.`;
           if (resultEl) {
             resultEl.style.display = 'block';
             resultEl.className = 'ai-test-result ai-error';
-            resultEl.innerHTML = '❌ Could not connect to any Gemini model.<br><small>This may be a temporary rate limit — wait 1 minute and try again. Make sure billing is enabled on your Google Cloud project, or try a fresh API key from <a href="https://aistudio.google.com/apikey" target="_blank">AI Studio</a>.</small>';
+            resultEl.innerHTML = '❌ Could not connect to any Gemini model.' +
+              '<br><small><strong>Models tried:</strong><br>' + modelResults.join('<br>') + '</small>' +
+              '<br><br><small>💡 <strong>Tips:</strong><br>' +
+              '• Wait 1 minute and try again (rate limits reset quickly)<br>' +
+              '• Go to <a href="https://aistudio.google.com/apikey" target="_blank">AI Studio</a> and create a fresh API key<br>' +
+              '• Make sure your Google account has the Gemini API enabled</small>';
           }
         }
 
