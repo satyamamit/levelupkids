@@ -367,41 +367,85 @@ const QuestionAPI = (function () {
       const items = ['apples', 'stickers', 'marbles', 'books', 'cookies', 'pencils', 'candies', 'toys', 'cards', 'coins'];
       const name = pick(names), item = pick(items);
 
-      const templates = [
+      // Grade-appropriate templates with increasing complexity
+      const easyTemplates = [
         () => {
           const a = rand(5, 20 + grade * 5), b = rand(3, 15 + grade * 3);
-          return { q: `${name} has ${a} ${item}. They get ${b} more. How many ${item} does ${name} have now?`, ans: a + b, hint: 'This is an addition problem.' };
+          return { q: `${name} has ${a} ${item}. They get ${b} more. How many ${item} does ${name} have now?`, ans: a + b, hint: 'This is an addition problem.', diff: 'easy' };
         },
         () => {
           const a = rand(10, 30 + grade * 5), b = rand(2, a - 1);
-          return { q: `${name} had ${a} ${item} and gave away ${b}. How many are left?`, ans: a - b, hint: 'This is a subtraction problem.' };
+          return { q: `${name} had ${a} ${item} and gave away ${b}. How many are left?`, ans: a - b, hint: 'This is a subtraction problem.', diff: 'easy' };
         },
+      ];
+      const mediumTemplates = [
         () => {
           const bags = rand(3, 8), perBag = rand(4, 12 + grade * 2);
-          return { q: `${name} has ${bags} bags with ${perBag} ${item} in each. How many ${item} in total?`, ans: bags * perBag, hint: 'Multiply the number of bags by items per bag.' };
+          return { q: `${name} has ${bags} bags with ${perBag} ${item} in each. How many ${item} in total?`, ans: bags * perBag, hint: 'Multiply the number of bags by items per bag.', diff: 'medium' };
         },
         () => {
           const total = rand(2, 8) * rand(3, 8 + grade), friends = rand(2, 6);
           const each = Math.floor(total / friends);
-          return { q: `${name} shares ${total} ${item} equally among ${friends} friends. How many does each friend get?`, ans: each, hint: 'Divide the total by the number of friends.' };
+          return { q: `${name} shares ${total} ${item} equally among ${friends} friends. How many does each friend get?`, ans: each, hint: 'Divide the total by the number of friends.', diff: 'medium' };
         },
         () => {
           const price = rand(2, 10) * (grade >= 4 ? pick([1, 0.5, 0.25]) : 1);
           const qty = rand(3, 10);
           const total = price * qty;
-          return { q: `Each ${item.slice(0, -1)} costs $${price}. ${name} buys ${qty}. How much does ${name} spend?`, ans: total, hint: 'Multiply the price by the quantity.' };
+          return { q: `Each ${item.slice(0, -1)} costs $${price}. ${name} buys ${qty}. How much does ${name} spend?`, ans: total, hint: 'Multiply the price by the quantity.', diff: 'medium' };
+        },
+      ];
+      const hardTemplates = [
+        () => {
+          // Two-step: buy and get change
+          const price = rand(3, 15), qty = rand(2, 5), paid = price * qty + rand(5, 20);
+          const change = paid - price * qty;
+          return { q: `${name} buys ${qty} items at $${price} each and pays with $${paid}. How much change does ${name} get?`, ans: change, hint: 'Total cost = price × quantity, then subtract from amount paid.', diff: 'medium' };
         },
         () => {
+          // Work backwards
+          const final = rand(5, 20), gave = rand(3, 10), got = rand(2, 8);
+          const start = final + gave - got;
+          return { q: `${name} gave away ${gave} ${item}, then received ${got} more, and now has ${final}. How many did ${name} start with?`, ans: start, hint: 'Work backwards: add what was given away, subtract what was received.', diff: 'hard' };
+        },
+        () => {
+          // Ratio/comparison
+          const small = rand(3, 12), mult = rand(2, 4);
+          const big = small * mult;
+          const total = small + big;
+          const n2 = pick(names.filter(n => n !== name));
+          return { q: `${name} has ${mult} times as many ${item} as ${n2}. Together they have ${total}. How many does ${n2} have?`, ans: small, hint: `If ${n2} has x, then ${name} has ${mult}x. Total = ${mult + 1}x.`, diff: 'hard' };
+        },
+        () => {
+          // Speed/distance
           const speed = rand(3, grade <= 4 ? 10 : 60);
           const time = rand(2, grade <= 4 ? 5 : 8);
           const distance = speed * time;
-          return { q: `${name} travels at ${speed} miles per hour for ${time} hours. How far does ${name} go?`, ans: distance, hint: 'Distance = Speed × Time' };
+          return { q: `${name} travels at ${speed} miles per hour for ${time} hours. How far does ${name} go?`, ans: distance, hint: 'Distance = Speed × Time', diff: 'medium' };
+        },
+        () => {
+          // Age problem
+          const age = rand(5, 12), diff2 = rand(20, 30);
+          const parentAge = age + diff2;
+          const yearsLater = rand(3, 10);
+          const sumLater = (age + yearsLater) + (parentAge + yearsLater);
+          return { q: `${name} is ${age} years old and their parent is ${parentAge}. What will be the sum of their ages in ${yearsLater} years?`, ans: sumLater, hint: 'Add years to each age, then add them together.', diff: 'hard' };
         },
       ];
 
-      const t = pick(grade <= 1 ? templates.slice(0, 3) : templates)();
+      // Pick templates based on grade
+      let templates;
+      if (grade <= 2) {
+        templates = [...easyTemplates, ...mediumTemplates.slice(0, 1)];
+      } else if (grade <= 4) {
+        templates = [...mediumTemplates, ...hardTemplates.slice(0, 3)];
+      } else {
+        templates = [...hardTemplates, ...mediumTemplates.slice(0, 1)];
+      }
+
+      const t = pick(templates)();
       const spread = Math.max(3, Math.floor(t.ans * 0.2));
-      return { q: t.q, ...makeOptions(t.ans, spread), hint: t.hint, explanation: `The answer is ${t.ans}.`, difficulty: grade <= 2 ? 'easy' : 'medium', source: 'Word Problem' };
+      return { q: t.q, ...makeOptions(t.ans, spread), hint: t.hint, explanation: `The answer is ${t.ans}.`, difficulty: t.diff || 'medium', source: 'Word Problem' };
     },
 
     ageWordProblem(grade) {
@@ -1078,8 +1122,11 @@ const QuestionAPI = (function () {
   }
 
   // ─── Helper: fill pool from all subcategories (grade-aware) ───
-  function _supplementFromAllSubcats(pool, grade, count) {
+  // minDifficulty: 'easy' (any), 'medium' (medium+hard only), 'hard' (hard only)
+  function _supplementFromAllSubcats(pool, grade, count, minDifficulty) {
     if (typeof QUESTIONS === 'undefined') return;
+    const diffRank = { easy: 1, medium: 2, hard: 3 };
+    const minRank = diffRank[minDifficulty] || 1;
     const existing = new Set(pool.map(q => q.q));
     const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
     for (const g of searchGrades) {
@@ -1087,7 +1134,12 @@ const QuestionAPI = (function () {
       const gData = QUESTIONS[g] || {};
       for (const arr of Object.values(gData)) {
         arr.forEach(q => {
-          if (!existing.has(q.q)) { pool.push(q); existing.add(q.q); }
+          if (!existing.has(q.q)) {
+            const qRank = diffRank[q.difficulty] || 2;
+            if (qRank >= minRank) {
+              pool.push(q); existing.add(q.q);
+            }
+          }
         });
       }
     }
@@ -1214,7 +1266,7 @@ const QuestionAPI = (function () {
       }
       // If source-tagged questions are sparse, supplement with general questions
       if (pool.length < count) {
-        _supplementFromAllSubcats(pool, grade, count);
+        _supplementFromAllSubcats(pool, grade, count, 'easy');
       }
       return shuffle(pool).slice(0, count);
     }
@@ -1235,6 +1287,9 @@ const QuestionAPI = (function () {
       'aime':           ['AIME', 'AMC 10', 'AMC 12'],
     };
 
+    // Competition exams = supplement with medium/hard only
+    const COMPETITION_CATS = new Set(['moems','noetic','imc','olympiad','math_challenge','math_is_cool','mathcounts','aime']);
+
     if (SOURCE_TAG_MAP[category]) {
       const tags = SOURCE_TAG_MAP[category];
       if (typeof QUESTIONS !== 'undefined') {
@@ -1250,9 +1305,10 @@ const QuestionAPI = (function () {
           }
         }
       }
-      // Supplement with general math questions if pool is sparse
+      // Supplement: competitions get medium/hard, school tests get any
+      const minDiff = COMPETITION_CATS.has(category) ? 'medium' : 'easy';
       if (pool.length < count) {
-        _supplementFromAllSubcats(pool, grade, count);
+        _supplementFromAllSubcats(pool, grade, count, minDiff);
       }
       return shuffle(pool).slice(0, count);
     }
@@ -1280,7 +1336,7 @@ const QuestionAPI = (function () {
 
     // If still empty (unknown category), grab from all subcats as fallback
     if (pool.length === 0) {
-      _supplementFromAllSubcats(pool, grade, count);
+      _supplementFromAllSubcats(pool, grade, count, 'easy');
     }
 
     return shuffle(pool).slice(0, count);
