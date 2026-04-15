@@ -937,11 +937,22 @@
 
         // Show cloud sync status
         showSyncStatus(state.useFirebase && state.authUser ? 'synced' : 'offline');
+        const syncVisible = (state.useFirebase && state.authUser) ? 'inline-block' : 'none';
         const syncBtn = $('#btn-sync-now');
         if (syncBtn) {
-            syncBtn.style.display = (state.useFirebase && state.authUser) ? 'inline-block' : 'none';
+            syncBtn.style.display = syncVisible;
             syncBtn.onclick = () => forceCloudSync(false);
         }
+        // Sync button on all shared screens too
+        document.querySelectorAll('.shared-sync-btn').forEach(btn => {
+            btn.style.display = syncVisible;
+            btn.onclick = () => forceCloudSync(false);
+        });
+
+        // Wire up shared sign-out buttons on all screens
+        document.querySelectorAll('.shared-signout-btn').forEach(btn => {
+            btn.onclick = () => $('#btn-logout').click();
+        });
 
         // Show admin tab for admin users
         const adminTab = $('#btn-admin');
