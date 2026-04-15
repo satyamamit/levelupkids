@@ -225,7 +225,42 @@
         if (el) el.classList.add('active');
         state.currentScreen = screenId;
         window.scrollTo(0, 0);
+
+        // Update URL hash for routing (skip quiz/results — transient screens)
+        const routableScreens = ['dashboard', 'leaderboard', 'rewards', 'achievements', 'progress'];
+        if (routableScreens.includes(screenId)) {
+            const newHash = '#' + screenId;
+            if (window.location.hash !== newHash) {
+                history.pushState(null, '', newHash);
+            }
+        } else if (screenId === 'welcome') {
+            if (window.location.hash) {
+                history.pushState(null, '', window.location.pathname);
+            }
+        }
     }
+
+    // ─── Hash-based Router ──────────────────────────────────
+    function navigateToHash(hash) {
+        const route = (hash || '').replace('#', '');
+        if (route === 'reset') { resetAllData(); return; }
+        if (!state.player) return;
+        switch (route) {
+            case 'dashboard':    showDashboard(); break;
+            case 'leaderboard':  showLeaderboard(); break;
+            case 'rewards':      showRewardsStore(); break;
+            case 'achievements': showAchievements(); break;
+            case 'progress':     showProgress(); break;
+            default:             showDashboard(); break;
+        }
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', () => {
+        if (state.player) {
+            navigateToHash(window.location.hash);
+        }
+    });
 
     // ===================== PLAYER DATA =====================
     function getDefaultPlayer(name, grade) {
@@ -244,18 +279,26 @@
 
     function savePlayer() {
         if (!state.player || state._resetting) return;
-        // Always save to localStorage as fallback
+        // Always save to localStorage (keyed by name AND uid if available)
         const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
         all[state.player.name.toLowerCase()] = state.player;
+        if (state.authUser && state.authUser.uid) {
+            all['__uid__' + state.authUser.uid] = state.player;
+        }
         localStorage.setItem('mathchamp_players', JSON.stringify(all));
+        localStorage.setItem('mathchamp_last_player', state.player.name);
 
-        // Also save to Firestore if Firebase is active
-        if (state.useFirebase && typeof FirestoreDB !== 'undefined') {
+        // Also save to Firestore if signed in
+        if (state.useFirebase && state.authUser && typeof FirestoreDB !== 'undefined') {
+            showSyncStatus('syncing');
+            const cleanPlayer = { ...state.player };
+            delete cleanPlayer.updatedAt;
             FirestoreDB.savePlayer({
-                ...state.player,
+                ...cleanPlayer,
                 photoURL: state.authUser?.photoURL || null
             }).then(ok => {
                 if (ok) showSyncStatus('synced');
+                else showSyncStatus('offline');
             }).catch(() => showSyncStatus('offline'));
         }
     }
@@ -276,8 +319,105 @@
 
     function loadPlayer(name) {
         const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
-        return all[name.toLowerCase()] || null;
+        let player = all[name.toLowerCase()] || null;
+        if (!player && state.authUser) {
+            player = all['__uid__' + state.authUser.uid] || null;
+        }
+        return player;
     }
+
+    // ─── Merge two player data objects, keeping the best of each ──
+    function mergePlayerData(a, b) {
+        const merged = { ...a };
+        const maxFields = [
+            'points', 'totalXP', 'totalQuizzes', 'totalCorrect', 'totalAttempted',
+            'totalPointsEarned', 'streak', 'maxStreak', 'perfectScores',
+            'quizzesWithNoHints', 'blitzHighAccuracy', 'hardCorrect', 'maxCombo',
+            'dailyChallengesCompleted', 'totalRedemptions'
+        ];
+        for (const key of maxFields) {
+            merged[key] = Math.max(a[key] || 0, b[key] || 0);
+        }
+        merged.achievements = [...new Set([...(a.achievements || []), ...(b.achievements || [])])];
+        merged.categoriesPlayed = { ...(a.categoriesPlayed || {}), ...(b.categoriesPlayed || {}) };
+        const aStats = a.categoryStats || {};
+        const bStats = b.categoryStats || {};
+        merged.categoryStats = { ...aStats };
+        for (const cat in bStats) {
+            if (!merged.categoryStats[cat] || (bStats[cat].attempted || 0) > (merged.categoryStats[cat].attempted || 0)) {
+                merged.categoryStats[cat] = bStats[cat];
+            }
+        }
+        merged.categoryHighScores = { ...(a.categoryHighScores || {}) };
+        for (const cat in (b.categoryHighScores || {})) {
+            merged.categoryHighScores[cat] = Math.max(merged.categoryHighScores[cat] || 0, b.categoryHighScores[cat]);
+        }
+        merged.dailyStreakDates = [...new Set([...(a.dailyStreakDates || []), ...(b.dailyStreakDates || [])])].sort();
+        merged.redeemedRewards = (a.redeemedRewards || []).length >= (b.redeemedRewards || []).length
+            ? (a.redeemedRewards || []) : (b.redeemedRewards || []);
+        merged.sessions = (a.sessions || []).length >= (b.sessions || []).length
+            ? (a.sessions || []) : (b.sessions || []);
+        merged.name = a.name || b.name;
+        merged.grade = a.grade || b.grade;
+        if (a.lastPlayedDate && b.lastPlayedDate) {
+            merged.lastPlayedDate = new Date(a.lastPlayedDate) > new Date(b.lastPlayedDate)
+                ? a.lastPlayedDate : b.lastPlayedDate;
+        }
+        return merged;
+    }
+
+    // Force a full cloud sync
+    let _syncInProgress = false;
+    async function forceCloudSync(silent) {
+        if (_syncInProgress || state._resetting) return;
+        if (!state.useFirebase || !state.authUser || !state.player) {
+            if (!silent) showToast('Not signed in to Google — cannot sync', 'error');
+            return;
+        }
+        _syncInProgress = true;
+        const syncBtn = $('#btn-sync-now');
+        if (syncBtn) syncBtn.classList.add('syncing');
+        showSyncStatus('syncing');
+        try {
+            const cloudPlayer = await FirestoreDB.loadPlayer(state.authUser.uid);
+            if (cloudPlayer) {
+                delete cloudPlayer.updatedAt;
+                const merged = mergePlayerData(cloudPlayer, state.player);
+                migratePlayer(merged);
+                state.player = merged;
+            }
+            savePlayer();
+            if (!silent) showToast('☁️ Data synced!', 'success');
+            if (state.currentScreen === 'dashboard') showDashboard();
+            else if (state.currentScreen === 'leaderboard') showLeaderboard();
+        } catch (e) {
+            console.error('🔄 Force sync failed:', e);
+            if (!silent) showToast('Sync failed — check connection', 'error');
+            showSyncStatus('offline');
+        } finally {
+            _syncInProgress = false;
+            if (syncBtn) syncBtn.classList.remove('syncing');
+        }
+    }
+
+    // Periodic sync every 2 minutes
+    setInterval(() => {
+        if (state.useFirebase && state.authUser && state.player && document.visibilityState === 'visible') {
+            forceCloudSync(true);
+        }
+    }, 120000);
+
+    // Sync when tab becomes visible (debounce: hidden for 5+ seconds)
+    let _lastHiddenAt = 0;
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            _lastHiddenAt = Date.now();
+        } else if (document.visibilityState === 'visible' && state.useFirebase && state.authUser && state.player) {
+            if (_lastHiddenAt > 0 && (Date.now() - _lastHiddenAt) > 5000) {
+                forceCloudSync(true);
+            }
+        }
+    });
 
     function getAllPlayerNames() {
         const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
@@ -383,24 +523,46 @@
             nameInput.dispatchEvent(new Event('input'));
 
             // Try to load existing profile from Firestore
-            const cloudPlayer = await FirestoreDB.loadPlayer(user.uid);
-            if (cloudPlayer) {
+            let cloudPlayer = null;
+            try { cloudPlayer = await FirestoreDB.loadPlayer(user.uid); } catch (e) { console.warn('Cloud load failed:', e); }
+
+            // Also check localStorage
+            const allLocal = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+            const localByUid = allLocal['__uid__' + user.uid] || null;
+            const localByName = allLocal[(displayName.split(' ')[0]).toLowerCase()] || null;
+            const localPlayer = localByUid || localByName;
+
+            if (cloudPlayer && localPlayer) {
+                state.player = mergePlayerData(cloudPlayer, localPlayer);
+                migratePlayer(state.player);
+                showToast(`Welcome back, ${state.player.name}! ☁️ Data synced & merged.`, 'success');
+            } else if (cloudPlayer) {
                 migratePlayer(cloudPlayer);
                 state.player = cloudPlayer;
-                nameInput.value = cloudPlayer.name;
+                showToast(`Welcome back, ${cloudPlayer.name}! ☁️ Data loaded from cloud.`, 'success');
+            } else if (localPlayer) {
+                migratePlayer(localPlayer);
+                state.player = localPlayer;
+                showToast(`Welcome back, ${localPlayer.name}! Local data found.`, 'success');
+            } else {
+                showToast('Welcome! Sign in successful. Choose your grade to start.', 'success');
+            }
+
+            if (state.player) {
+                delete state.player.updatedAt;
+                nameInput.value = state.player.name;
                 nameInput.dispatchEvent(new Event('input'));
-                // Auto-select grade
-                if (cloudPlayer.grade) {
+                if (state.player.grade) {
                     gradeButtons.forEach(b => {
                         b.classList.remove('selected');
-                        if (parseInt(b.dataset.grade) === cloudPlayer.grade) {
+                        if (parseInt(b.dataset.grade) === state.player.grade) {
                             b.classList.add('selected');
-                            selectedGrade = cloudPlayer.grade;
+                            selectedGrade = state.player.grade;
                         }
                     });
                     checkReady();
                 }
-                showToast(`Welcome back, ${cloudPlayer.name}! ☁️ Data synced from cloud.`, 'success');
+                savePlayer();
             }
         }
 
@@ -465,7 +627,11 @@
             state.bots = generateBotPlayers(selectedGrade);
             updateStreak();
             savePlayer();
-            showDashboard();
+            if (window.location.hash && window.location.hash !== '#') {
+                navigateToHash(window.location.hash);
+            } else {
+                showDashboard();
+            }
         });
 
         loadBtn.addEventListener('click', () => {
@@ -485,7 +651,11 @@
                     state.bots = generateBotPlayers(p.grade);
                     updateStreak();
                     savePlayer();
-                    showDashboard();
+                    if (window.location.hash && window.location.hash !== '#') {
+                        navigateToHash(window.location.hash);
+                    } else {
+                        showDashboard();
+                    }
                 } else { showToast('Profile not found!', 'error'); }
             }
         });
@@ -703,6 +873,14 @@
         $('#btn-achievements').onclick = showAchievements;
         $('#btn-history').onclick = showProgress;
 
+        // Show cloud sync status
+        showSyncStatus(state.useFirebase && state.authUser ? 'synced' : 'offline');
+        const syncBtn = $('#btn-sync-now');
+        if (syncBtn) {
+            syncBtn.style.display = (state.useFirebase && state.authUser) ? 'inline-block' : 'none';
+            syncBtn.onclick = () => forceCloudSync(false);
+        }
+
         // Show admin tab for admin users
         const adminTab = $('#btn-admin');
         if (adminTab) {
@@ -721,6 +899,7 @@
         $('#btn-logout').onclick = async () => {
             savePlayer();
             state.player = null;
+            localStorage.removeItem('mathchamp_last_player');
             if (state.useFirebase && typeof FirebaseAuthHelper !== 'undefined') {
                 await FirebaseAuthHelper.signOut();
             }
@@ -732,6 +911,7 @@
             if (authUserInfo) authUserInfo.style.display = 'none';
             const googleBtn = $('#btn-google-signin');
             if (googleBtn) { googleBtn.disabled = false; }
+            history.pushState(null, '', window.location.pathname);
             showScreen('welcome');
         };
     }
@@ -1807,6 +1987,59 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
+
+        // ─── Auto-login returning user from localStorage ───
+        const savedPlayers = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+        const lastPlayerName = localStorage.getItem('mathchamp_last_player');
+        if (lastPlayerName && savedPlayers[lastPlayerName.toLowerCase()]) {
+            const p = savedPlayers[lastPlayerName.toLowerCase()];
+            migratePlayer(p);
+            state.player = p;
+            state.bots = generateBotPlayers(p.grade);
+
+            // Initialize Firebase for auto-login users too
+            if (!state.useFirebase && typeof initFirebase === 'function') {
+                state.useFirebase = initFirebase();
+            }
+
+            // Listen for Firebase auth to restore authUser and sync
+            if (state.useFirebase && typeof FirebaseAuthHelper !== 'undefined') {
+                FirebaseAuthHelper.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        state.authUser = FirebaseAuthHelper.getUserInfo(user);
+                        console.log('🔑 Auth restored for:', user.displayName);
+
+                        const syncBtn = $('#btn-sync-now');
+                        if (syncBtn) { syncBtn.style.display = 'inline-block'; syncBtn.onclick = () => forceCloudSync(false); }
+
+                        // Sync latest data from cloud
+                        try {
+                            const cloudPlayer = await FirestoreDB.loadPlayer(user.uid);
+                            if (cloudPlayer) {
+                                delete cloudPlayer.updatedAt;
+                                const merged = mergePlayerData(cloudPlayer, state.player);
+                                migratePlayer(merged);
+                                state.player = merged;
+                                savePlayer();
+                                if (state.currentScreen === 'dashboard') showDashboard();
+                                else if (state.currentScreen === 'leaderboard') showLeaderboard();
+                            } else {
+                                savePlayer();
+                            }
+                        } catch (e) {
+                            console.warn('Cloud sync on auto-login failed:', e);
+                        }
+                    }
+                });
+            }
+
+            updateStreak();
+            if (window.location.hash && window.location.hash !== '#') {
+                navigateToHash(window.location.hash);
+            } else {
+                showDashboard();
+            }
+        }
     }
 
     // ===================== AI ADMIN PANEL =====================
