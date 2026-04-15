@@ -1114,33 +1114,44 @@
         showScreen('quiz');
         $('#quiz-category-label').textContent = CATEGORY_NAMES[category] || category;
         $('#quiz-progress').textContent = 'Loading...';
-        $('#question-text').textContent = '⏳ Generating questions...';
+        $('#question-text').textContent = '⏳ Loading questions...';
         $('#answers-grid').innerHTML = '';
 
         const count = isDaily ? DAILY_CHALLENGE_COUNT : QUESTIONS_PER_QUIZ;
 
+        // Helper: race a promise against a timeout
+        function withTimeout(promise, ms) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+            ]);
+        }
+
         let questions;
         try {
-            // Use QuestionAPI for async questions
+            // Use QuestionAPI — 3s timeout so quiz doesn't hang on slow external APIs
             if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
-                questions = await QuestionAPI.getQuestions(state.player.grade, category, count);
+                questions = await withTimeout(QuestionAPI.getQuestions(state.player.grade, category, count), 3000);
             } else {
                 questions = getQuestions(state.player.grade, category, count);
             }
         } catch (e) {
-            console.warn('Question fetch error, using fallback:', e);
-            questions = typeof getLocalQuestions === 'function'
-                ? getLocalQuestions(state.player.grade, category, count)
-                : getQuestions(state.player.grade, category, count);
+            console.warn('Question fetch error or timeout, using local fallback:', e);
+            questions = typeof QuestionAPI !== 'undefined' && QuestionAPI.getLocalQuestions
+                ? QuestionAPI.getLocalQuestions(state.player.grade, category, count)
+                : (typeof getLocalQuestions === 'function'
+                    ? getLocalQuestions(state.player.grade, category, count)
+                    : getQuestions(state.player.grade, category, count));
         }
 
-        // Mix in AI-generated questions for uniqueness
-        // All students get AI questions from Firestore — no API key needed to READ
-        // API key is only needed for GENERATING new questions (admin only)
+        // Mix in AI-generated questions (non-blocking, 2s timeout)
+        // All students can READ from Firestore — no API key needed
         if (typeof GeminiQuestionEngine !== 'undefined') {
             try {
                 const aiCount = Math.ceil(count * 0.4); // 40% AI questions
-                const aiQuestions = await GeminiQuestionEngine.getUniqueQuestions(state.player.grade, category, aiCount);
+                const aiQuestions = await withTimeout(
+                    GeminiQuestionEngine.getUniqueQuestions(state.player.grade, category, aiCount), 2000
+                );
                 if (aiQuestions && aiQuestions.length > 0) {
                     // Replace some regular questions with AI ones to maintain total count
                     const regularSlice = (questions || []).slice(0, count - aiQuestions.length);
@@ -1153,8 +1164,20 @@
                     console.log(`🤖 Mixed ${aiQuestions.length} AI questions into quiz`);
                 }
             } catch (e) {
-                console.warn('AI question mixing failed (non-critical):', e);
+                console.warn('AI question mixing skipped (timeout or error):', e.message);
             }
+        }
+
+        // Last resort: if no questions, fall back to mixed/general pool
+        if (!questions || questions.length === 0) {
+            console.warn(`⚠️ No questions for ${category}, falling back to mixed pool`);
+            try {
+                if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getLocalQuestions) {
+                    questions = QuestionAPI.getLocalQuestions(state.player.grade, 'mixed', count);
+                } else if (typeof getLocalQuestions === 'function') {
+                    questions = getLocalQuestions(state.player.grade, 'mixed', count);
+                }
+            } catch (e) { /* ignore */ }
         }
 
         if (!questions || questions.length === 0) {

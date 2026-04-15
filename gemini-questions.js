@@ -588,9 +588,12 @@ Return ONLY valid JSON.`;
         const served = _getServedIds();
         let pool = _getCached(grade, category);
 
-        // ALWAYS try Firestore first — all students can read, no API key needed
+        // Try Firestore (2s timeout — don't block quiz on slow network)
         try {
-            const cloudQs = await loadFromFirestore(grade, category, 100);
+            const cloudQs = await Promise.race([
+                loadFromFirestore(grade, category, 100),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 2000))
+            ]);
             if (cloudQs.length > 0) {
                 // Merge cloud questions into local pool, avoiding duplicates
                 const existingIds = new Set(pool.map(q => q._id));
@@ -600,7 +603,7 @@ Return ONLY valid JSON.`;
                 _setCached(grade, category, pool);
             }
         } catch (e) {
-            console.warn('Firestore read failed (non-critical):', e);
+            console.warn('Firestore read skipped (timeout or error):', e.message);
         }
 
         // Filter out already-served questions

@@ -1077,6 +1077,22 @@ const QuestionAPI = (function () {
     return questions;
   }
 
+  // ─── Helper: fill pool from all subcategories (grade-aware) ───
+  function _supplementFromAllSubcats(pool, grade, count) {
+    if (typeof QUESTIONS === 'undefined') return;
+    const existing = new Set(pool.map(q => q.q));
+    const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+    for (const g of searchGrades) {
+      if (pool.length >= count * 2) break; // enough to choose from
+      const gData = QUESTIONS[g] || {};
+      for (const arr of Object.values(gData)) {
+        arr.forEach(q => {
+          if (!existing.has(q.q)) { pool.push(q); existing.add(q.q); }
+        });
+      }
+    }
+  }
+
   // ─── Local question bank lookup ──────────────────────────
   const ENGLISH_CATS = ['vocabulary', 'grammar', 'reading', 'spelling'];
   const ENGLISH_EXAM_CATS = ['fb_reading', 'spelling_bee'];
@@ -1180,10 +1196,10 @@ const QuestionAPI = (function () {
       return shuffle(pool).slice(0, count);
     }
 
-    // FastBridge aMath → pull FastBridge/HCP/CogAT tagged questions
+    // FastBridge aMath → pull FastBridge/HCP/CogAT tagged questions + dedicated bank
     if (category === 'fastbridge') {
       if (typeof QUESTIONS !== 'undefined') {
-        const fbCats = ['arithmetic', 'geometry', 'word'];
+        const fbCats = ['arithmetic', 'geometry', 'word', 'logic'];
         const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
         for (const g of searchGrades) {
           const gData = QUESTIONS[g] || {};
@@ -1195,6 +1211,48 @@ const QuestionAPI = (function () {
             });
           }
         }
+      }
+      // If source-tagged questions are sparse, supplement with general questions
+      if (pool.length < count) {
+        _supplementFromAllSubcats(pool, grade, count);
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // ─── Source-tag based lookups for competition exams ──────
+    // These exams don't have their own subcategory in QUESTIONS,
+    // so we search ALL subcategories by source tag, then supplement
+    // with general math questions to fill the count.
+    const SOURCE_TAG_MAP = {
+      'moems':          ['MOEMS'],
+      'noetic':         ['Noetic'],
+      'imc':            ['IMC'],
+      'olympiad':       ['AMC', 'AOPS', 'Olympiad'],
+      'math_challenge': ['RSM', 'CML', 'Continental'],
+      'math_is_cool':   ['Math is Cool', 'Cool'],
+      'highcap':        ['HCP', 'CogAT', 'Gifted', 'High Cap'],
+      'mathcounts':     ['Mathcounts', 'MATHCOUNTS'],
+      'aime':           ['AIME', 'AMC 10', 'AMC 12'],
+    };
+
+    if (SOURCE_TAG_MAP[category]) {
+      const tags = SOURCE_TAG_MAP[category];
+      if (typeof QUESTIONS !== 'undefined') {
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = QUESTIONS[g] || {};
+          for (const subcat of Object.keys(gData)) {
+            (gData[subcat] || []).forEach(q => {
+              if (q.source && tags.some(tag => q.source.includes(tag))) {
+                pool.push(q);
+              }
+            });
+          }
+        }
+      }
+      // Supplement with general math questions if pool is sparse
+      if (pool.length < count) {
+        _supplementFromAllSubcats(pool, grade, count);
       }
       return shuffle(pool).slice(0, count);
     }
@@ -1220,6 +1278,11 @@ const QuestionAPI = (function () {
       }
     });
 
+    // If still empty (unknown category), grab from all subcats as fallback
+    if (pool.length === 0) {
+      _supplementFromAllSubcats(pool, grade, count);
+    }
+
     return shuffle(pool).slice(0, count);
   }
 
@@ -1235,6 +1298,17 @@ const QuestionAPI = (function () {
     const localCount = Math.ceil(count * 0.5);
     const localQs = getLocalQuestions(grade, category, localCount);
     questions.push(...localQs);
+
+    // 1b) For FastBridge, also pull from dedicated FastBridge question engine
+    if (category === 'fastbridge' && typeof getFastBridgeMathQuestions === 'function') {
+      try {
+        const fbQs = await getFastBridgeMathQuestions(grade, 'fb_math_mixed', localCount);
+        if (fbQs && fbQs.length > 0) {
+          const existing = new Set(questions.map(q => q.q));
+          fbQs.forEach(q => { if (!existing.has(q.q)) questions.push(q); });
+        }
+      } catch (e) { /* non-critical */ }
+    }
 
     // English categories don't have math generators or external APIs
     const isEnglish = ENGLISH_CATS.includes(category) || ENGLISH_EXAM_CATS.includes(category);
