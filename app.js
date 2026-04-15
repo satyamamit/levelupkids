@@ -1384,8 +1384,8 @@
         const p = state.player;
 
         // Update stats
-        p.points = Math.max(0, p.points + quiz.pointsEarned);
-        p.totalPointsEarned = Math.max(0, p.totalPointsEarned + quiz.pointsEarned);
+        p.points = p.points + quiz.pointsEarned;
+        p.totalPointsEarned = p.totalPointsEarned + quiz.pointsEarned;
         p.totalQuizzes++;
 
         // XP
