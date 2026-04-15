@@ -16,6 +16,7 @@ const GeminiQuestionEngine = (function () {
     const SETTINGS_KEY = 'mathchamp_ai_settings';
     const STATS_KEY = 'mathchamp_ai_stats';
     const RATE_KEY = 'mathchamp_ai_ratelimit';
+    const COOLDOWN_KEY = 'mathchamp_ai_cooldown';
     const BATCH_SIZE = 10;          // 10 questions per API call (fits comfortably in free-tier tokens)
     const MIN_POOL_SIZE = 20;       // Start background gen if pool falls below this
     const BG_INTERVAL_MS = 600000;  // Check pool every 10 minutes (was 2min — too aggressive for free tier)
@@ -42,7 +43,43 @@ const GeminiQuestionEngine = (function () {
     function init() {
         _loadSettings();
         _loadStats();
+        _loadCooldown();
         console.log('🤖 GeminiQuestionEngine initialized', _apiKey ? '(API key set)' : '(no API key)');
+    }
+
+    function _loadCooldown() {
+        try {
+            const raw = localStorage.getItem(COOLDOWN_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                _rateLimitedUntil = data.until || 0;
+                _consecutive429s = data.count || 0;
+                if (Date.now() < _rateLimitedUntil) {
+                    const waitMin = Math.round((_rateLimitedUntil - Date.now()) / 60000);
+                    console.log(`🛑 Restored 429 cooldown from storage: ${waitMin}min remaining (hit #${_consecutive429s})`);
+                } else {
+                    // Cooldown expired — reset
+                    _rateLimitedUntil = 0;
+                    _consecutive429s = 0;
+                    localStorage.removeItem(COOLDOWN_KEY);
+                }
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function _saveCooldown() {
+        try {
+            localStorage.setItem(COOLDOWN_KEY, JSON.stringify({
+                until: _rateLimitedUntil,
+                count: _consecutive429s
+            }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function _clearCooldown() {
+        _rateLimitedUntil = 0;
+        _consecutive429s = 0;
+        try { localStorage.removeItem(COOLDOWN_KEY); } catch (e) { /* ignore */ }
     }
 
     // ─── Settings Management ────────────────────────────────
@@ -273,13 +310,14 @@ const GeminiQuestionEngine = (function () {
             body: JSON.stringify(body)
         });
 
-        // Handle rate limiting (429) — exponential backoff cooldown
+        // Handle rate limiting (429) — exponential backoff cooldown (persisted to localStorage)
         if (res.status === 429) {
             _consecutive429s++;
             const cooldownMin = Math.min(120, 10 * Math.pow(2, _consecutive429s - 1)); // 10, 20, 40, 80, 120min
             _rateLimitedUntil = Date.now() + cooldownMin * 60 * 1000;
+            _saveCooldown(); // Persist so cooldown survives page reload
             const errText = await res.text();
-            console.warn(`🛑 Rate limited (429). Pausing ALL API requests for ${cooldownMin} minutes (hit #${_consecutive429s}).`);
+            console.warn(`🛑 Rate limited (429). Pausing ALL API requests for ${cooldownMin} minutes (hit #${_consecutive429s}). Saved to localStorage.`);
             throw new Error(`Gemini API error 429 — paused for ${cooldownMin}min. ${errText.slice(0, 100)}`);
         }
 
@@ -636,12 +674,17 @@ Return ONLY valid JSON.`;
 
         // If not enough unique questions AND admin has API key, generate more on-demand
         // Regular students without API key just get whatever is in Firestore
-        if (available.length < count && hasApiKey()) {
+        // IMPORTANT: Respect 429 cooldown — do NOT call API if we're rate-limited
+        const inCooldown = Date.now() < _rateLimitedUntil;
+        if (available.length < count && hasApiKey() && !inCooldown) {
             console.log(`🤖 Pool low (${available.length}/${count}), generating more AI questions...`);
             const newQs = await generateQuestions(grade, category, Math.max(BATCH_SIZE, count * 2));
             // Re-check the pool
             pool = _getCached(grade, category);
             available = pool.filter(q => !served.has(q._id));
+        } else if (inCooldown) {
+            const waitMin = Math.round((_rateLimitedUntil - Date.now()) / 60000);
+            console.log(`🛑 Skipping on-demand generation — 429 cooldown active (${waitMin}min left)`);
         }
 
         // If STILL not enough, allow re-serving old questions
@@ -741,7 +784,7 @@ Return ONLY valid JSON.`;
                     console.log(`🤖 Background: Pool low for g${combo.grade}/${combo.cat} (${unserved.length}), generating ${BATCH_SIZE}...`);
                     const result = await generateQuestions(combo.grade, combo.cat, BATCH_SIZE);
                     if (result && result.length > 0) {
-                        _consecutive429s = 0; // Reset backoff on success
+                        _clearCooldown(); // Reset backoff on success (clears localStorage too)
                     }
                     generated = true;
                     startBackgroundGeneration._rotateIdx = (startIdx + i + 1) % combos.length;
