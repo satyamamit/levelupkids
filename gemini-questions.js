@@ -323,8 +323,30 @@ const GeminiQuestionEngine = (function () {
             geometry: isElem
                 ? `geometry: shapes, symmetry, perimeter, area, angles — ${level} level`
                 : `geometry: area, volume, coordinate geometry, transformations, angles — ${level} level`,
-            word: `word problems with real-life scenarios appropriate for ${level} — using ${topics}`,
-            mixed: `mixed math topics for Grade ${grade} covering: ${topics}`,
+            word: isElem
+                ? `COMPLEX multi-step word problems for Grade ${grade}. Each problem MUST require 2-4 steps of reasoning. Types to include:
+- Chickens-and-rabbits (two unknowns from totals)
+- Work-backwards / "I'm thinking of a number" puzzles
+- Rate × Time = Distance with multiple legs or meeting points
+- Sharing/splitting with "twice as many" or ratio conditions
+- Pattern/sequence word problems (necklace beads, tiles, etc.)
+- Age problems ("in X years, she'll be twice as old")
+- Money problems with discount chains or buy-X-get-Y-free
+- Snail-on-wall / filling-pool with setback problems
+Avoid simple 1-step add/subtract/multiply. Each question should tell a mini-story that requires setting up a strategy to solve.`
+                : `COMPLEX multi-step word problems for Grade ${grade}. Each problem MUST require 3-5 steps of reasoning. Types to include:
+- Work/Rate problems (pipes filling pools, workers building walls)
+- Mixture/Alloy problems (ratios of two substances)
+- Boats upstream/downstream (speed of current)
+- Profit/Loss chains (markup then discount)
+- Compound interest and population growth
+- Speed/Distance with head starts or opposite directions
+- Inclusion-exclusion (Venn diagram word problems)
+- Investment/Partnership problems (money × time splitting)
+- Clock problems (angles between hands, gaining/losing time)
+- Consecutive number problems with constraints
+Every problem must be a rich story requiring multi-step algebra or arithmetic reasoning. Never generate simple 1-step calculations.`,
+            mixed: `mixed math topics for Grade ${grade} covering: ${topics}. Include at least 40% multi-step word problems alongside computation and logic.`,
             // Competition — grade-aware
             olympiad: isElem
                 ? `AMC 8/Math Kangaroo style for elementary: creative puzzles, pattern recognition, counting, logical thinking — NOT algebra`
@@ -367,13 +389,13 @@ const GeminiQuestionEngine = (function () {
 
         let extra = '';
         if (['olympiad', 'aime', 'moems', 'noetic', 'imc', 'kangaroo', 'mathcounts', 'math_challenge', 'math_is_cool'].includes(category)) {
-            extra = ' Problems should require 2-3 steps of reasoning, not just direct computation. Include tricky distractors.';
+            extra = ' At least half the problems should be WORD PROBLEMS with real-world stories requiring 2-4 steps. Include tricky distractors. Problems should require strategic thinking — not just direct computation. Types: rate/distance, age puzzles, combinatorial counting in a story, optimization, work-rate, chickens-and-rabbits.';
         } else if (category === 'singapore') {
-            extra = ' Problems should be word-problem heavy with real-world context. Describe bar models in text if applicable.';
+            extra = ' ALL problems must be multi-step WORD PROBLEMS with real-world context. Use bar model thinking, ratio conditions, before-and-after scenarios, work-backwards strategies. Every problem must require 2+ steps to solve.';
         } else if (category === 'fastbridge') {
-            extra = ' Focus on quick estimation, number sense, and data literacy. Describe any charts/graphs in text.';
+            extra = ' Focus on quick estimation, number sense, and data literacy. Include some 2-step word problems involving measurement and data interpretation. Describe any charts/graphs in text.';
         } else if (category === 'highcap') {
-            extra = ' Focus on abstract patterns, analogies, and gifted-level quantitative thinking. No advanced math notation.';
+            extra = ' Focus on abstract patterns, analogies, and gifted-level quantitative thinking. Include story-based logic puzzles. No advanced math notation.';
         } else if (category === 'cogat') {
             extra = ' Focus on CogAT-style number analogies (A→B, C→D, E→?), number series (find next/missing), and number puzzles. Use → arrow notation for analogies. Problems should test pattern recognition, NOT computation skills.';
         }
