@@ -690,30 +690,46 @@ Return ONLY valid JSON.`;
                 return;
             }
 
-            // Generate for current grade only (1 batch per cycle to stay within free tier)
-            const grade = currentGrade;
-            const categories = getCategoriesForGrade(grade);
+            // Rotate through ALL grades (1-8), 1 batch per cycle
+            // Use a rotating index so each cycle picks a different grade+category
+            if (!startBackgroundGeneration._rotateIdx) startBackgroundGeneration._rotateIdx = 0;
+            const allGrades = [1, 2, 3, 4, 5, 6, 7, 8];
             let generated = false;
 
-            for (const cat of categories) {
-                if (generated) break; // Only 1 batch per cycle
+            // Build a flat list of all grade+category combos to rotate through
+            const combos = [];
+            for (const g of allGrades) {
+                for (const cat of getCategoriesForGrade(g)) {
+                    combos.push({ grade: g, cat });
+                }
+            }
+
+            // Start from where we left off last cycle
+            const startIdx = startBackgroundGeneration._rotateIdx % combos.length;
+            for (let i = 0; i < combos.length; i++) {
+                if (generated) break;
                 if (!_canMakeRequest()) break;
 
-                const pool = _getCached(grade, cat);
+                const combo = combos[(startIdx + i) % combos.length];
+                const pool = _getCached(combo.grade, combo.cat);
                 const served = _getServedIds();
                 const unserved = pool.filter(q => !served.has(q._id));
 
                 if (unserved.length < MIN_POOL_SIZE) {
-                    console.log(`🤖 Background: Pool low for g${grade}/${cat} (${unserved.length}), generating ${BATCH_SIZE}...`);
-                    const result = await generateQuestions(grade, cat, BATCH_SIZE);
+                    console.log(`🤖 Background: Pool low for g${combo.grade}/${combo.cat} (${unserved.length}), generating ${BATCH_SIZE}...`);
+                    const result = await generateQuestions(combo.grade, combo.cat, BATCH_SIZE);
                     if (result && result.length > 0) {
                         _consecutive429s = 0; // Reset backoff on success
                     }
                     generated = true;
+                    startBackgroundGeneration._rotateIdx = (startIdx + i + 1) % combos.length;
                 }
             }
             if (generated) {
                 console.log(`🤖 Background cycle done: 1 batch (~${BATCH_SIZE} questions)`);
+            } else {
+                // All pools are full, advance index anyway
+                startBackgroundGeneration._rotateIdx = (startIdx + 1) % combos.length;
             }
         }
 
