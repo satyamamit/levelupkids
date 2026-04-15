@@ -18,7 +18,7 @@ const GeminiQuestionEngine = (function () {
     const RATE_KEY = 'mathchamp_ai_ratelimit';
     const BATCH_SIZE = 10;          // 10 questions per API call (fits comfortably in free-tier tokens)
     const MIN_POOL_SIZE = 20;       // Start background gen if pool falls below this
-    const BG_INTERVAL_MS = 120000;  // Check pool every 2 minutes
+    const BG_INTERVAL_MS = 600000;  // Check pool every 10 minutes (was 2min — too aggressive for free tier)
     const MAX_CACHED = 1000;        // Max questions in local cache per grade+category
     const MAX_REQUESTS_PER_DAY = 300; // Free tier allows 1500 RPD, we use 300 conservatively
     const MIN_REQUEST_GAP_MS = 3000; // Min 3s between API calls (free tier allows 30 RPM)
@@ -27,6 +27,7 @@ const GeminiQuestionEngine = (function () {
     let _apiKey = '';
     let _isGenerating = false;
     let _rateLimitedUntil = 0;
+    let _consecutive429s = 0;       // Exponential backoff: doubles cooldown each consecutive 429
     let _bgTimer = null;
     let _lastRequestTime = 0;
     let _stats = {
@@ -272,12 +273,14 @@ const GeminiQuestionEngine = (function () {
             body: JSON.stringify(body)
         });
 
-        // Handle rate limiting (429) — set 10-minute cooldown, don't retry
+        // Handle rate limiting (429) — exponential backoff cooldown
         if (res.status === 429) {
-            _rateLimitedUntil = Date.now() + 600000; // 10 minute cooldown
+            _consecutive429s++;
+            const cooldownMin = Math.min(120, 10 * Math.pow(2, _consecutive429s - 1)); // 10, 20, 40, 80, 120min
+            _rateLimitedUntil = Date.now() + cooldownMin * 60 * 1000;
             const errText = await res.text();
-            console.warn(`🛑 Rate limited (429). Pausing ALL API requests for 10 minutes.`);
-            throw new Error(`Gemini API error 429 — paused for 10min. ${errText.slice(0, 100)}`);
+            console.warn(`🛑 Rate limited (429). Pausing ALL API requests for ${cooldownMin} minutes (hit #${_consecutive429s}).`);
+            throw new Error(`Gemini API error 429 — paused for ${cooldownMin}min. ${errText.slice(0, 100)}`);
         }
 
         if (!res.ok) {
@@ -687,33 +690,30 @@ Return ONLY valid JSON.`;
                 return;
             }
 
-            // Generate for multiple grades around the current grade
-            const grades = [...new Set([currentGrade, Math.max(1, currentGrade - 1), Math.min(8, currentGrade + 1)])];
-            let batchesThisCycle = 0;
-            const MAX_BATCHES_PER_CYCLE = 3; // Up to 3 batches per cycle
+            // Generate for current grade only (1 batch per cycle to stay within free tier)
+            const grade = currentGrade;
+            const categories = getCategoriesForGrade(grade);
+            let generated = false;
 
-            for (const grade of grades) {
-                if (batchesThisCycle >= MAX_BATCHES_PER_CYCLE) break;
-                const categories = getCategoriesForGrade(grade);
-                for (const cat of categories) {
-                    if (batchesThisCycle >= MAX_BATCHES_PER_CYCLE) break;
-                    if (!_canMakeRequest()) break;
+            for (const cat of categories) {
+                if (generated) break; // Only 1 batch per cycle
+                if (!_canMakeRequest()) break;
 
-                    const pool = _getCached(grade, cat);
-                    const served = _getServedIds();
-                    const unserved = pool.filter(q => !served.has(q._id));
+                const pool = _getCached(grade, cat);
+                const served = _getServedIds();
+                const unserved = pool.filter(q => !served.has(q._id));
 
-                    if (unserved.length < MIN_POOL_SIZE) {
-                        console.log(`🤖 Background: Pool low for g${grade}/${cat} (${unserved.length}), generating ${BATCH_SIZE}...`);
-                        await generateQuestions(grade, cat, BATCH_SIZE);
-                        batchesThisCycle++;
-                        // Brief delay between batches
-                        await new Promise(r => setTimeout(r, 4000));
+                if (unserved.length < MIN_POOL_SIZE) {
+                    console.log(`🤖 Background: Pool low for g${grade}/${cat} (${unserved.length}), generating ${BATCH_SIZE}...`);
+                    const result = await generateQuestions(grade, cat, BATCH_SIZE);
+                    if (result && result.length > 0) {
+                        _consecutive429s = 0; // Reset backoff on success
                     }
+                    generated = true;
                 }
             }
-            if (batchesThisCycle > 0) {
-                console.log(`🤖 Background cycle done: ${batchesThisCycle} batches (~${batchesThisCycle * BATCH_SIZE} questions)`);
+            if (generated) {
+                console.log(`🤖 Background cycle done: 1 batch (~${BATCH_SIZE} questions)`);
             }
         }
 
