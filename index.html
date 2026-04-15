@@ -95,6 +95,7 @@
                     <span id="nav-points">0</span> pts
                 </div>
                 <button id="btn-theme-toggle" class="btn-theme-toggle" title="Toggle Light/Dark Mode">🌙</button>
+                <button id="btn-feedback" class="btn-feedback-nav" title="Send Feedback">💬</button>
                 <button id="btn-sync-now" class="btn-sync-nav" title="Sync data to cloud" style="display:none;">🔄</button>
                 <button id="btn-logout" class="btn-signout-nav" title="Sign Out">🚪 Sign Out</button>
             </div>
@@ -146,6 +147,37 @@
             <div class="modal-actions">
                 <button id="btn-save-profile" class="btn-primary">Save Changes</button>
                 <button id="btn-cancel-profile" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box feedback-box">
+            <div class="modal-icon">💬</div>
+            <h2>Send Feedback</h2>
+            <p class="feedback-subtitle">Found a bug? Have a suggestion? Let us know!</p>
+            <div class="feedback-form">
+                <div class="form-group">
+                    <label for="feedback-type">Type</label>
+                    <select id="feedback-type" class="feedback-select">
+                        <option value="bug">🐛 Bug Report</option>
+                        <option value="wrong-answer">❌ Wrong Answer / Question Issue</option>
+                        <option value="feature">✨ Feature Request</option>
+                        <option value="too-easy">😴 Questions Too Easy</option>
+                        <option value="too-hard">🤯 Questions Too Hard</option>
+                        <option value="other">💭 Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="feedback-text">Details</label>
+                    <textarea id="feedback-text" class="feedback-textarea" rows="4" maxlength="500" placeholder="Tell us what's on your mind..."></textarea>
+                    <div class="feedback-char-count"><span id="feedback-char">0</span>/500</div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-send-feedback" class="btn-primary">📤 Send Feedback</button>
+                <button id="btn-cancel-feedback" class="btn-secondary">Cancel</button>
             </div>
         </div>
     </div>

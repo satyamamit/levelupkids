@@ -938,6 +938,10 @@
         // Edit profile
         $('#btn-edit-profile').onclick = openEditProfile;
 
+        // Feedback button
+        const feedbackBtn = $('#btn-feedback');
+        if (feedbackBtn) feedbackBtn.onclick = openFeedback;
+
         // Show cloud sync status
         showSyncStatus(state.useFirebase && state.authUser ? 'synced' : 'offline');
         const syncVisible = (state.useFirebase && state.authUser) ? 'inline-block' : 'none';
@@ -1052,6 +1056,99 @@
         };
 
         // Close on overlay click
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        };
+    }
+
+    // ===================== FEEDBACK =====================
+    function openFeedback() {
+        const modal = $('#feedback-modal');
+        if (!modal) return;
+
+        const typeSelect = $('#feedback-type');
+        const textArea = $('#feedback-text');
+        const charCount = $('#feedback-char');
+        const sendBtn = $('#btn-send-feedback');
+        const cancelBtn = $('#btn-cancel-feedback');
+
+        // Reset form
+        if (typeSelect) typeSelect.value = 'bug';
+        if (textArea) { textArea.value = ''; }
+        if (charCount) charCount.textContent = '0';
+
+        // Character counter
+        if (textArea) {
+            textArea.oninput = () => {
+                if (charCount) charCount.textContent = textArea.value.length;
+            };
+        }
+
+        modal.style.display = 'flex';
+
+        sendBtn.onclick = async () => {
+            const type = typeSelect ? typeSelect.value : 'other';
+            const text = textArea ? textArea.value.trim() : '';
+
+            if (!text) {
+                showToast('Please enter some feedback details!', 'error');
+                return;
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = '⏳ Sending...';
+
+            const feedbackData = {
+                type,
+                text,
+                playerName: state.player ? state.player.name : 'Unknown',
+                grade: state.player ? state.player.grade : 0,
+                email: state.authUser ? state.authUser.email : 'anonymous',
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+            };
+
+            let saved = false;
+
+            // Try saving to Firestore
+            if (typeof firebaseDb !== 'undefined' && firebaseDb) {
+                try {
+                    await firebaseDb.collection('feedback').add({
+                        ...feedbackData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    saved = true;
+                } catch (e) {
+                    console.warn('Firestore feedback save failed:', e);
+                }
+            }
+
+            // Fallback: save to localStorage
+            if (!saved) {
+                try {
+                    const existing = JSON.parse(localStorage.getItem('levelupkids_feedback') || '[]');
+                    existing.push(feedbackData);
+                    localStorage.setItem('levelupkids_feedback', JSON.stringify(existing));
+                    saved = true;
+                } catch (e) { /* ignore */ }
+            }
+
+            sendBtn.disabled = false;
+            sendBtn.textContent = '📤 Send Feedback';
+
+            if (saved) {
+                showToast('Thank you for your feedback! 💛', 'success');
+                modal.style.display = 'none';
+            } else {
+                showToast('Could not send feedback. Please try again.', 'error');
+            }
+        };
+
+        cancelBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+
         modal.onclick = (e) => {
             if (e.target === modal) modal.style.display = 'none';
         };

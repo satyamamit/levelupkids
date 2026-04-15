@@ -372,6 +372,74 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* Feedback nav button */
+.btn-feedback-nav {
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: var(--radius-full);
+    padding: 8px 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    line-height: 1;
+}
+.btn-feedback-nav:hover {
+    background: rgba(255, 193, 7, 0.3);
+    border-color: #FFC107;
+    transform: translateY(-1px);
+}
+
+/* Feedback Modal */
+.feedback-box {
+    max-width: 480px;
+}
+.feedback-subtitle {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin: -8px 0 16px;
+    text-align: center;
+}
+.feedback-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.feedback-select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: var(--font-main);
+    cursor: pointer;
+}
+.feedback-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: var(--font-main);
+    resize: vertical;
+    min-height: 80px;
+}
+.feedback-textarea:focus, .feedback-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+}
+.feedback-char-count {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
 .btn-link {
     background: none;
     border: none;
@@ -3861,6 +3929,21 @@ body {
 [data-theme="light"] .btn-signout-nav:hover {
     background: rgba(239, 68, 68, 0.1) !important;
     color: #EF4444 !important;
+}
+
+[data-theme="light"] .btn-feedback-nav {
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #555570 !important;
+}
+[data-theme="light"] .btn-feedback-nav:hover {
+    background: rgba(255, 193, 7, 0.15) !important;
+    color: #D4A017 !important;
+}
+[data-theme="light"] .feedback-select,
+[data-theme="light"] .feedback-textarea {
+    background: #F0F0F8 !important;
+    color: #1A1A2E !important;
+    border-color: #D0D0E0 !important;
 }
 
 /* ── Dashboard ── */
