@@ -7,6 +7,42 @@
 (function () {
     'use strict';
 
+    // ===================== THEME TOGGLE =====================
+    const THEME_KEY = 'levelupkids_theme';
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem(THEME_KEY, theme);
+        // Update all toggle button icons
+        const icon = theme === 'light' ? '☀️' : '🌙';
+        document.querySelectorAll('.btn-theme-toggle').forEach(btn => {
+            btn.textContent = icon;
+            btn.title = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+        });
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    // Apply saved theme immediately (default = dark)
+    (function initTheme() {
+        const saved = localStorage.getItem(THEME_KEY) || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+        // Icons will be set once DOM is ready
+    })();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set initial icons
+        const saved = localStorage.getItem(THEME_KEY) || 'dark';
+        applyTheme(saved);
+        // Bind all toggle buttons
+        document.querySelectorAll('.btn-theme-toggle').forEach(btn => {
+            btn.addEventListener('click', toggleTheme);
+        });
+    });
+
     // ===================== CONSTANTS =====================
     const POINTS_MAP = { easy: 5, medium: 10, hard: 20 };
     const HINT_PENALTY = 2;
