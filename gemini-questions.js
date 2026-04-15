@@ -26,6 +26,7 @@ const GeminiQuestionEngine = (function () {
     // ─── State ──────────────────────────────────────────────
     let _apiKey = '';
     let _isGenerating = false;
+    let _rateLimitedUntil = 0;
     let _bgTimer = null;
     let _lastRequestTime = 0;
     let _stats = {
@@ -242,6 +243,12 @@ const GeminiQuestionEngine = (function () {
         if (!hasApiKey()) throw new Error('No Gemini API key configured');
         if (!_canMakeRequest()) throw new Error('Daily free-tier request limit reached. Try again tomorrow!');
 
+        // Check if we're in a 429 cooldown period
+        if (Date.now() < _rateLimitedUntil) {
+            const waitMin = Math.round((_rateLimitedUntil - Date.now()) / 60000);
+            throw new Error(`Rate limited — cooling down (${waitMin}min left). Try again later.`);
+        }
+
         await _waitForRateLimit();
 
         const url = `${GEMINI_API_URL}?key=${_apiKey}`;
@@ -265,12 +272,12 @@ const GeminiQuestionEngine = (function () {
             body: JSON.stringify(body)
         });
 
-        // Handle rate limiting (429) with exponential backoff
-        if (res.status === 429 && retries > 0) {
-            const backoff = (3 - retries) * 15000 + Math.random() * 5000; // 15-35s backoff
-            console.warn(`⚠️ Rate limited (429). Retrying in ${Math.round(backoff / 1000)}s... (${retries} retries left)`);
-            await new Promise(r => setTimeout(r, backoff));
-            return _callGemini(prompt, retries - 1);
+        // Handle rate limiting (429) — set 10-minute cooldown, don't retry
+        if (res.status === 429) {
+            _rateLimitedUntil = Date.now() + 600000; // 10 minute cooldown
+            const errText = await res.text();
+            console.warn(`🛑 Rate limited (429). Pausing ALL API requests for 10 minutes.`);
+            throw new Error(`Gemini API error 429 — paused for 10min. ${errText.slice(0, 100)}`);
         }
 
         if (!res.ok) {
@@ -669,6 +676,11 @@ Return ONLY valid JSON.`;
             if (_isGenerating) return;
             if (!_canMakeRequest()) {
                 console.log('🛑 Background gen paused — daily limit reached');
+                return;
+            }
+            if (Date.now() < _rateLimitedUntil) {
+                const waitMin = Math.round((_rateLimitedUntil - Date.now()) / 60000);
+                console.log(`🛑 Background gen paused — 429 cooldown (${waitMin}min remaining)`);
                 return;
             }
 
