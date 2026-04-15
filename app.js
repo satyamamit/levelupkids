@@ -881,7 +881,15 @@
                     recEl.style.display = 'none';
                 }
             } else {
-                recEl.style.display = 'none';
+                // New user / reset user — suggest a random exam to try
+                const allCats = ['fastbridge','moems','noetic','kangaroo','olympiad','imc','math_challenge','math_is_cool','highcap','cogat','fb_reading','spelling_bee'];
+                const tryCat = allCats[Math.floor(Math.random() * allCats.length)];
+                recEl.innerHTML = `<span class="rec-emoji">🌟</span> <strong>Get started:</strong> Try <strong>${CATEGORY_NAMES[tryCat] || tryCat}</strong> — a great way to warm up! <button class="rec-btn" data-rec-cat="${tryCat}">Let's go!</button>`;
+                recEl.style.display = 'block';
+                const recBtn = recEl.querySelector('.rec-btn');
+                if (recBtn) {
+                    recBtn.onclick = () => startQuiz(recBtn.dataset.recCat, recBtn.dataset.recDiff || 'medium');
+                }
             }
         }
 
