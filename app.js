@@ -243,7 +243,7 @@
     }
 
     function savePlayer() {
-        if (!state.player) return;
+        if (!state.player || state._resetting) return;
         // Always save to localStorage as fallback
         const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
         all[state.player.name.toLowerCase()] = state.player;
@@ -1730,7 +1730,73 @@
     }
 
     // ===================== INIT =====================
+    // Full data reset — clears localStorage + Firestore + signs out
+    async function resetAllData() {
+        if (!confirm('⚠️ This will delete ALL your progress on this device and in the cloud. Are you sure?')) {
+            if (state.player) showDashboard();
+            return;
+        }
+
+        // IMMEDIATELY prevent any further saves/syncs
+        state.player = null;
+        state.authUser = null;
+        state._resetting = true;
+
+        console.log('🗑️ Step 1: Clearing localStorage...');
+        localStorage.clear();
+        console.log('🗑️ localStorage keys remaining:', Object.keys(localStorage).length);
+
+        console.log('🗑️ Step 2: Init Firebase if needed...');
+        if (!state.useFirebase && typeof initFirebase === 'function') {
+            state.useFirebase = initFirebase();
+        }
+
+        // Get UID
+        let uid = null;
+        if (state.useFirebase && typeof firebase !== 'undefined') {
+            try {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    uid = user.uid;
+                } else {
+                    // Wait for auth
+                    const resolved = await new Promise((resolve) => {
+                        const unsub = firebase.auth().onAuthStateChanged(u => { unsub(); resolve(u); });
+                        setTimeout(() => resolve(null), 3000);
+                    });
+                    if (resolved) uid = resolved.uid;
+                }
+            } catch (e) { console.warn('Auth error:', e); }
+        }
+
+        console.log('🗑️ Step 3: Delete Firestore doc for uid:', uid);
+        if (uid && state.useFirebase && typeof FirestoreDB !== 'undefined') {
+            try {
+                const ok = await FirestoreDB.resetPlayer(uid);
+                console.log('🗑️ Firestore delete:', ok ? '✅ Success' : '❌ Failed');
+            } catch (e) { console.error('🗑️ Firestore delete error:', e); }
+        }
+
+        console.log('🗑️ Step 4: Sign out...');
+        if (state.useFirebase && typeof firebase !== 'undefined') {
+            try { await firebase.auth().signOut(); } catch (e) {}
+        }
+
+        console.log('🗑️ Step 5: Final localStorage clear + reload');
+        localStorage.clear(); // One more time for safety
+        sessionStorage.clear();
+        window.location.href = window.location.pathname; // Clean URL, no hash
+    }
+    // Expose globally for console access
+    window.resetMathChamp = resetAllData;
+
     function init() {
+        // ─── #reset route: wipe all local + cloud data ───
+        if (window.location.hash === '#reset') {
+            resetAllData();
+            return;
+        }
+
         initWelcome();
         initHintButton();
         initNextButton();
