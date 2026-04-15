@@ -31,6 +31,7 @@ const GeminiQuestionEngine = (function () {
     let _consecutive429s = 0;       // Exponential backoff: doubles cooldown each consecutive 429
     let _bgTimer = null;
     let _lastRequestTime = 0;
+    let _lastError = null;          // Last generation error (for admin UI)
     let _stats = {
         totalGenerated: 0,
         totalServed: 0,
@@ -152,7 +153,9 @@ const GeminiQuestionEngine = (function () {
             servedCount: served.size,
             hasApiKey: hasApiKey(),
             model: GEMINI_MODEL,
-            rateLimit: rateInfo
+            rateLimit: rateInfo,
+            rateLimitedUntil: _rateLimitedUntil,
+            consecutive429s: _consecutive429s
         };
     }
 
@@ -574,6 +577,7 @@ Return ONLY valid JSON.`;
             return questions;
         } catch (err) {
             console.error('❌ Gemini generation error:', err);
+            _lastError = err.message;
             _stats.totalErrors++;
             _stats.generationLog.push({
                 time: new Date().toISOString(),
@@ -878,6 +882,8 @@ Return ONLY valid JSON.`;
     return {
         setApiKey,
         getApiKey,
+        getLastError() { return _lastError; },
+        clearCooldown: _clearCooldown,
         hasApiKey,
         generateQuestions,
         getUniqueQuestions,

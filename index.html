@@ -560,6 +560,12 @@
             </div>
             <p class="admin-hint" style="text-align:center;margin:-10px 0 10px;">Model: <strong>gemini-2.5-flash-lite</strong> (Free Tier) · Batch: 10 questions · Background: every 10 min · Daily cap: 300 requests</p>
 
+            <!-- 429 Cooldown Banner -->
+            <div id="admin-cooldown-banner" class="admin-cooldown-banner" style="display:none;">
+                <span id="admin-cooldown-text">🛑 API rate-limited</span>
+                <button id="btn-admin-clear-cooldown" class="btn-small btn-warning">🔓 Clear Cooldown</button>
+            </div>
+
             <!-- Breakdown -->
             <div class="admin-section"><h3>📊 Questions by Grade</h3><div id="admin-by-grade" class="admin-breakdown"></div></div>
             <div class="admin-section"><h3>📂 Questions by Category</h3><div id="admin-by-category" class="admin-breakdown"></div></div>

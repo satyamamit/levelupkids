@@ -2330,6 +2330,19 @@
             $('#admin-total-cloud').textContent = 'N/A';
         }
 
+        // 429 Cooldown banner
+        const cooldownBanner = $('#admin-cooldown-banner');
+        if (cooldownBanner) {
+            if (stats.rateLimitedUntil && Date.now() < stats.rateLimitedUntil) {
+                const waitMin = Math.round((stats.rateLimitedUntil - Date.now()) / 60000);
+                const cooldownText = $('#admin-cooldown-text');
+                cooldownText.textContent = `🛑 API rate-limited (429 hit #${stats.consecutive429s}). Cooldown: ~${waitMin} min remaining.`;
+                cooldownBanner.style.display = 'flex';
+            } else {
+                cooldownBanner.style.display = 'none';
+            }
+        }
+
         // API Key status with model name and rate limit
         const keyStatus = $('#admin-key-status');
         const keyInput = $('#admin-api-key');
@@ -2475,6 +2488,18 @@
             };
         }
 
+        // Clear cooldown button
+        const clearCooldownBtn = $('#btn-admin-clear-cooldown');
+        if (clearCooldownBtn) {
+            clearCooldownBtn.onclick = () => {
+                if (typeof GeminiQuestionEngine !== 'undefined' && GeminiQuestionEngine.clearCooldown) {
+                    GeminiQuestionEngine.clearCooldown();
+                    showToast('✅ 429 cooldown cleared! You can generate again.', 'success');
+                    refreshAdminStats();
+                }
+            };
+        }
+
         // Generate button
         const genBtn = $('#btn-admin-generate');
         if (genBtn) {
@@ -2486,6 +2511,15 @@
 
                 if (!GeminiQuestionEngine.hasApiKey()) {
                     statusEl.textContent = '❌ Please set a Gemini API key first!';
+                    statusEl.className = 'admin-gen-status error';
+                    return;
+                }
+
+                // Check 429 cooldown
+                const stats0 = GeminiQuestionEngine.getStats();
+                if (stats0.rateLimitedUntil && Date.now() < stats0.rateLimitedUntil) {
+                    const waitMin = Math.round((stats0.rateLimitedUntil - Date.now()) / 60000);
+                    statusEl.textContent = `🛑 API rate-limited (429 cooldown). Try again in ~${waitMin} minutes.`;
                     statusEl.className = 'admin-gen-status error';
                     return;
                 }
@@ -2509,7 +2543,11 @@
                         statusEl.className = 'admin-gen-status success';
                         showToast(`🤖 Generated ${questions.length} AI questions!`, 'success');
                     } else {
-                        statusEl.textContent = '⚠️ No questions generated. Check your API key and try again.';
+                        // Show actual error instead of generic message
+                        const lastErr = GeminiQuestionEngine.getLastError ? GeminiQuestionEngine.getLastError() : null;
+                        statusEl.textContent = lastErr
+                            ? `⚠️ Generation failed: ${lastErr}`
+                            : '⚠️ No questions generated. The API returned an empty or unparseable response.';
                         statusEl.className = 'admin-gen-status error';
                     }
                 } catch (e) {
