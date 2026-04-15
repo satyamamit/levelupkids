@@ -1007,21 +1007,53 @@ const QuestionAPI = (function () {
 
   // ─── Category → Generator Mapping ────────────────────────
   function getGenerators(grade, category) {
+    const isElem = grade <= 5; // Elementary vs Middle School
     const map = {
+      // Core Math
       arithmetic: ['addition', 'subtraction', 'multiplication', 'division', 'remainderDivision', 'orderOfOperations', 'negativeNumbers', 'exponents', 'squareRoots', 'estimation', 'mentalMath'],
       logic: ['numberPattern', 'missingNumber', 'digitSum', 'divisibility', 'primeCheck', 'gcdLcm', 'factorCount', 'logicPuzzle', 'magicSquare', 'numberAnalogy'],
       geometry: ['perimeter', 'area', 'circleGeometry', 'angles', 'volume', 'coordinateDistance', 'coordinatePlane', 'unitConversion'],
-      olympiad: ['orderOfOperations', 'gcdLcm', 'factorCount', 'primeCheck', 'logicPuzzle', 'magicSquare', 'permutationCombo', 'simpleEquation', 'inequality', 'countingPrinciple', 'numberAnalogy', 'mentalMath'],
-      aime: ['aimeNumberTheory', 'aimeAlgebra', 'aimeCombinatorics', 'aimeGeometry', 'permutationCombo', 'countingPrinciple', 'gcdLcm', 'factorCount', 'simpleEquation', 'inequality'],
       word: ['wordProblem', 'ageWordProblem', 'moneyProblem', 'timeProblem', 'ratio', 'proportion', 'percentages', 'averageProblem', 'simpleProbability', 'percentChange', 'dataTable', 'unitConversion'],
       mixed: ['addition', 'subtraction', 'multiplication', 'division', 'numberPattern', 'perimeter', 'area', 'wordProblem', 'missingNumber', 'exponents', 'digitSum', 'placeValue', 'rounding', 'fractionAddition', 'decimalArithmetic', 'estimation', 'meanMedianModeRange', 'unitConversion', 'dataTable', 'numberAnalogy', 'mentalMath', 'coordinatePlane', 'fractionMultDiv', 'percentChange'],
-      // FastBridge aMath categories
-      fb_estimation: ['estimation', 'rounding', 'mentalMath'],
-      fb_data: ['meanMedianModeRange', 'dataTable', 'averageProblem'],
-      fb_measurement: ['unitConversion', 'perimeter', 'area', 'volume'],
-      fb_number_sense: ['numberPattern', 'numberAnalogy', 'mentalMath', 'missingNumber'],
-      fb_probability: ['simpleProbability', 'countingPrinciple', 'permutationCombo'],
-      fb_math_mixed: ['estimation', 'meanMedianModeRange', 'unitConversion', 'numberAnalogy', 'mentalMath', 'simpleProbability', 'dataTable', 'numberPattern', 'rounding'],
+      // Competition Prep (uses olympiad-level generators as fallback; AI provides the real competition questions)
+      olympiad: ['orderOfOperations', 'gcdLcm', 'factorCount', 'primeCheck', 'logicPuzzle', 'magicSquare', 'permutationCombo', 'simpleEquation', 'inequality', 'countingPrinciple', 'numberAnalogy', 'mentalMath'],
+      moems: isElem
+        ? ['numberPattern', 'logicPuzzle', 'missingNumber', 'digitSum', 'factorCount', 'wordProblem', 'mentalMath']
+        : ['gcdLcm', 'factorCount', 'primeCheck', 'logicPuzzle', 'permutationCombo', 'countingPrinciple', 'simpleEquation'],
+      noetic: isElem
+        ? ['numberPattern', 'missingNumber', 'logicPuzzle', 'wordProblem', 'digitSum', 'mentalMath', 'estimation']
+        : ['numberPattern', 'logicPuzzle', 'gcdLcm', 'simpleEquation', 'inequality', 'permutationCombo', 'countingPrinciple'],
+      imc: isElem
+        ? ['logicPuzzle', 'numberPattern', 'gcdLcm', 'factorCount', 'countingPrinciple', 'wordProblem', 'mentalMath', 'digitSum']
+        : ['gcdLcm', 'factorCount', 'primeCheck', 'permutationCombo', 'countingPrinciple', 'simpleEquation', 'inequality', 'aimeNumberTheory', 'aimeAlgebra'],
+      aime: ['aimeNumberTheory', 'aimeAlgebra', 'aimeCombinatorics', 'aimeGeometry', 'permutationCombo', 'countingPrinciple', 'gcdLcm', 'factorCount', 'simpleEquation', 'inequality'],
+      // Test Prep (LWSD)
+      fastbridge: ['estimation', 'rounding', 'mentalMath', 'meanMedianModeRange', 'dataTable', 'unitConversion', 'numberPattern', 'numberAnalogy', 'simpleProbability'],
+      highcap: ['numberAnalogy', 'numberPattern', 'missingNumber', 'logicPuzzle', 'magicSquare', 'mentalMath', 'digitSum'],
+      cogat: isElem
+        ? ['numberAnalogy', 'numberPattern', 'missingNumber', 'logicPuzzle', 'digitSum', 'mentalMath', 'magicSquare']
+        : ['numberAnalogy', 'numberPattern', 'logicPuzzle', 'missingNumber', 'simpleEquation', 'permutationCombo', 'magicSquare'],
+      // Additional Math Competitions
+      kangaroo: isElem
+        ? ['logicPuzzle', 'numberPattern', 'missingNumber', 'wordProblem', 'perimeter', 'area', 'mentalMath']
+        : ['logicPuzzle', 'numberPattern', 'permutationCombo', 'countingPrinciple', 'wordProblem', 'area', 'coordinatePlane'],
+      mathcounts: ['gcdLcm', 'factorCount', 'primeCheck', 'simpleEquation', 'inequality', 'permutationCombo', 'countingPrinciple', 'percentages', 'simpleProbability', 'area'],
+      math_challenge: isElem
+        ? ['mentalMath', 'estimation', 'orderOfOperations', 'numberPattern', 'wordProblem', 'missingNumber', 'digitSum', 'fractionAddition']
+        : ['orderOfOperations', 'simpleEquation', 'gcdLcm', 'percentages', 'wordProblem', 'area', 'fractionMultDiv', 'mentalMath'],
+      math_is_cool: isElem
+        ? ['mentalMath', 'estimation', 'logicPuzzle', 'numberPattern', 'wordProblem', 'missingNumber', 'rounding', 'placeValue']
+        : ['mentalMath', 'estimation', 'simpleEquation', 'logicPuzzle', 'percentages', 'area', 'simpleProbability', 'gcdLcm'],
+      singapore: isElem
+        ? ['wordProblem', 'mentalMath', 'numberPattern', 'missingNumber', 'ratio', 'estimation', 'fractionAddition']
+        : ['wordProblem', 'ratio', 'proportion', 'percentages', 'fractionMultDiv', 'simpleEquation', 'percentChange'],
+      // English exam categories — served from ENGLISH_QUESTIONS bank + AI
+      fb_reading: [],  // FastBridge aReading — mix of vocabulary, grammar, reading, spelling
+      spelling_bee: [], // Scripps Spelling Bee style
+      vocabulary: [],
+      grammar: [],
+      reading: [],
+      spelling: [],
     };
     const gens = map[category] || map.mixed;
     return gens.filter(g => typeof Gen[g] === 'function');
@@ -1046,9 +1078,129 @@ const QuestionAPI = (function () {
   }
 
   // ─── Local question bank lookup ──────────────────────────
+  const ENGLISH_CATS = ['vocabulary', 'grammar', 'reading', 'spelling'];
+  const ENGLISH_EXAM_CATS = ['fb_reading', 'spelling_bee'];
+
   function getLocalQuestions(grade, category, count) {
-    if (typeof QUESTIONS === 'undefined') return [];
     const pool = [];
+
+    // fb_reading = FastBridge aReading → mix all English subcategories
+    if (category === 'fb_reading') {
+      if (typeof ENGLISH_QUESTIONS !== 'undefined') {
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = ENGLISH_QUESTIONS[g];
+          if (gData) {
+            for (const sub of ENGLISH_CATS) {
+              if (gData[sub]) pool.push(...gData[sub]);
+            }
+          }
+        }
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // spelling_bee = heavy on spelling, supplemented with vocabulary
+    if (category === 'spelling_bee') {
+      if (typeof ENGLISH_QUESTIONS !== 'undefined') {
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = ENGLISH_QUESTIONS[g];
+          if (gData) {
+            if (gData.spelling) pool.push(...gData.spelling);
+            if (gData.vocabulary) pool.push(...gData.vocabulary);
+          }
+        }
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // English subcategories → use ENGLISH_QUESTIONS bank
+    if (ENGLISH_CATS.includes(category)) {
+      if (typeof ENGLISH_QUESTIONS !== 'undefined') {
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = ENGLISH_QUESTIONS[g];
+          if (gData && gData[category]) {
+            pool.push(...gData[category]);
+          }
+        }
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // Singapore Math → pull Singapore Math tagged questions
+    if (category === 'singapore') {
+      if (typeof QUESTIONS !== 'undefined') {
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = QUESTIONS[g] || {};
+          for (const cat of Object.keys(gData)) {
+            (gData[cat] || []).forEach(q => {
+              if (q.source && q.source.includes('Singapore')) pool.push(q);
+            });
+          }
+        }
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // Math Kangaroo → pull Kangaroo-tagged questions
+    if (category === 'kangaroo') {
+      if (typeof QUESTIONS !== 'undefined') {
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = QUESTIONS[g] || {};
+          for (const cat of Object.keys(gData)) {
+            (gData[cat] || []).forEach(q => {
+              if (q.source && q.source.includes('Kangaroo')) pool.push(q);
+            });
+          }
+        }
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // CogAT → pull CogAT and HCP tagged questions (number analogies, patterns, etc.)
+    if (category === 'cogat') {
+      if (typeof QUESTIONS !== 'undefined') {
+        const cogCats = ['arithmetic', 'logic', 'geometry', 'word'];
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = QUESTIONS[g] || {};
+          for (const cat of cogCats) {
+            (gData[cat] || []).forEach(q => {
+              if (q.source && (q.source.includes('CogAT') || q.source.includes('HCP'))) {
+                pool.push(q);
+              }
+            });
+          }
+        }
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // FastBridge aMath → pull FastBridge/HCP/CogAT tagged questions
+    if (category === 'fastbridge') {
+      if (typeof QUESTIONS !== 'undefined') {
+        const fbCats = ['arithmetic', 'geometry', 'word'];
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        for (const g of searchGrades) {
+          const gData = QUESTIONS[g] || {};
+          for (const cat of fbCats) {
+            (gData[cat] || []).forEach(q => {
+              if (q.source && (q.source.includes('FastBridge') || q.source.includes('HCP') || q.source.includes('CogAT'))) {
+                pool.push(q);
+              }
+            });
+          }
+        }
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // Regular math categories → use QUESTIONS bank
+    if (typeof QUESTIONS === 'undefined') return [];
     const gradeData = QUESTIONS[grade] || {};
 
     if (category === 'mixed') {
@@ -1084,24 +1236,29 @@ const QuestionAPI = (function () {
     const localQs = getLocalQuestions(grade, category, localCount);
     questions.push(...localQs);
 
-    // 2) Generate dynamic questions (30% of count — grade-pushed generators)
-    const genCount = Math.ceil(count * 0.3);
-    const genQs = generateQuestions(grade, category, genCount);
-    questions.push(...genQs);
+    // English categories don't have math generators or external APIs
+    const isEnglish = ENGLISH_CATS.includes(category) || ENGLISH_EXAM_CATS.includes(category);
 
-    // 3) Try external APIs for remaining (20% of count)
-    const apiCount = Math.max(2, count - questions.length);
-    try {
-      const diff = grade <= 2 ? 'easy' : grade <= 5 ? 'medium' : 'hard';
-      const apiQs = await fetchOpenTDB(apiCount, diff);
-      questions.push(...apiQs);
-    } catch (e) { /* API failed, no problem */ }
+    if (!isEnglish) {
+      // 2) Generate dynamic questions (30% of count — grade-pushed generators)
+      const genCount = Math.ceil(count * 0.3);
+      const genQs = generateQuestions(grade, category, genCount);
+      questions.push(...genQs);
 
-    // 4) If still short, generate more
-    while (questions.length < count) {
-      const extra = generateQuestions(grade, category, count - questions.length);
-      questions.push(...extra);
-      if (extra.length === 0) break; // safety valve
+      // 3) Try external APIs for remaining (20% of count)
+      const apiCount = Math.max(2, count - questions.length);
+      try {
+        const diff = grade <= 2 ? 'easy' : grade <= 5 ? 'medium' : 'hard';
+        const apiQs = await fetchOpenTDB(apiCount, diff);
+        questions.push(...apiQs);
+      } catch (e) { /* API failed, no problem */ }
+
+      // 4) If still short, generate more
+      while (questions.length < count) {
+        const extra = generateQuestions(grade, category, count - questions.length);
+        questions.push(...extra);
+        if (extra.length === 0) break; // safety valve
+      }
     }
 
     // Shuffle final set and return exactly count

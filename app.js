@@ -1,5 +1,5 @@
 // =============================================
-// LevelUpKids v2 — Full Game Engine
+// MathChamp v2 — Full Game Engine
 // Leaderboard · XP & Levels · Daily Challenges
 // Combo Streaks · Enhanced Rewards · Unlimited Questions
 // =============================================
@@ -7,82 +7,47 @@
 (function () {
     'use strict';
 
-    // ===================== THEME TOGGLE =====================
-    const THEME_KEY = 'levelupkids_theme';
-
-    function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem(THEME_KEY, theme);
-        // Update all toggle button icons
-        const icon = theme === 'light' ? '☀️' : '🌙';
-        document.querySelectorAll('.btn-theme-toggle').forEach(btn => {
-            btn.textContent = icon;
-            btn.title = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
-        });
-    }
-
-    function toggleTheme() {
-        const current = document.documentElement.getAttribute('data-theme') || 'dark';
-        applyTheme(current === 'dark' ? 'light' : 'dark');
-    }
-
-    // Apply saved theme immediately (default = dark)
-    (function initTheme() {
-        const saved = localStorage.getItem(THEME_KEY) || 'dark';
-        document.documentElement.setAttribute('data-theme', saved);
-        // Icons will be set once DOM is ready
-    })();
-
-    document.addEventListener('DOMContentLoaded', () => {
-        // Set initial icons
-        const saved = localStorage.getItem(THEME_KEY) || 'dark';
-        applyTheme(saved);
-        // Bind all toggle buttons
-        document.querySelectorAll('.btn-theme-toggle').forEach(btn => {
-            btn.addEventListener('click', toggleTheme);
-        });
-    });
-
-    // ===================== SUBJECT TAB SWITCHER (global) =====================
-    window.switchSubject = function(subject) {
-        document.querySelectorAll('.subject-tab').forEach(function(t) {
-            if (t.dataset.subject === subject) t.classList.add('active');
-            else t.classList.remove('active');
-        });
-        document.querySelectorAll('.subject-panel').forEach(function(p) {
-            if (p.dataset.subject === subject) p.classList.add('active');
-            else p.classList.remove('active');
-        });
-    };
-
     // ===================== CONSTANTS =====================
     const POINTS_MAP = { easy: 5, medium: 10, hard: 20 };
-    const WRONG_PENALTY_MAP = { easy: -1, medium: -2, hard: -5 };
     const HINT_PENALTY = 2;
     const QUESTIONS_PER_QUIZ = 10;
     const TIMED_SECONDS = 90;
     const DAILY_CHALLENGE_COUNT = 5;
 
     const CATEGORY_NAMES = {
-        arithmetic: '🔢 Number Ninja',
-        logic: '🧩 Logic Legend',
-        geometry: '📐 Shape Shifter',
-        olympiad: '🏆 Olympiad Crusher',
-        aime: '🔥 AIME Challenge',
-        word: '📖 Word Wizard',
-        mixed: '🎲 Random Blitz',
-        english_vocabulary: '📚 Vocabulary Builder',
-        english_grammar: '✏️ Grammar Pro',
-        english_reading: '📖 Reading Champ',
-        english_spelling: '🔤 Spelling Bee',
-        english_mixed: '🇦 English Blitz',
-        fb_estimation: '🎯 Estimation Station',
-        fb_data: '📊 Data Detective',
-        fb_measurement: '📏 Measurement Master',
-        fb_number_sense: '🧠 Number Sense',
-        fb_probability: '🎲 Probability Pro',
-        fb_math_mixed: '⚡ aMath Blitz'
+        // ─── Math Exams ───────────────────────────────────────
+        fastbridge: '📋 FastBridge aMath',
+        moems: '🏅 MOEMS',
+        noetic: '✨ Noetic Math',
+        olympiad: '🏆 Math Olympiad',
+        mathcounts: '📐 Mathcounts',
+        kangaroo: '🦘 Math Kangaroo',
+        highcap: '🎯 High Cap Screening',
+        cogat: '🧩 CogAT',
+        imc: '🌍 IMC',
+        aime: '🧠 AIME',
+        math_challenge: '💪 Math Challenge',
+        math_is_cool: '❄️ Math is Cool',
+        singapore: '🇸🇬 Singapore Math',
+        mixed: '🎲 Practice Blitz',
+        // ─── English Exams ───────────────────────────────────
+        fb_reading: '📖 FastBridge aReading',
+        spelling_bee: '🐝 Spelling Bee',
+        // ─── Internal keys (still used for routing) ──────────
+        arithmetic: '🔢 Arithmetic',
+        logic: '🧩 Logic',
+        geometry: '📐 Geometry',
+        word: '📖 Word Problems',
+        vocabulary: '📚 Vocabulary',
+        grammar: '✏️ Grammar',
+        reading: '📖 Reading',
+        spelling: '🔤 Spelling',
     };
+
+    // ─── ADMIN EMAILS (users who can see AI Admin panel) ─────
+    const ADMIN_EMAILS = [
+        'amit.satyam@gmail.com'
+    ];
 
     // ─── XP & LEVEL SYSTEM ─────────────────────────────────
     const XP_PER_CORRECT = { easy: 10, medium: 20, hard: 40 };
@@ -128,47 +93,46 @@
 
     // ─── ENHANCED REWARDS ───────────────────────────────────
     const REWARDS = {
-        activities: [
-            { id: 'gaming_time', emoji: '🎮', name: '1 Hour Extra Gaming', desc: 'Extra gaming session!', cost: 500, tier: 'common' },
-            { id: 'bike_ride', emoji: '🚲', name: 'Bike Ride Adventure', desc: 'Go on a bike ride to the park!', cost: 400, tier: 'common' },
-            { id: 'baking_day', emoji: '🧁', name: 'Baking Day', desc: 'Bake cookies or a cake together!', cost: 750, tier: 'rare' },
-            { id: 'board_game', emoji: '🎲', name: 'Board Game Night', desc: 'Pick the game for family game night!', cost: 350, tier: 'common' },
-            { id: 'craft_time', emoji: '✂️', name: 'Craft Project', desc: 'Pick a fun craft to make!', cost: 500, tier: 'common' },
-            { id: 'science_exp', emoji: '🧪', name: 'Science Experiment', desc: 'Do a cool science experiment at home!', cost: 750, tier: 'rare' },
+        gaming: [
+            { id: 'roblox_100', emoji: '🎮', name: '100 Robux', desc: 'Roblox digital currency!', cost: 300, tier: 'rare' },
+            { id: 'roblox_400', emoji: '🎮', name: '400 Robux', desc: 'Even more Roblox fun!', cost: 1000, tier: 'epic' },
+            { id: 'minecraft', emoji: '⛏️', name: 'Minecraft Skin Pack', desc: 'Cool skins for Minecraft', cost: 250, tier: 'rare' },
+            { id: 'vbucks_1000', emoji: '🎯', name: '1000 V-Bucks', desc: 'Fortnite V-Bucks card', cost: 800, tier: 'epic' },
+            { id: 'nintendo_eshop', emoji: '🕹️', name: '$10 Nintendo eShop', desc: 'Get new games!', cost: 500, tier: 'rare' },
+            { id: 'gaming_time', emoji: '🎮', name: '1 Hour Extra Gaming', desc: 'Extra gaming session!', cost: 150, tier: 'common' },
         ],
-        privileges: [
-            { id: 'extra_screen', emoji: '📱', name: '30 Min Extra Screen Time', desc: 'Extra screen time for a day!', cost: 400, tier: 'common' },
-            { id: 'no_chores', emoji: '🏖️', name: 'Skip Chores Day', desc: 'One day free from chores!', cost: 600, tier: 'common' },
-            { id: 'stay_up_late', emoji: '🌙', name: 'Stay Up 30 Min Late', desc: 'Push bedtime by 30 minutes!', cost: 400, tier: 'common' },
-            { id: 'movie_night', emoji: '🎬', name: 'Movie Night Pick', desc: 'You pick the family movie!', cost: 800, tier: 'rare' },
-            { id: 'restaurant', emoji: '🍕', name: 'Restaurant Choice', desc: 'Pick where the family eats!', cost: 1000, tier: 'rare' },
-            { id: 'breakfast_bed', emoji: '🥞', name: 'Breakfast in Bed', desc: 'Get breakfast served in bed!', cost: 500, tier: 'common' },
-            { id: 'no_veggies', emoji: '🍩', name: 'No Veggies Dinner', desc: 'One dinner with no vegetables!', cost: 400, tier: 'common' },
-            { id: 'music_choice', emoji: '🎵', name: 'DJ for a Day', desc: 'Pick the music in the car all day!', cost: 350, tier: 'common' },
-            { id: 'homework_break', emoji: '📚', name: 'Homework-Free Evening', desc: 'One evening off from extra homework!', cost: 800, tier: 'rare' },
-            { id: 'sleepover', emoji: '🏕️', name: 'Sleepover Permission', desc: 'Invite a friend for a sleepover!', cost: 1500, tier: 'epic' },
-            { id: 'yes_day', emoji: '🎉', name: 'YES Day!', desc: 'Parents say YES to (almost) everything for a day!', cost: 5000, tier: 'legendary' },
-            { id: 'boss_of_house', emoji: '👑', name: 'Boss of the House', desc: 'You make all the family decisions for an evening!', cost: 3000, tier: 'legendary' },
-            { id: 'dessert_first', emoji: '🍰', name: 'Dessert Before Dinner', desc: 'Eat dessert first — rules reversed!', cost: 300, tier: 'common' },
-            { id: 'pajama_day', emoji: '🛌', name: 'Pajama Day', desc: 'Stay in PJs all day — no getting dressed!', cost: 350, tier: 'common' },
-            { id: 'skip_bath', emoji: '🛁', name: 'Skip Bath Night', desc: 'One night off from bath/shower!', cost: 300, tier: 'common' },
-            { id: 'backseat_driver', emoji: '🚗', name: 'Backseat Navigator', desc: 'You pick the route on the next car ride!', cost: 250, tier: 'common' },
-            { id: 'lunch_choice', emoji: '🍱', name: 'Lunch Box Pick', desc: 'You design your own lunch for a week!', cost: 600, tier: 'rare' },
-            { id: 'stay_up_1hr', emoji: '🌃', name: 'Stay Up 1 Hour Late', desc: 'Push bedtime by a full hour!', cost: 800, tier: 'rare' },
-            { id: 'friend_playdate', emoji: '🤝', name: 'Friend Playdate', desc: 'Invite a friend over to play!', cost: 700, tier: 'rare' },
-            { id: 'no_reading', emoji: '📵', name: 'Screen Day Pass', desc: 'No reading time — extra screen time instead!', cost: 1000, tier: 'epic' },
+        giftcards: [
+            { id: 'amazon_5', emoji: '📦', name: '$5 Amazon Gift Card', desc: 'Shop anything on Amazon!', cost: 200, tier: 'common' },
+            { id: 'amazon_10', emoji: '📦', name: '$10 Amazon Gift Card', desc: 'More shopping power!', cost: 400, tier: 'rare' },
+            { id: 'amazon_25', emoji: '📦', name: '$25 Amazon Gift Card', desc: 'Big shopping spree!', cost: 1000, tier: 'epic' },
+            { id: 'amazon_50', emoji: '📦', name: '$50 Amazon Gift Card', desc: 'The ultimate Amazon reward!', cost: 2000, tier: 'legendary' },
+            { id: 'target_10', emoji: '🎯', name: '$10 Target Gift Card', desc: 'Target shopping!', cost: 400, tier: 'rare' },
+            { id: 'walmart_10', emoji: '🛒', name: '$10 Walmart Gift Card', desc: 'Walmart goodies!', cost: 400, tier: 'rare' },
         ],
         toys: [
-            { id: 'sticker_pack', emoji: '🌟', name: 'Sticker Pack', desc: 'A pack of 10 awesome stickers!', cost: 200, tier: 'common' },
-            { id: 'pokemon_cards', emoji: '🃏', name: 'Pokémon Card Pack', desc: '5 random Pokémon cards!', cost: 800, tier: 'rare' },
-            { id: 'puzzle_cube', emoji: '🧊', name: 'Speed Cube', desc: 'A competition-grade Rubik\'s cube', cost: 600, tier: 'common' },
-            { id: 'art_supplies', emoji: '🎨', name: 'Art Supply Set', desc: 'Markers, crayons & more!', cost: 1200, tier: 'rare' },
-            { id: 'book_choice', emoji: '📖', name: 'Book of Your Choice', desc: 'Pick any book from the bookstore!', cost: 1000, tier: 'rare' },
-            { id: 'lego_set', emoji: '🧱', name: 'LEGO Mini Set', desc: 'Build & learn with LEGO!', cost: 2000, tier: 'epic' },
+            { id: 'sticker_pack', emoji: '🌟', name: 'Sticker Pack', desc: 'A pack of 10 awesome stickers!', cost: 50, tier: 'common' },
+            { id: 'pokemon_cards', emoji: '🃏', name: 'Pokémon Card Pack', desc: '5 random Pokémon cards!', cost: 200, tier: 'rare' },
+            { id: 'puzzle_cube', emoji: '🧊', name: 'Speed Cube', desc: 'A competition-grade Rubik\'s cube', cost: 150, tier: 'common' },
+            { id: 'lego_set', emoji: '🧱', name: 'LEGO Mini Set', desc: 'Build & learn with LEGO!', cost: 500, tier: 'epic' },
+            { id: 'science_kit', emoji: '🔬', name: 'Science Kit', desc: 'Cool experiments at home!', cost: 750, tier: 'epic' },
+            { id: 'art_supplies', emoji: '🎨', name: 'Art Supply Set', desc: 'Markers, crayons & more!', cost: 300, tier: 'rare' },
+        ],
+        privileges: [
+            { id: 'extra_screen', emoji: '📱', name: '30 Min Extra Screen Time', desc: 'Extra screen time for a day!', cost: 100, tier: 'common' },
+            { id: 'no_chores', emoji: '🏖️', name: 'Skip Chores Day', desc: 'One day free from chores!', cost: 150, tier: 'common' },
+            { id: 'movie_night', emoji: '🎬', name: 'Movie Night Pick', desc: 'You pick the family movie!', cost: 200, tier: 'rare' },
+            { id: 'restaurant', emoji: '🍕', name: 'Restaurant Choice', desc: 'Pick where the family eats!', cost: 250, tier: 'rare' },
+            { id: 'sleepover', emoji: '🏕️', name: 'Sleepover Permission', desc: 'Invite a friend for a sleepover!', cost: 400, tier: 'epic' },
+            { id: 'ice_cream', emoji: '🍦', name: 'Ice Cream Trip', desc: 'A trip to the ice cream shop!', cost: 120, tier: 'common' },
+            { id: 'stay_up_late', emoji: '🌙', name: 'Stay Up 30 Min Late', desc: 'Push bedtime by 30 minutes!', cost: 100, tier: 'common' },
         ],
         legendary: [
-            { id: 'ice_cream', emoji: '🍦', name: 'Ice Cream Trip', desc: 'A trip to the ice cream shop!', cost: 500, tier: 'common' },
-            { id: 'pizza_party', emoji: '🍕', name: 'Pizza Party', desc: 'Invite friends for pizza!', cost: 5000, tier: 'legendary' },
+            { id: 'trip_choice', emoji: '🎢', name: 'Fun Trip Choice', desc: 'Choose a family outing!', cost: 1500, tier: 'legendary' },
+            { id: 'ipad_time', emoji: '📲', name: '1 Hour iPad Time', desc: 'Full hour of iPad freedom!', cost: 500, tier: 'epic' },
+            { id: 'pet_day', emoji: '🐶', name: 'Pet Store Visit', desc: 'Visit the pet store (just looking!)', cost: 600, tier: 'epic' },
+            { id: 'trampoline', emoji: '🤸', name: 'Trampoline Park Visit', desc: 'Jump around for an hour!', cost: 1000, tier: 'legendary' },
+            { id: 'pizza_party', emoji: '🍕', name: 'Pizza Party', desc: 'Invite friends for pizza!', cost: 2000, tier: 'legendary' },
+            { id: 'toy_store_50', emoji: '🏪', name: '$50 Toy Store Trip', desc: 'The ULTIMATE reward!', cost: 5000, tier: 'legendary' },
         ]
     };
 
@@ -261,109 +225,7 @@
         if (el) el.classList.add('active');
         state.currentScreen = screenId;
         window.scrollTo(0, 0);
-
-        // Highlight active tab in top tab strip
-        const tabMap = { dashboard: 'home', leaderboard: 'leaderboard', rewards: 'rewards', achievements: 'achievements', progress: 'progress' };
-        const activeTab = tabMap[screenId] || '';
-        $$('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
-
-        // Update URL hash for routing (skip quiz/results — transient screens)
-        const routableScreens = ['dashboard', 'leaderboard', 'rewards', 'achievements', 'progress'];
-        if (routableScreens.includes(screenId)) {
-            const newHash = '#' + screenId;
-            if (window.location.hash !== newHash) {
-                history.pushState(null, '', newHash);
-            }
-        } else if (screenId === 'welcome') {
-            if (window.location.hash) {
-                history.pushState(null, '', window.location.pathname);
-            }
-        }
     }
-
-    // ─── Hash-based Router ──────────────────────────────────
-    function navigateToHash(hash) {
-        const route = (hash || '').replace('#', '');
-        // Allow reset even without a player
-        if (route === 'reset') { resetAllData(); return; }
-        if (!state.player) return; // Can't route without a player
-        switch (route) {
-            case 'dashboard':    showDashboard(); break;
-            case 'leaderboard':  showLeaderboard(); break;
-            case 'rewards':      showRewardsStore(); break;
-            case 'achievements': showAchievements(); break;
-            case 'progress':     showProgress(); break;
-            default:             showDashboard(); break;
-        }
-    }
-
-    // Full data reset — clears localStorage + Firestore
-    async function resetAllData() {
-        if (!confirm('⚠️ This will delete ALL your progress on this device and in the cloud. Are you sure?')) {
-            if (state.player) showDashboard();
-            return;
-        }
-
-        // IMMEDIATELY prevent any further saves/syncs
-        state.player = null;
-        state.authUser = null;
-        state._resetting = true;
-
-        console.log('🗑️ Step 1: Clearing localStorage...');
-        localStorage.clear();
-        // Double-check
-        console.log('🗑️ localStorage keys remaining:', Object.keys(localStorage).length);
-
-        console.log('🗑️ Step 2: Init Firebase if needed...');
-        if (!state.useFirebase && typeof initFirebase === 'function') {
-            state.useFirebase = initFirebase();
-        }
-
-        // Get UID
-        let uid = null;
-        if (state.useFirebase && typeof firebase !== 'undefined') {
-            try {
-                const user = firebase.auth().currentUser;
-                if (user) {
-                    uid = user.uid;
-                } else {
-                    // Wait for auth
-                    const resolved = await new Promise((resolve) => {
-                        const unsub = firebase.auth().onAuthStateChanged(u => { unsub(); resolve(u); });
-                        setTimeout(() => resolve(null), 3000);
-                    });
-                    if (resolved) uid = resolved.uid;
-                }
-            } catch (e) { console.warn('Auth error:', e); }
-        }
-
-        console.log('🗑️ Step 3: Delete Firestore doc for uid:', uid);
-        if (uid && state.useFirebase && typeof FirestoreDB !== 'undefined') {
-            try {
-                const ok = await FirestoreDB.resetPlayer(uid);
-                console.log('🗑️ Firestore delete:', ok ? '✅ Success' : '❌ Failed');
-            } catch (e) { console.error('🗑️ Firestore delete error:', e); }
-        }
-
-        console.log('🗑️ Step 4: Sign out...');
-        if (state.useFirebase && typeof firebase !== 'undefined') {
-            try { await firebase.auth().signOut(); } catch (e) {}
-        }
-
-        console.log('🗑️ Step 5: Final localStorage clear + reload');
-        localStorage.clear(); // One more time for safety
-        sessionStorage.clear();
-        window.location.href = window.location.pathname; // Clean URL, no hash
-    }
-    // Expose globally for console access
-    window.resetLevelUpKids = resetAllData;
-
-    // Handle browser back/forward
-    window.addEventListener('popstate', () => {
-        if (state.player) {
-            navigateToHash(window.location.hash);
-        }
-    });
 
     // ===================== PLAYER DATA =====================
     function getDefaultPlayer(name, grade) {
@@ -381,52 +243,20 @@
     }
 
     function savePlayer() {
-        if (!state.player || state._resetting) return;
-        // Always save to localStorage as fallback (keyed by name AND uid if available)
-        const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
+        if (!state.player) return;
+        // Always save to localStorage as fallback
+        const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
         all[state.player.name.toLowerCase()] = state.player;
-        // Also store by uid so we can find it on reload
-        if (state.authUser && state.authUser.uid) {
-            all['__uid__' + state.authUser.uid] = state.player;
-        }
-        localStorage.setItem('levelupkids_players', JSON.stringify(all));
-        // Remember last player for auto-login
-        localStorage.setItem('levelupkids_last_player', state.player.name);
+        localStorage.setItem('mathchamp_players', JSON.stringify(all));
 
-        // Also save to Firestore if Firebase is active and user is signed in
-        if (state.useFirebase && state.authUser && typeof FirestoreDB !== 'undefined') {
-            showSyncStatus('syncing');
-            // Clean out non-serializable fields before saving
-            const cleanPlayer = { ...state.player };
-            delete cleanPlayer.updatedAt; // Firestore will set this via serverTimestamp
-            delete cleanPlayer._priority;
+        // Also save to Firestore if Firebase is active
+        if (state.useFirebase && typeof FirestoreDB !== 'undefined') {
             FirestoreDB.savePlayer({
-                ...cleanPlayer,
+                ...state.player,
                 photoURL: state.authUser?.photoURL || null
             }).then(ok => {
-                if (ok) {
-                    showSyncStatus('synced');
-                    console.log('☁️ Player data synced to cloud:', {
-                        name: state.player.name,
-                        totalXP: state.player.totalXP,
-                        totalQuizzes: state.player.totalQuizzes,
-                        points: state.player.points
-                    });
-                } else {
-                    showSyncStatus('offline');
-                    console.warn('⚠️ Firestore save returned false');
-                }
-            }).catch(err => {
-                console.error('❌ Sync error:', err);
-                showSyncStatus('offline');
-            });
-        } else {
-            // Log why cloud save was skipped
-            if (!state.useFirebase) console.log('💾 Local only (Firebase not initialized)');
-            else if (!state.authUser) {
-                console.log('💾 Local only (not signed in yet) — marking pending sync');
-                state._pendingCloudSync = true; // Will be picked up when auth resolves
-            }
+                if (ok) showSyncStatus('synced');
+            }).catch(() => showSyncStatus('offline'));
         }
     }
 
@@ -444,82 +274,13 @@
         el._timer = setTimeout(() => { el.className = 'sync-status'; }, 2000);
     }
 
-    // Force a full cloud sync: pull cloud data, merge with local, save everywhere
-    let _syncInProgress = false;
-    async function forceCloudSync(silent) {
-        if (_syncInProgress || state._resetting) { console.log('🔄 Sync skipped'); return; }
-        if (!state.useFirebase || !state.authUser || !state.player) {
-            if (!silent) showToast('Not signed in to Google — cannot sync', 'error');
-            return;
-        }
-        _syncInProgress = true;
-        const syncBtn = $('#btn-sync-now');
-        if (syncBtn) syncBtn.classList.add('syncing');
-        showSyncStatus('syncing');
-        console.log('🔄 Force sync started...');
-        try {
-            const cloudPlayer = await FirestoreDB.loadPlayer(state.authUser.uid);
-            if (cloudPlayer && cloudPlayer.name !== 'RESET' && (cloudPlayer.totalXP || 0) > 0) {
-                delete cloudPlayer.updatedAt;
-                console.log('🔄 Cloud:', { xp: cloudPlayer.totalXP, quizzes: cloudPlayer.totalQuizzes, pts: cloudPlayer.points });
-                console.log('🔄 Local:', { xp: state.player.totalXP, quizzes: state.player.totalQuizzes, pts: state.player.points });
-                const merged = mergePlayerData(cloudPlayer, state.player);
-                migratePlayer(merged);
-                console.log('🔄 Merged:', { xp: merged.totalXP, quizzes: merged.totalQuizzes, pts: merged.points });
-                state.player = merged;
-            } else {
-                console.log('🔄 No cloud data found, pushing local to cloud');
-            }
-            // Save everywhere (localStorage + Firestore)
-            savePlayer();
-            if (!silent) showToast('☁️ Data synced!', 'success');
-            // Refresh current view
-            if (state.currentScreen === 'dashboard') showDashboard();
-            else if (state.currentScreen === 'leaderboard') showLeaderboard();
-        } catch (e) {
-            console.error('🔄 Force sync failed:', e);
-            if (!silent) showToast('Sync failed — check connection', 'error');
-            showSyncStatus('offline');
-        } finally {
-            _syncInProgress = false;
-            if (syncBtn) syncBtn.classList.remove('syncing');
-        }
-    }
-
-    // Periodic sync every 2 minutes when signed in
-    setInterval(() => {
-        if (state.useFirebase && state.authUser && state.player && document.visibilityState === 'visible') {
-            forceCloudSync(true);
-        }
-    }, 120000);
-
-    // Sync when tab becomes visible again (e.g. switching from phone to laptop)
-    // Debounce: only if tab was hidden for at least 5 seconds
-    let _lastHiddenAt = 0;
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            _lastHiddenAt = Date.now();
-        } else if (document.visibilityState === 'visible' && state.useFirebase && state.authUser && state.player) {
-            const hiddenFor = Date.now() - _lastHiddenAt;
-            if (_lastHiddenAt > 0 && hiddenFor > 5000) {
-                console.log('👁️ Tab became visible after', Math.round(hiddenFor / 1000), 's — syncing...');
-                forceCloudSync(true);
-            }
-        }
-    });
-
     function loadPlayer(name) {
-        const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
-        // Check by name first, then by uid if authUser exists
-        let player = all[name.toLowerCase()] || null;
-        if (!player && state.authUser) {
-            player = all['__uid__' + state.authUser.uid] || null;
-        }
-        return player;
+        const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
+        return all[name.toLowerCase()] || null;
     }
 
     function getAllPlayerNames() {
-        const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
+        const all = JSON.parse(localStorage.getItem('mathchamp_players') || '{}');
         return Object.keys(all).map(k => all[k].name);
     }
 
@@ -549,65 +310,6 @@
         savePlayer();
     }
 
-    // ─── Merge two player data objects, keeping the best of each ──
-    function mergePlayerData(a, b) {
-        const merged = { ...a };
-
-        // Additive stats — take the max (both are cumulative totals, so higher is more up-to-date)
-        const maxFields = [
-            'totalXP', 'totalQuizzes', 'totalCorrect', 'totalAttempted',
-            'totalPointsEarned', 'maxStreak', 'perfectScores',
-            'quizzesWithNoHints', 'blitzHighAccuracy', 'hardCorrect', 'maxCombo',
-            'dailyChallengesCompleted', 'totalRedemptions'
-        ];
-        for (const key of maxFields) {
-            merged[key] = Math.max(a[key] || 0, b[key] || 0);
-        }
-
-        // Spendable points: pick from whichever side has done more total activity
-        // (more quizzes = more recent state of truth)
-        const aActivity = (a.totalQuizzes || 0) + (a.totalRedemptions || 0);
-        const bActivity = (b.totalQuizzes || 0) + (b.totalRedemptions || 0);
-        if (bActivity > aActivity) {
-            merged.points = b.points || 0;
-            merged.streak = b.streak || 0;
-        } else {
-            merged.points = a.points || 0;
-            merged.streak = a.streak || 0;
-        }
-
-        merged.achievements = [...new Set([...(a.achievements || []), ...(b.achievements || [])])];
-        merged.categoriesPlayed = { ...(a.categoriesPlayed || {}), ...(b.categoriesPlayed || {}) };
-        merged.categoryHighScores = { ...(a.categoryHighScores || {}) };
-        for (const cat in (b.categoryHighScores || {})) {
-            merged.categoryHighScores[cat] = Math.max(merged.categoryHighScores[cat] || 0, b.categoryHighScores[cat]);
-        }
-
-        // Merge categoryStats — take the max for each category
-        merged.categoryStats = { ...(a.categoryStats || {}) };
-        for (const cat in (b.categoryStats || {})) {
-            const aStat = merged.categoryStats[cat] || { correct: 0, attempted: 0 };
-            const bStat = b.categoryStats[cat] || { correct: 0, attempted: 0 };
-            merged.categoryStats[cat] = {
-                correct: Math.max(aStat.correct || 0, bStat.correct || 0),
-                attempted: Math.max(aStat.attempted || 0, bStat.attempted || 0)
-            };
-        }
-
-        merged.dailyStreakDates = [...new Set([...(a.dailyStreakDates || []), ...(b.dailyStreakDates || [])])].sort();
-        merged.redeemedRewards = (a.redeemedRewards || []).length >= (b.redeemedRewards || []).length
-            ? (a.redeemedRewards || []) : (b.redeemedRewards || []);
-        merged.sessions = (a.sessions || []).length >= (b.sessions || []).length
-            ? (a.sessions || []) : (b.sessions || []);
-        merged.name = a.name || b.name;
-        merged.grade = a.grade || b.grade;
-        if (a.lastPlayedDate && b.lastPlayedDate) {
-            merged.lastPlayedDate = new Date(a.lastPlayedDate) > new Date(b.lastPlayedDate)
-                ? a.lastPlayedDate : b.lastPlayedDate;
-        }
-        return merged;
-    }
-
     // ===================== WELCOME SCREEN =====================
     function migratePlayer(p) {
         if (!p.totalXP) p.totalXP = (p.totalPointsEarned || 0) * 2;
@@ -630,13 +332,6 @@
         // ─── Initialize Firebase if available ───
         if (typeof initFirebase === 'function') {
             state.useFirebase = initFirebase();
-        }
-
-        // ─── Check for redirect sign-in result (e.g. after popup was blocked) ───
-        if (state.useFirebase && typeof FirebaseAuthHelper !== 'undefined') {
-            FirebaseAuthHelper.getRedirectResult().then(user => {
-                if (user) handleGoogleUser(user);
-            }).catch(() => {});
         }
 
         // ─── Google Sign-In Button ───
@@ -683,69 +378,29 @@
             }
 
             // Pre-fill name
-            const displayName = user.displayName || 'LevelUp Kid';
+            const displayName = user.displayName || 'Math Champion';
             nameInput.value = displayName.split(' ')[0]; // Use first name
             nameInput.dispatchEvent(new Event('input'));
 
             // Try to load existing profile from Firestore
-            let cloudPlayer = null;
-            try {
-                cloudPlayer = await FirestoreDB.loadPlayer(user.uid);
-            } catch (e) {
-                console.warn('Failed to load cloud data:', e);
-            }
-
-            // Also check localStorage for existing data — ONLY by uid (not by name,
-            // because name-based lookup can cross-contaminate between different Google accounts)
-            const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
-            const localByUid = all['__uid__' + user.uid] || null;
-
-            if (cloudPlayer && localByUid) {
-                // Merge: keep the higher value for each stat
-                state.player = mergePlayerData(cloudPlayer, localByUid);
-                showToast(`Welcome back, ${state.player.name}! ☁️ Data synced & merged.`, 'success');
-            } else if (cloudPlayer) {
+            const cloudPlayer = await FirestoreDB.loadPlayer(user.uid);
+            if (cloudPlayer) {
+                migratePlayer(cloudPlayer);
                 state.player = cloudPlayer;
-                showToast(`Welcome back, ${cloudPlayer.name}! ☁️ Data loaded from cloud.`, 'success');
-            } else if (localByUid) {
-                state.player = localByUid;
-                showToast(`Welcome back, ${localByUid.name}! Local data found.`, 'success');
-            } else {
-                // No data anywhere — will create fresh on "Let's Go"
-                showToast(`Welcome! Sign in successful. Choose your grade to start.`, 'success');
-            }
-
-            if (state.player) {
-                // Remove Firestore Timestamp objects that can't be serialized
-                delete state.player.updatedAt;
-                migratePlayer(state.player);
-                nameInput.value = state.player.name;
+                nameInput.value = cloudPlayer.name;
                 nameInput.dispatchEvent(new Event('input'));
                 // Auto-select grade
-                if (state.player.grade) {
+                if (cloudPlayer.grade) {
                     gradeButtons.forEach(b => {
                         b.classList.remove('selected');
-                        if (parseInt(b.dataset.grade) === state.player.grade) {
+                        if (parseInt(b.dataset.grade) === cloudPlayer.grade) {
                             b.classList.add('selected');
-                            selectedGrade = state.player.grade;
+                            selectedGrade = cloudPlayer.grade;
                         }
                     });
                     checkReady();
                 }
-                // Save merged data back to both localStorage AND Firestore
-                savePlayer();
-
-                // Auto-navigate to dashboard if we have a complete profile from cloud
-                if (state.player.name && state.player.grade && (state.player.totalXP || 0) > 0) {
-                    state.bots = generateBotPlayers(state.player.grade);
-                    updateStreak();
-                    if (window.location.hash && window.location.hash !== '#') {
-                        navigateToHash(window.location.hash);
-                    } else {
-                        showDashboard();
-                    }
-                    return; // Skip the welcome form — go straight to dashboard
-                }
+                showToast(`Welcome back, ${cloudPlayer.name}! ☁️ Data synced from cloud.`, 'success');
             }
         }
 
@@ -810,12 +465,7 @@
             state.bots = generateBotPlayers(selectedGrade);
             updateStreak();
             savePlayer();
-            // Route to hash if present, otherwise dashboard
-            if (window.location.hash && window.location.hash !== '#') {
-                navigateToHash(window.location.hash);
-            } else {
-                showDashboard();
-            }
+            showDashboard();
         });
 
         loadBtn.addEventListener('click', () => {
@@ -835,79 +485,111 @@
                     state.bots = generateBotPlayers(p.grade);
                     updateStreak();
                     savePlayer();
-                    if (window.location.hash && window.location.hash !== '#') {
-                        navigateToHash(window.location.hash);
-                    } else {
-                        showDashboard();
-                    }
+                    showDashboard();
                 } else { showToast('Profile not found!', 'error'); }
             }
         });
     }
 
-    // ===================== EDIT PROFILE =====================
-    function openEditProfile() {
-        const modal = $('#edit-profile-modal');
-        const nameInput = $('#edit-profile-name');
-        const gradeGrid = $('#edit-grade-grid');
-        const saveBtn = $('#btn-save-profile');
-        const cancelBtn = $('#btn-cancel-profile');
+    // ===================== EXAM-BASED CHALLENGE CARDS =====================
+    // Every card = a real exam. Kids pick which exam to prep for.
+    function getChallengeCards(grade) {
+        const isElem = grade <= 5;
+        const cards = {
+            math: [
+                // ── School Testing ──
+                { cat: 'fastbridge', diff: 'medium', emoji: '📋', name: 'FastBridge aMath',
+                  desc: isElem ? 'Estimation, number sense, data & measurement — LWSD benchmark' : 'Data analysis, proportional reasoning & statistics — LWSD benchmark',
+                  diffLabel: '⭐⭐ School Test', pts: '+10 pts each', tag: 'School' },
+                { cat: 'highcap', diff: 'hard', emoji: '🎯', name: 'High Cap Screening',
+                  desc: isElem ? 'Gifted program screening: reasoning, patterns & quantitative thinking' : 'Highly Capable program: abstract reasoning & advanced problem-solving',
+                  diffLabel: '⭐⭐⭐ Gifted', pts: '+20 pts each', tag: 'School' },
+                { cat: 'cogat', diff: 'hard', emoji: '🧩', name: 'CogAT',
+                  desc: isElem ? 'Number analogies, number series, number puzzles & quantitative reasoning' : 'Verbal analogies, figure matrices, number series & quantitative comparisons',
+                  diffLabel: '⭐⭐⭐ CogAT', pts: '+20 pts each', tag: 'School' },
+                // ── Math Competitions (all grades) ──
+                { cat: 'moems', diff: 'hard', emoji: '🏅', name: isElem ? 'MOEMS Div E' : 'MOEMS Div M',
+                  desc: isElem ? 'Creative problem-solving, counting & pattern puzzles' : 'Number theory, combinatorics & multi-step logic',
+                  diffLabel: isElem ? 'Div E' : 'Div M', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'noetic', diff: 'hard', emoji: '✨', name: 'Noetic Math',
+                  desc: isElem ? 'Non-routine reasoning, work backwards & creative counting' : 'Advanced reasoning, optimization & algebraic patterns',
+                  diffLabel: '⭐⭐⭐ Noetic', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'kangaroo', diff: 'hard', emoji: '🦘', name: 'Math Kangaroo',
+                  desc: isElem ? 'Fun visual puzzles, logic & creative thinking' : 'Multi-step puzzles, spatial reasoning & clever tricks',
+                  diffLabel: '⭐⭐⭐ Kangaroo', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'imc', diff: 'hard', emoji: '🌍', name: 'IMC',
+                  desc: isElem ? 'International competition: logic, number puzzles & creative problem-solving' : 'International competition: number theory, combinatorics & algebra',
+                  diffLabel: '⭐⭐⭐ IMC', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'olympiad', diff: 'hard', emoji: '🏆', name: 'AMC 8 Prep',
+                  desc: isElem ? 'Pre-AMC: logic, patterns & problem-solving' : 'AMC 8 style: number theory, counting & geometry',
+                  diffLabel: '⭐⭐⭐ AMC', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'math_challenge', diff: 'hard', emoji: '💪', name: 'Math Challenge',
+                  desc: isElem ? 'RSM & Continental Math League: speed math, problem-solving & mental math' : 'RSM & CML: algebra, geometry & multi-step challenge problems',
+                  diffLabel: '⭐⭐⭐ Challenge', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'math_is_cool', diff: 'hard', emoji: '❄️', name: 'Math is Cool',
+                  desc: isElem ? 'Individual & team rounds: mental math, estimation & logic' : 'Individual, team & relay: algebra, geometry & problem-solving',
+                  diffLabel: '⭐⭐⭐ Cool', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'singapore', diff: 'medium', emoji: '🇸🇬', name: 'Singapore Math',
+                  desc: isElem ? 'Bar models, mental math & multi-step word problems' : 'Heuristic problem-solving & model drawing',
+                  diffLabel: '⭐⭐ Singapore', pts: '+10 pts each', tag: 'Competition' },
+            ],
+            english: [
+                { cat: 'fb_reading', diff: 'medium', emoji: '📖', name: 'FastBridge aReading',
+                  desc: isElem ? 'Vocabulary, grammar, reading comprehension & spelling — LWSD benchmark' : 'Context clues, inference, text structure & grammar — LWSD benchmark',
+                  diffLabel: '⭐⭐ School Test', pts: '+10 pts each', tag: 'School', cssClass: 'challenge-card-english' },
+                { cat: 'spelling_bee', diff: 'medium', emoji: '🐝', name: 'Spelling Bee',
+                  desc: isElem ? 'Scripps-style: commonly misspelled words & phonics patterns' : 'Scripps-style: challenging roots, Latin/Greek origins & homophones',
+                  diffLabel: '⭐⭐ Spelling Bee', pts: '+10 pts each', tag: 'Competition', cssClass: 'challenge-card-english' },
+            ]
+        };
 
-        // Pre-fill current values
-        nameInput.value = state.player.name || '';
-
-        // Build grade buttons
-        gradeGrid.innerHTML = '';
-        let selectedGrade = state.player.grade;
-        for (let g = 1; g <= 8; g++) {
-            const btn = document.createElement('button');
-            btn.className = 'grade-btn' + (g === selectedGrade ? ' selected' : '');
-            btn.textContent = g;
-            btn.dataset.grade = g;
-            btn.type = 'button';
-            btn.onclick = () => {
-                gradeGrid.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                selectedGrade = g;
-            };
-            gradeGrid.appendChild(btn);
+        // Middle school only: Mathcounts and AIME
+        if (!isElem) {
+            cards.math.splice(cards.math.length - 1, 0, // before Singapore
+                { cat: 'mathcounts', diff: 'hard', emoji: '📐', name: 'Mathcounts',
+                  desc: 'Sprint, Target & Team round style — algebra, geometry & probability',
+                  diffLabel: '⭐⭐⭐ Mathcounts', pts: '+20 pts each', tag: 'Competition' },
+                { cat: 'aime', diff: 'hard', emoji: '🧠', name: 'AIME',
+                  desc: 'Advanced: multi-step number theory, algebra, combinatorics & geometry',
+                  diffLabel: '⭐⭐⭐ AIME', pts: '+25 pts each', tag: 'Competition' }
+            );
         }
 
-        modal.style.display = 'flex';
+        // Practice Blitz — at the end of math
+        cards.math.push(
+            { cat: 'mixed', diff: 'mixed', emoji: '🎲', name: 'Practice Blitz',
+              desc: 'Mixed questions from all exams — timed challenge!',
+              diffLabel: '⚡ Timed', pts: '+5-25 pts each', special: true }
+        );
 
-        saveBtn.onclick = () => {
-            const newName = nameInput.value.trim();
-            if (!newName) { showToast('Please enter a name!', 'error'); return; }
-            if (!selectedGrade) { showToast('Please select a grade!', 'error'); return; }
+        return cards;
+    }
 
-            const oldName = state.player.name;
-            state.player.name = newName;
-            state.player.grade = selectedGrade;
-            state.bots = generateBotPlayers(selectedGrade);
+    function renderChallengeCards(grade) {
+        const cards = getChallengeCards(grade);
 
-            // Update localStorage key if name changed
-            if (oldName && oldName.toLowerCase() !== newName.toLowerCase()) {
-                const all = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
-                delete all[oldName.toLowerCase()];
-                all[newName.toLowerCase()] = state.player;
-                localStorage.setItem('levelupkids_players', JSON.stringify(all));
-                localStorage.setItem('levelupkids_last_player', newName);
-            }
+        function buildCardHTML(c) {
+            const tagClass = c.tag === 'Competition' ? 'comp-tag' : c.tag === 'School' ? 'fb-tag' : 'comp-tag';
+            const tagHTML = c.tag ? `<span class="${tagClass}">${c.tag}</span>` : '';
+            const specialClass = c.special ? ' challenge-card-special' : '';
+            const cssExtra = c.cssClass ? ` ${c.cssClass}` : '';
+            return `
+                <div class="challenge-card${specialClass}${cssExtra}" data-category="${c.cat}" data-difficulty="${c.diff}">
+                    ${tagHTML}
+                    <div class="challenge-emoji">${c.emoji}</div>
+                    <h3>${c.name}</h3>
+                    <p>${c.desc}</p>
+                    <div class="challenge-meta">
+                        <span class="difficulty ${c.diff}">${c.diffLabel}</span>
+                        <span class="points-badge">${c.pts}</span>
+                    </div>
+                </div>`;
+        }
 
-            savePlayer();
-            modal.style.display = 'none';
-            showToast(`Profile updated! ✅`, 'success');
-            showDashboard();
-        };
-
-        cancelBtn.onclick = () => {
-            modal.style.display = 'none';
-        };
-
-        // Close on overlay click
-        modal.onclick = (e) => {
-            if (e.target === modal) modal.style.display = 'none';
-        };
+        const mathGrid = $('#math-challenge-grid');
+        const engGrid = $('#english-challenge-grid');
+        if (mathGrid) mathGrid.innerHTML = cards.math.map(buildCardHTML).join('');
+        if (engGrid) engGrid.innerHTML = cards.english.map(buildCardHTML).join('');
     }
 
     // ===================== DASHBOARD =====================
@@ -920,7 +602,7 @@
         // Top nav
         $('#nav-player-name').textContent = p.name;
         $('#nav-grade-badge').textContent = `Grade ${p.grade}`;
-        $('#nav-points').textContent = (p.totalXP || 0).toLocaleString();
+        $('#nav-points').textContent = p.points.toLocaleString();
 
         // User avatar
         const navAvatar = $('#nav-user-avatar');
@@ -930,24 +612,6 @@
         } else if (navAvatar) {
             navAvatar.style.display = 'none';
         }
-
-        // Show cloud sync status on dashboard
-        const syncInfo = state.useFirebase && state.authUser ? '☁️' : '💾';
-        const syncTitle = state.useFirebase && state.authUser
-            ? 'Signed in — data syncs to cloud'
-            : 'Local mode — sign in with Google to sync across devices';
-        showSyncStatus(state.useFirebase && state.authUser ? 'synced' : 'offline');
-
-        // Sync button visibility — dashboard + all shared sync buttons
-        const syncVisible = (state.useFirebase && state.authUser) ? 'inline-block' : 'none';
-        const syncBtn = $('#btn-sync-now');
-        if (syncBtn) {
-            syncBtn.style.display = syncVisible;
-            syncBtn.onclick = () => forceCloudSync(false);
-        }
-        document.querySelectorAll('.shared-sync-btn').forEach(btn => {
-            btn.style.display = syncVisible;
-        });
 
         // XP Banner
         $('#dash-rank-badge').textContent = tier.emoji;
@@ -962,7 +626,7 @@
         $('#dash-multiplier').textContent = streakMult;
 
         // Stats
-        $('#dash-points').textContent = (p.totalXP || 0).toLocaleString();
+        $('#dash-points').textContent = p.points.toLocaleString();
         $('#dash-streak').textContent = p.streak;
         $('#dash-solved').textContent = p.totalCorrect;
         const accuracy = p.totalAttempted ? Math.round((p.totalCorrect / p.totalAttempted) * 100) : 0;
@@ -970,6 +634,59 @@
 
         // Daily challenge
         renderDailyChallenge();
+
+        // Smart recommendation based on category stats
+        const recEl = $('#smart-rec');
+        if (recEl) {
+            const cs = p.categoryStats || {};
+            const played = Object.entries(cs).filter(([, s]) => s.attempted >= 3);
+            if (played.length > 0) {
+                // Find weakest category
+                let weakCat = null, weakAcc = 101;
+                // Find strongest
+                let strongCat = null, strongAcc = -1;
+                // Find never-played categories
+                const allCats = ['fastbridge','moems','noetic','kangaroo','olympiad','imc','math_challenge','math_is_cool','highcap','cogat','fb_reading','spelling_bee'];
+                const unplayed = allCats.filter(c => !cs[c] || cs[c].attempted === 0);
+
+                played.forEach(([cat, s]) => {
+                    const acc = Math.round((s.correct / s.attempted) * 100);
+                    if (acc < weakAcc) { weakAcc = acc; weakCat = cat; }
+                    if (acc > strongAcc) { strongAcc = acc; strongCat = cat; }
+                });
+
+                let recHTML = '';
+                if (weakCat && weakAcc < 65) {
+                    recHTML = `<span class="rec-emoji">🎯</span> <strong>Suggested:</strong> Practice <strong>${CATEGORY_NAMES[weakCat] || weakCat}</strong> — you're at ${weakAcc}% accuracy. <button class="rec-btn" data-rec-cat="${weakCat}">Let's go!</button>`;
+                } else if (unplayed.length > 0) {
+                    const tryCat = unplayed[Math.floor(Math.random() * unplayed.length)];
+                    recHTML = `<span class="rec-emoji">✨</span> <strong>Try something new:</strong> ${CATEGORY_NAMES[tryCat] || tryCat}! <button class="rec-btn" data-rec-cat="${tryCat}">Start</button>`;
+                } else if (strongCat && strongAcc >= 85) {
+                    recHTML = `<span class="rec-emoji">🚀</span> You're rocking ${CATEGORY_NAMES[strongCat] || strongCat} at ${strongAcc}%! Try <strong>Hard</strong> mode. <button class="rec-btn" data-rec-cat="${strongCat}" data-rec-diff="hard">Challenge me!</button>`;
+                }
+                if (recHTML) {
+                    recEl.innerHTML = recHTML;
+                    recEl.style.display = 'block';
+                    const recBtn = recEl.querySelector('.rec-btn');
+                    if (recBtn) {
+                        recBtn.onclick = () => startQuiz(recBtn.dataset.recCat, recBtn.dataset.recDiff || 'medium');
+                    }
+                } else {
+                    recEl.style.display = 'none';
+                }
+            } else {
+                recEl.style.display = 'none';
+            }
+        }
+
+        // Render grade-appropriate challenge cards
+        renderChallengeCards(p.grade);
+
+        // Subject tab switcher (Math ↔ English)
+        window.switchSubject = function(subject) {
+            $$('.subject-tab').forEach(t => t.classList.toggle('active', t.dataset.subject === subject));
+            $$('.subject-panel').forEach(p => p.classList.toggle('active', p.dataset.subject === subject));
+        };
 
         // Challenge card clicks
         $$('.challenge-card').forEach(card => {
@@ -980,22 +697,30 @@
             };
         });
 
-        // Bottom tab bar
-        $('#btn-tab-home').onclick = showDashboard;
+        // Bottom buttons
         $('#btn-leaderboard').onclick = showLeaderboard;
         $('#btn-rewards').onclick = showRewardsStore;
         $('#btn-achievements').onclick = showAchievements;
         $('#btn-history').onclick = showProgress;
 
-        // Edit profile
-        $('#btn-edit-profile').onclick = openEditProfile;
+        // Show admin tab for admin users
+        const adminTab = $('#btn-admin');
+        if (adminTab) {
+            const isAdmin = state.authUser && ADMIN_EMAILS.includes((state.authUser.email || '').toLowerCase());
+            adminTab.style.display = isAdmin ? 'flex' : 'none';
+            if (isAdmin) {
+                adminTab.onclick = showAdmin;
+            }
+        }
 
-        // Subject tabs handled by global window.switchSubject()
+        // Start background AI question generation if API key is set
+        if (typeof GeminiQuestionEngine !== 'undefined' && GeminiQuestionEngine.hasApiKey()) {
+            GeminiQuestionEngine.startBackgroundGeneration(state.player.grade);
+        }
+
         $('#btn-logout').onclick = async () => {
             savePlayer();
             state.player = null;
-            // Clear auto-login so user sees welcome screen next time
-            localStorage.removeItem('levelupkids_last_player');
             if (state.useFirebase && typeof FirebaseAuthHelper !== 'undefined') {
                 await FirebaseAuthHelper.signOut();
             }
@@ -1007,24 +732,15 @@
             if (authUserInfo) authUserInfo.style.display = 'none';
             const googleBtn = $('#btn-google-signin');
             if (googleBtn) { googleBtn.disabled = false; }
-            // Clear hash and go to welcome
-            history.pushState(null, '', window.location.pathname);
             showScreen('welcome');
         };
-
-        // Wire up shared nav buttons on all screens (sign-out, sync)
-        document.querySelectorAll('.shared-signout-btn').forEach(btn => {
-            btn.onclick = () => $('#btn-logout').click();
-        });
-        document.querySelectorAll('.shared-sync-btn').forEach(btn => {
-            btn.onclick = () => forceCloudSync(false);
-        });
     }
 
     // ===================== DAILY CHALLENGE =====================
     function getDailyCategory() {
         const dayOfWeek = new Date().getDay();
-        const cats = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word', 'mixed', 'mixed'];
+        // Rotate through real exams so kids get exposure to different test formats
+        const cats = ['fastbridge', 'moems', 'noetic', 'kangaroo', 'olympiad', 'cogat', 'fb_reading'];
         return cats[dayOfWeek];
     }
 
@@ -1083,28 +799,40 @@
         const count = isDaily ? DAILY_CHALLENGE_COUNT : QUESTIONS_PER_QUIZ;
 
         let questions;
-        const isEnglish = category.startsWith('english_');
-        const isFastBridgeMath = category.startsWith('fb_');
         try {
-            if (isEnglish && typeof getEnglishQuestions === 'function') {
-                questions = getEnglishQuestions(state.player.grade, category, count);
-            } else if (isFastBridgeMath && typeof getFastBridgeMathQuestions === 'function') {
-                questions = await getFastBridgeMathQuestions(state.player.grade, category, count);
-            } else if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
+            // Use QuestionAPI for async questions
+            if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
                 questions = await QuestionAPI.getQuestions(state.player.grade, category, count);
             } else {
                 questions = getQuestions(state.player.grade, category, count);
             }
         } catch (e) {
             console.warn('Question fetch error, using fallback:', e);
-            if (isEnglish && typeof getEnglishQuestions === 'function') {
-                questions = getEnglishQuestions(state.player.grade, category, count);
-            } else if (isFastBridgeMath && typeof getFastBridgeMathQuestions === 'function') {
-                questions = await getFastBridgeMathQuestions(state.player.grade, category, count);
-            } else {
-                questions = typeof getLocalQuestions === 'function'
-                    ? getLocalQuestions(state.player.grade, category, count)
-                    : getQuestions(state.player.grade, category, count);
+            questions = typeof getLocalQuestions === 'function'
+                ? getLocalQuestions(state.player.grade, category, count)
+                : getQuestions(state.player.grade, category, count);
+        }
+
+        // Mix in AI-generated questions for uniqueness
+        // All students get AI questions from Firestore — no API key needed to READ
+        // API key is only needed for GENERATING new questions (admin only)
+        if (typeof GeminiQuestionEngine !== 'undefined') {
+            try {
+                const aiCount = Math.ceil(count * 0.4); // 40% AI questions
+                const aiQuestions = await GeminiQuestionEngine.getUniqueQuestions(state.player.grade, category, aiCount);
+                if (aiQuestions && aiQuestions.length > 0) {
+                    // Replace some regular questions with AI ones to maintain total count
+                    const regularSlice = (questions || []).slice(0, count - aiQuestions.length);
+                    questions = [...regularSlice, ...aiQuestions];
+                    // Shuffle so AI questions are mixed in randomly
+                    for (let i = questions.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [questions[i], questions[j]] = [questions[j], questions[i]];
+                    }
+                    console.log(`🤖 Mixed ${aiQuestions.length} AI questions into quiz`);
+                }
+            } catch (e) {
+                console.warn('AI question mixing failed (non-critical):', e);
             }
         }
 
@@ -1156,19 +884,24 @@
         // Source badge
         const sourceBadge = $('#source-badge');
         if (sourceBadge && q.source) {
+            const isAI = q._aiGenerated || q.source === '🤖 AI Generated';
             const sourceIcons = {
                 'AMC 8 / AOPS': '🏆', 'AMC 8 2024': '🏆', 'AOPS': '🏆',
                 'Math Kangaroo': '🦘', 'RSM': '🧮', 'Primefactor': '🔢',
                 'Singapore Math': '🇸🇬', 'MOEMS': '🏅', 'Mathcounts': '📐', 'IMC': '🌍',
+                'Noetic Math': '✨', 'CogAT Prep': '🧩', 'CogAT': '🧩', 'HCP Prep': '🎯',
+                'FastBridge Prep': '📋', 'Spelling Bee': '🐝',
                 'OpenTDB': '📚', 'Generated': '🧮', 'Competition Style': '🏆',
                 'Olympiad Style': '🥇', 'Word Problem': '📖', 'NumbersAPI': '🔢',
-                'AIME Style': '🔥'
+                '🤖 AI Generated': '🤖'
             };
             const icon = sourceIcons[q.source] || '📚';
             sourceBadge.innerHTML = `${icon} ${q.source}`;
             sourceBadge.style.display = 'inline-block';
+            sourceBadge.className = isAI ? 'source-badge ai-source' : 'source-badge';
         } else if (sourceBadge) {
             sourceBadge.style.display = 'none';
+            sourceBadge.className = 'source-badge';
         }
 
         // Image
@@ -1264,18 +997,14 @@
         } else {
             // Reset combo
             quiz.combo = 0;
-
-            // Negative marking — deduct points for wrong answer
-            const penalty = WRONG_PENALTY_MAP[diff] || -2;
-            pointsEarned = penalty;
-            quiz.pointsEarned += penalty;
         }
 
         state.player.totalAttempted++;
 
         quiz.results.push({
             question: q.q, correct, selected: q.options[selected],
-            answer: q.options[q.answer], pointsEarned, xpEarned, difficulty: diff
+            answer: q.options[q.answer], pointsEarned, xpEarned, difficulty: diff,
+            hint: q.hint || '', explanation: q.explanation || '', options: q.options, correctIndex: q.answer
         });
 
         showFeedback(correct, q, pointsEarned, quiz.combo);
@@ -1308,7 +1037,7 @@
             const phrases = ['😮 Not quite!', '🤔 Close one!', '💡 Good try!', '📚 Keep learning!'];
             $('#feedback-icon').textContent = '❌';
             $('#feedback-message').textContent = phrases[Math.floor(Math.random() * phrases.length)];
-            $('#feedback-points').textContent = `${points} points ⚠️`;
+            $('#feedback-points').textContent = 'No points this time';
             $('#feedback-points').style.color = '#C62828';
         }
 
@@ -1384,8 +1113,8 @@
         const p = state.player;
 
         // Update stats
-        p.points = p.points + quiz.pointsEarned;
-        p.totalPointsEarned = p.totalPointsEarned + quiz.pointsEarned;
+        p.points += quiz.pointsEarned;
+        p.totalPointsEarned += quiz.pointsEarned;
         p.totalQuizzes++;
 
         // XP
@@ -1441,19 +1170,12 @@
             if (acc >= 0.8) p.blitzHighAccuracy = (p.blitzHighAccuracy || 0) + 1;
         }
 
-        // Session history — save detailed Q&A for review
+        // Session history
         if (!p.sessions) p.sessions = [];
         p.sessions.unshift({
             date: new Date().toISOString(), category: quiz.category,
             correct: quiz.score, total: quiz.results.length,
-            points: quiz.pointsEarned, xp: totalXP, combo: quiz.maxCombo,
-            questions: quiz.results.map(r => ({
-                q: r.question,
-                selected: r.selected,
-                answer: r.answer,
-                correct: r.correct,
-                difficulty: r.difficulty
-            }))
+            points: quiz.pointsEarned, xp: totalXP, combo: quiz.maxCombo
         });
         if (p.sessions.length > 50) p.sessions = p.sessions.slice(0, 50);
 
@@ -1480,7 +1202,7 @@
         $('#results-subtitle').textContent = `${CATEGORY_NAMES[quiz.category]} • Grade ${state.player.grade}${quiz.isDaily ? ' • Daily Challenge' : ''}`;
         $('#result-correct').textContent = correct;
         $('#result-total').textContent = total;
-        $('#result-points-earned').textContent = `${quiz.pointsEarned >= 0 ? '+' : ''}${quiz.pointsEarned}`;
+        $('#result-points-earned').textContent = `+${quiz.pointsEarned}`;
         $('#result-accuracy').textContent = accuracy + '%';
 
         // Breakdown
@@ -1490,16 +1212,85 @@
             <div style="text-align:center;margin-bottom:12px;color:var(--primary);font-weight:700;">
                 +${totalXP} XP earned${quiz.maxCombo >= 3 ? ` | Max Combo: ${quiz.maxCombo}🔥` : ''}
             </div>`;
+
+        const wrongOnes = [];
         quiz.results.forEach((r, i) => {
             const item = document.createElement('div');
             item.className = `result-item ${r.correct ? 'result-correct' : 'result-wrong'}`;
-            item.innerHTML = `
-                <span class="result-item-status">${r.correct ? '✅' : '❌'}</span>
-                <span class="result-item-text">Q${i + 1}: ${truncate(r.question, 60)}</span>
-                <span class="result-item-pts">${r.correct ? '+' + r.pointsEarned : r.pointsEarned} pts</span>
-            `;
-            breakdown.appendChild(item);
+            if (!r.correct) {
+                // Clickable wrong answers — tap to expand review
+                item.style.cursor = 'pointer';
+                item.innerHTML = `
+                    <span class="result-item-status">❌</span>
+                    <span class="result-item-text">Q${i + 1}: ${truncate(r.question, 60)}</span>
+                    <span class="result-item-pts" style="color:var(--primary);font-size:0.75rem;">tap to review</span>
+                `;
+                const detail = document.createElement('div');
+                detail.className = 'result-review-detail';
+                detail.style.cssText = 'display:none;padding:10px 12px;margin:4px 0 8px;border-radius:10px;background:rgba(108,99,255,0.08);font-size:0.88rem;line-height:1.5;';
+                detail.innerHTML = `
+                    <div style="margin-bottom:6px;"><strong>Q:</strong> ${r.question}</div>
+                    <div style="color:#C62828;margin-bottom:4px;">Your answer: <strong>${r.selected}</strong></div>
+                    <div style="color:#2E7D32;margin-bottom:6px;">Correct answer: <strong>${r.answer}</strong></div>
+                    ${r.hint ? `<div style="margin-bottom:4px;">💡 <em>${r.hint}</em></div>` : ''}
+                    ${r.explanation ? `<div>📖 ${r.explanation}</div>` : ''}
+                `;
+                item.onclick = () => { detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; };
+                breakdown.appendChild(item);
+                breakdown.appendChild(detail);
+                wrongOnes.push(r);
+            } else {
+                item.innerHTML = `
+                    <span class="result-item-status">✅</span>
+                    <span class="result-item-text">Q${i + 1}: ${truncate(r.question, 60)}</span>
+                    <span class="result-item-pts">+${r.pointsEarned} pts</span>
+                `;
+                breakdown.appendChild(item);
+            }
         });
+
+        // Smart "Next Step" recommendation
+        const recBox = document.createElement('div');
+        recBox.style.cssText = 'margin-top:18px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(46,213,115,0.1));text-align:center;';
+        const catStats = (state.player.categoryStats || {})[quiz.category] || { correct: 0, attempted: 0 };
+        const catAcc = catStats.attempted > 0 ? Math.round((catStats.correct / catStats.attempted) * 100) : 0;
+
+        let recText = '', recAction = null;
+        if (accuracy >= 90 && quiz.difficulty !== 'hard') {
+            recText = `🚀 You crushed it at ${accuracy}%! Ready for a harder challenge?`;
+            const nextDiff = quiz.difficulty === 'easy' ? 'medium' : 'hard';
+            recAction = { label: `Try ${nextDiff.charAt(0).toUpperCase() + nextDiff.slice(1)}`, cat: quiz.category, diff: nextDiff };
+        } else if (accuracy < 50) {
+            // Find their strongest category to boost confidence
+            const cs = state.player.categoryStats || {};
+            let bestCat = null, bestAcc = 0;
+            for (const [c, s] of Object.entries(cs)) {
+                if (c !== quiz.category && s.attempted >= 5) {
+                    const a = Math.round((s.correct / s.attempted) * 100);
+                    if (a > bestAcc) { bestAcc = a; bestCat = c; }
+                }
+            }
+            if (bestCat) {
+                recText = `💪 Tough round! Try ${CATEGORY_NAMES[bestCat] || bestCat} where you're at ${bestAcc}% — build momentum!`;
+                recAction = { label: `Play ${CATEGORY_NAMES[bestCat] || bestCat}`, cat: bestCat, diff: 'medium' };
+            } else {
+                recText = `💪 Keep going! Practice makes perfect. Try again?`;
+            }
+        } else if (wrongOnes.length > 0) {
+            recText = `📝 ${wrongOnes.length} question${wrongOnes.length > 1 ? 's' : ''} to review — tap the ❌ items above to study the explanations!`;
+        } else {
+            recText = `⭐ Perfect score! Your ${CATEGORY_NAMES[quiz.category] || quiz.category} accuracy is now ${catAcc}% overall.`;
+        }
+        recBox.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">${recText}</div>`;
+        if (recAction) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-primary';
+            btn.style.cssText = 'margin-top:8px;padding:8px 20px;font-size:0.9rem;';
+            btn.textContent = recAction.label;
+            btn.onclick = () => startQuiz(recAction.cat, recAction.diff);
+            recBox.appendChild(btn);
+        }
+        breakdown.appendChild(recBox);
 
         if (accuracy >= 80) launchConfetti();
 
@@ -1516,10 +1307,10 @@
         const levelInfo = getLevelFromXP(p.totalXP || 0);
         const tier = getTier(levelInfo.level);
 
-        $('#lb-points').textContent = (p.totalXP || 0).toLocaleString();
+        $('#lb-points').textContent = p.points.toLocaleString();
         $('#lb-your-name').textContent = p.name;
         $('#lb-your-tier').textContent = `${tier.emoji} ${tier.name}`;
-        $('#lb-your-xp').textContent = `${(p.totalXP || 0).toLocaleString()} pts`;
+        $('#lb-your-xp').textContent = `${(p.totalXP || 0).toLocaleString()} XP`;
         $('#lb-your-level').textContent = `Level ${levelInfo.level}`;
 
         // Stats
@@ -1568,18 +1359,16 @@
         // Build the combined list
         let allPlayers;
         const myUid = state.authUser?.uid;
-        const myName = p.name?.toLowerCase();
 
         if (realPlayers.length > 0) {
             // Use real players from Firestore, mark current user
             allPlayers = realPlayers.map(pl => ({
                 ...pl,
                 level: getLevelFromXP(pl.totalXP || 0).level,
-                // Match by uid first, then by name as fallback
-                isYou: (myUid && pl.uid === myUid) || (!myUid && pl.name?.toLowerCase() === myName),
+                isYou: pl.uid === myUid,
                 isBot: false
             }));
-            // Ensure current player is in the list (but only if not already matched)
+            // Ensure current player is in the list
             const meInList = allPlayers.find(pl => pl.isYou);
             if (!meInList) {
                 const levelInfo = getLevelFromXP(p.totalXP || 0);
@@ -1638,7 +1427,7 @@
             const topClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
             const youClass = pl.isYou ? 'is-you' : '';
             const xpVal = tab === 'weekly' && pl.weeklyXP != null ? pl.weeklyXP : (pl.totalXP || 0);
-            const xpDisplay = `${xpVal.toLocaleString()} pts`;
+            const xpDisplay = `${xpVal.toLocaleString()} XP`;
 
             // Avatar: use photo if available, otherwise tier emoji
             const avatarContent = pl.photoURL
@@ -1671,16 +1460,10 @@
         $('#rewards-points').textContent = p.points.toLocaleString();
         $('#rewards-balance').textContent = p.points.toLocaleString();
 
-        // Hint text
-        const hintEl = $('.rewards-hint');
-        if (hintEl) {
-            hintEl.textContent = 'Solve more problems to earn coins for rewards!';
-            hintEl.style.color = '';
-        }
-
-        renderRewardSection('rewards-activities', REWARDS.activities);
-        renderRewardSection('rewards-privileges', REWARDS.privileges);
+        renderRewardSection('rewards-gaming', REWARDS.gaming);
+        renderRewardSection('rewards-giftcards', REWARDS.giftcards);
         renderRewardSection('rewards-toys', REWARDS.toys);
+        renderRewardSection('rewards-privileges', REWARDS.privileges);
         renderRewardSection('rewards-legendary', REWARDS.legendary);
         renderRedemptionHistory();
 
@@ -1703,7 +1486,7 @@
                 <div class="reward-emoji">${item.emoji}</div>
                 <h4>${item.name}</h4>
                 <p>${item.desc}</p>
-                <div class="reward-cost">🪙 ${item.cost.toLocaleString()} coins</div>
+                <div class="reward-cost">🪙 ${item.cost.toLocaleString()} pts</div>
                 <button class="btn-redeem" ${canAfford ? '' : 'disabled'}>
                     ${canAfford ? '🎁 Redeem' : '🔒 Need ' + (item.cost - state.player.points).toLocaleString() + ' more'}
                 </button>
@@ -1725,14 +1508,9 @@
         $('#modal-confirm').onclick = () => { overlay.style.display = 'none'; redeemReward(item); };
     }
 
-    function getRedemptionsToday() {
-        const today = new Date().toDateString();
-        return (state.player.redemptions || []).filter(r => new Date(r.date).toDateString() === today).length;
-    }
-
     function redeemReward(item) {
         const p = state.player;
-        if (p.points < item.cost) { showToast('Not enough coins!', 'error'); return; }
+        if (p.points < item.cost) { showToast('Not enough points!', 'error'); return; }
         p.points -= item.cost;
         p.totalRedemptions = (p.totalRedemptions || 0) + 1;
         if (!p.redemptions) p.redemptions = [];
@@ -1769,7 +1547,7 @@
     function showAchievements() {
         showScreen('achievements');
         const p = state.player;
-        $('#ach-points').textContent = (p.totalXP || 0).toLocaleString();
+        $('#ach-points').textContent = p.points.toLocaleString();
         const grid = $('#achievements-grid');
         grid.innerHTML = '';
 
@@ -1809,23 +1587,49 @@
     function showProgress() {
         showScreen('progress');
         const p = state.player;
-        $('#prog-points').textContent = (p.totalXP || 0).toLocaleString();
+        $('#prog-points').textContent = p.points.toLocaleString();
 
-        // Category bars
+        // Category bars — show ALL categories the student has played, grouped by subject
         const barsContainer = $('#category-bars');
         barsContainer.innerHTML = '';
-        const categories = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word'];
-        categories.forEach(cat => {
-            const stats = (p.categoryStats && p.categoryStats[cat]) || { correct: 0, attempted: 0 };
-            const pct = stats.attempted > 0 ? Math.round((stats.correct / stats.attempted) * 100) : 0;
-            const row = document.createElement('div');
-            row.className = 'bar-row';
-            row.innerHTML = `
-                <span class="bar-label">${cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
-                <div class="bar-track"><div class="bar-fill bar-${cat}" style="width: ${pct}%">${pct}%</div></div>
-            `;
-            barsContainer.appendChild(row);
-        });
+        const cs = p.categoryStats || {};
+        const played = Object.keys(cs).filter(c => cs[c].attempted > 0);
+
+        if (played.length === 0) {
+            barsContainer.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-secondary);">No quizzes taken yet — start a challenge!</div>';
+        } else {
+            // Sort: weakest first so they stand out
+            const sorted = played.map(cat => {
+                const s = cs[cat];
+                return { cat, correct: s.correct, attempted: s.attempted, pct: Math.round((s.correct / s.attempted) * 100) };
+            }).sort((a, b) => a.pct - b.pct);
+
+            // Weak-area callout
+            const weakest = sorted[0];
+            if (weakest.pct < 70 && weakest.attempted >= 3) {
+                const callout = document.createElement('div');
+                callout.style.cssText = 'padding:12px 14px;margin-bottom:14px;border-radius:12px;background:linear-gradient(135deg,rgba(255,107,107,0.12),rgba(255,165,2,0.12));cursor:pointer;';
+                callout.innerHTML = `
+                    <div style="font-weight:700;margin-bottom:4px;">🎯 Focus Area: ${CATEGORY_NAMES[weakest.cat] || weakest.cat}</div>
+                    <div style="font-size:0.88rem;color:var(--text-secondary);">Accuracy: ${weakest.pct}% (${weakest.correct}/${weakest.attempted}) — practice to improve!</div>
+                `;
+                callout.onclick = () => startQuiz(weakest.cat, 'medium');
+                barsContainer.appendChild(callout);
+            }
+
+            sorted.forEach(({ cat, pct, correct, attempted }) => {
+                const name = CATEGORY_NAMES[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
+                const barColor = pct >= 80 ? '#2ED573' : pct >= 60 ? '#FFA502' : '#FF6B6B';
+                const row = document.createElement('div');
+                row.className = 'bar-row';
+                row.innerHTML = `
+                    <span class="bar-label" style="min-width:130px;font-size:0.85rem;">${name}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${barColor};">${pct}%</div></div>
+                    <span style="font-size:0.75rem;color:var(--text-secondary);min-width:45px;text-align:right;">${correct}/${attempted}</span>
+                `;
+                barsContainer.appendChild(row);
+            });
+        }
 
         // Session history
         const sessContainer = $('#session-history');
@@ -1834,31 +1638,29 @@
             sessContainer.innerHTML = `<div class="empty-state"><div class="empty-state-emoji">📊</div><p>No sessions yet. Start a challenge!</p></div>`;
         } else {
             sessContainer.innerHTML = '';
-            const catEmojis = { arithmetic: '🔢', logic: '🧩', geometry: '📐', olympiad: '🏆', word: '📖', mixed: '🎲', english_vocabulary: '📚', english_grammar: '✏️', english_reading: '📖', english_spelling: '🔤', english_mixed: '🇦', fb_estimation: '🎯', fb_data: '📊', fb_measurement: '📏', fb_number_sense: '🧠', fb_probability: '🎲', fb_math_mixed: '⚡' };
-            sessions.slice(0, 15).forEach((s, idx) => {
+            const catEmojis = { fastbridge: '📋', moems: '🏅', noetic: '✨', olympiad: '🏆', kangaroo: '🦘',
+                mathcounts: '📐', singapore: '🇸🇬', highcap: '🎯', cogat: '🧩', imc: '🌍', aime: '🧠',
+                math_challenge: '💪', math_is_cool: '❄️', mixed: '🎲',
+                fb_reading: '📖', spelling_bee: '🐝',
+                arithmetic: '🔢', logic: '🧩', geometry: '📐', word: '📖',
+                vocabulary: '📚', grammar: '✏️', reading: '📖', spelling: '🔤' };
+            sessions.slice(0, 15).forEach(s => {
                 const item = document.createElement('div');
                 item.className = 'session-item';
-                const hasReview = s.questions && s.questions.length > 0;
-                if (hasReview) item.classList.add('session-reviewable');
                 const date = new Date(s.date).toLocaleDateString();
-                const time = new Date(s.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 item.innerHTML = `
                     <div class="session-left">
                         <span class="session-cat-emoji">${catEmojis[s.category] || '📝'}</span>
                         <div>
                             <div class="session-cat-name">${CATEGORY_NAMES[s.category] || s.category}</div>
-                            <div class="session-date">${date} ${time}</div>
+                            <div class="session-date">${date}</div>
                         </div>
                     </div>
                     <div class="session-right">
                         <span class="session-score">${s.correct}/${s.total}</span>
                         <span class="session-pts">+${s.points} pts${s.combo >= 3 ? ' 🔥' + s.combo : ''}</span>
-                        ${hasReview ? '<span class="session-review-icon" title="Review answers">🔍</span>' : ''}
                     </div>
                 `;
-                if (hasReview) {
-                    item.onclick = () => showSessionReview(s);
-                }
                 sessContainer.appendChild(item);
             });
         }
@@ -1866,64 +1668,7 @@
         $('#btn-back-from-progress').onclick = showDashboard;
     }
 
-    // ===================== SESSION REVIEW =====================
-    function showSessionReview(session) {
-        const overlay = document.createElement('div');
-        overlay.className = 'review-overlay';
-        const date = new Date(session.date).toLocaleDateString();
-        const time = new Date(session.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const accuracy = session.total > 0 ? Math.round((session.correct / session.total) * 100) : 0;
-        const catName = CATEGORY_NAMES[session.category] || session.category;
-
-        let questionsHTML = '';
-        session.questions.forEach((q, i) => {
-            const icon = q.correct ? '✅' : '❌';
-            const statusClass = q.correct ? 'review-correct' : 'review-wrong';
-            questionsHTML += `
-                <div class="review-question ${statusClass}">
-                    <div class="review-q-header">
-                        <span class="review-q-num">${icon} Q${i + 1}</span>
-                        <span class="review-q-diff">${q.difficulty || ''}</span>
-                    </div>
-                    <div class="review-q-text">${q.q}</div>
-                    <div class="review-answers">
-                        <div class="review-answer ${q.correct ? 'review-answer-correct' : 'review-answer-wrong'}">
-                            <span class="review-answer-label">Your answer:</span>
-                            <span>${q.selected || '—'}</span>
-                        </div>
-                        ${!q.correct ? `<div class="review-answer review-answer-correct">
-                            <span class="review-answer-label">Correct answer:</span>
-                            <span>${q.answer}</span>
-                        </div>` : ''}
-                    </div>
-                </div>
-            `;
-        });
-
-        overlay.innerHTML = `
-            <div class="review-modal">
-                <div class="review-header">
-                    <h2>📋 Quiz Review</h2>
-                    <button class="review-close" onclick="this.closest('.review-overlay').remove()">✖</button>
-                </div>
-                <div class="review-summary">
-                    <div class="review-summary-title">${catName}</div>
-                    <div class="review-summary-meta">${date} at ${time}</div>
-                    <div class="review-summary-stats">
-                        <span class="review-stat">${session.correct}/${session.total} correct</span>
-                        <span class="review-stat">${accuracy}% accuracy</span>
-                        <span class="review-stat">+${session.points} pts</span>
-                    </div>
-                </div>
-                <div class="review-questions-list">
-                    ${questionsHTML}
-                </div>
-            </div>
-        `;
-
-        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-        document.body.appendChild(overlay);
-    }
+    // ===================== TOASTS =====================
     function showToast(message, type = 'info') {
         const container = $('#toast-container');
         const toast = document.createElement('div');
@@ -1990,74 +1735,296 @@
         initHintButton();
         initNextButton();
         initQuitButton();
+        initAdmin();
         window.addEventListener('resize', () => {
             const canvas = $('#confetti-canvas');
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
+    }
 
-        // ─── Auto-login returning user from localStorage ───
-        const savedPlayers = JSON.parse(localStorage.getItem('levelupkids_players') || '{}');
-        const lastPlayerName = localStorage.getItem('levelupkids_last_player');
-        if (lastPlayerName && savedPlayers[lastPlayerName.toLowerCase()]) {
-            const p = savedPlayers[lastPlayerName.toLowerCase()];
-            migratePlayer(p);
-            state.player = p;
-            state.bots = generateBotPlayers(p.grade);
+    // ===================== AI ADMIN PANEL =====================
+    function showAdmin() {
+        showScreen('admin');
+        const p = state.player;
+        if (p) $('#admin-points').textContent = p.points.toLocaleString();
+        refreshAdminStats();
+    }
 
-            // Initialize Firebase for auto-login users too
-            if (!state.useFirebase && typeof initFirebase === 'function') {
-                state.useFirebase = initFirebase();
-            }
+    async function refreshAdminStats() {
+        if (typeof GeminiQuestionEngine === 'undefined') return;
 
-            // Listen for Firebase auth to restore authUser
-            if (state.useFirebase && typeof FirebaseAuthHelper !== 'undefined') {
-                FirebaseAuthHelper.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        state.authUser = FirebaseAuthHelper.getUserInfo(user);
-                        console.log('🔑 Auth restored for:', user.displayName, 'uid:', user.uid);
-                        
-                        // Show sync button now that auth is ready
-                        const syncBtn = $('#btn-sync-now');
-                        if (syncBtn) { syncBtn.style.display = 'inline-block'; syncBtn.onclick = () => forceCloudSync(false); }
+        const stats = GeminiQuestionEngine.getStats();
 
-                        // Sync latest data from cloud
-                        try {
-                            const cloudPlayer = await FirestoreDB.loadPlayer(user.uid);
-                            if (cloudPlayer && cloudPlayer.name !== 'RESET' && (cloudPlayer.totalXP || 0) > 0) {
-                                delete cloudPlayer.updatedAt;
-                                console.log('☁️ Cloud data:', { xp: cloudPlayer.totalXP, quizzes: cloudPlayer.totalQuizzes, points: cloudPlayer.points });
-                                console.log('💾 Local data:', { xp: state.player.totalXP, quizzes: state.player.totalQuizzes, points: state.player.points });
-                                const merged = mergePlayerData(cloudPlayer, state.player);
-                                console.log('🔀 Merged data:', { xp: merged.totalXP, quizzes: merged.totalQuizzes, points: merged.points });
-                                migratePlayer(merged);
-                                state.player = merged;
-                                savePlayer(); // This will push merged data to both localStorage AND Firestore
-                            } else if ((state.player.totalXP || 0) > 0) {
-                                console.log('ℹ️ No cloud data found, pushing local data to cloud');
-                                savePlayer(); // Push local data to cloud for the first time
-                            }
-                        } catch (e) {
-                            console.warn('Cloud sync on auto-login failed:', e);
-                        }
+        // Update stat cards
+        $('#admin-total-local').textContent = stats.totalCached;
+        $('#admin-total-generated').textContent = stats.totalGenerated;
+        $('#admin-total-served').textContent = stats.totalServed;
+        $('#admin-total-errors').textContent = stats.totalErrors;
+        $('#admin-generating').textContent = stats.isGenerating ? 'Yes ⚡' : 'No';
 
-                        // Always refresh the current screen after sync so UI shows correct data
-                        if (state.currentScreen === 'dashboard') showDashboard();
-                        else if (state.currentScreen === 'leaderboard') showLeaderboard();
-                        else if (state.currentScreen === 'progress') showProgress();
+        // Cloud count
+        try {
+            const cloudCount = await GeminiQuestionEngine.getFirestoreCount();
+            $('#admin-total-cloud').textContent = cloudCount;
+        } catch (e) {
+            $('#admin-total-cloud').textContent = 'N/A';
+        }
 
-                        state._pendingCloudSync = false;
+        // API Key status with model name and rate limit
+        const keyStatus = $('#admin-key-status');
+        const keyInput = $('#admin-api-key');
+        if (stats.hasApiKey) {
+            const rl = stats.rateLimit || {};
+            keyStatus.textContent = `✅ Key set · Model: ${stats.model || 'unknown'} · Today: ${rl.today || 0}/${rl.limit || '?'} requests (${rl.remaining || '?'} left)`;
+            keyStatus.className = 'admin-key-status active';
+            if (keyInput) keyInput.placeholder = '••••••••••••••• (key saved)';
+        } else {
+            keyStatus.textContent = '❌ No key set';
+            keyStatus.className = 'admin-key-status inactive';
+        }
+
+        // Breakdown by grade
+        const gradeContainer = $('#admin-by-grade');
+        gradeContainer.innerHTML = '';
+        if (Object.keys(stats.byGrade).length === 0) {
+            gradeContainer.innerHTML = '<span style="color:var(--text-secondary);font-size:0.85rem;">No AI questions yet. Generate some!</span>';
+        } else {
+            Object.entries(stats.byGrade).sort((a, b) => a[0] - b[0]).forEach(([grade, count]) => {
+                const el = document.createElement('div');
+                el.className = 'admin-breakdown-item';
+                el.innerHTML = `Grade ${grade} <span class="admin-breakdown-count">${count}</span>`;
+                gradeContainer.appendChild(el);
+            });
+        }
+
+        // Breakdown by category
+        const catContainer = $('#admin-by-category');
+        catContainer.innerHTML = '';
+        if (Object.keys(stats.byCategory).length === 0) {
+            catContainer.innerHTML = '<span style="color:var(--text-secondary);font-size:0.85rem;">No AI questions yet.</span>';
+        } else {
+            Object.entries(stats.byCategory).forEach(([cat, count]) => {
+                const el = document.createElement('div');
+                el.className = 'admin-breakdown-item';
+                el.innerHTML = `${cat} <span class="admin-breakdown-count">${count}</span>`;
+                catContainer.appendChild(el);
+            });
+        }
+
+        // Recent questions
+        renderAdminRecentQuestions();
+
+        // Generation log
+        renderAdminGenLog(stats.recentLog);
+    }
+
+    function renderAdminRecentQuestions() {
+        const container = $('#admin-recent-questions');
+        const questions = GeminiQuestionEngine.getRecentQuestions(20);
+
+        if (questions.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">No AI questions generated yet. Use the form above to generate some!</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        questions.forEach(q => {
+            const card = document.createElement('div');
+            card.className = 'admin-question-card';
+            const diffClass = q.difficulty === 'easy' ? 'diff-tag' : q.difficulty === 'hard' ? 'diff-tag' : 'diff-tag';
+            card.innerHTML = `
+                <div class="admin-q-header">
+                    <div class="admin-q-tags">
+                        <span class="admin-q-tag ai-tag">🤖 AI</span>
+                        <span class="admin-q-tag grade-tag">Grade ${q._grade || '?'}</span>
+                        <span class="admin-q-tag cat-tag">${q._category || 'mixed'}</span>
+                        <span class="admin-q-tag ${diffClass}">${q.difficulty || 'medium'}</span>
+                    </div>
+                </div>
+                <div class="admin-q-text">${q.q}</div>
+                <div class="admin-q-options">
+                    ${(q.options || []).map((opt, i) => 
+                        `<div class="admin-q-option ${i === q.answer ? 'correct' : ''}">${['A','B','C','D'][i]}: ${opt}</div>`
+                    ).join('')}
+                </div>
+                <div class="admin-q-actions">
+                    <button class="admin-q-btn delete" data-id="${q._id}" title="Delete this question">🗑️ Delete</button>
+                </div>
+            `;
+            // Delete handler
+            const deleteBtn = card.querySelector('.admin-q-btn.delete');
+            if (deleteBtn) {
+                deleteBtn.onclick = () => {
+                    if (confirm('Delete this AI question?')) {
+                        GeminiQuestionEngine.deleteQuestion(q._id);
+                        showToast('Question deleted', 'info');
+                        renderAdminRecentQuestions();
+                        refreshAdminStats();
                     }
-                });
+                };
             }
+            container.appendChild(card);
+        });
+    }
 
-            updateStreak();
-            // If there's a hash route, go directly there
-            if (window.location.hash && window.location.hash !== '#') {
-                navigateToHash(window.location.hash);
+    function renderAdminGenLog(log) {
+        const container = $('#admin-gen-log');
+        if (!log || log.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-secondary);font-size:0.85rem;">No generation logs yet.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        [...log].reverse().forEach(entry => {
+            const el = document.createElement('div');
+            el.className = 'admin-log-item';
+            const time = new Date(entry.time).toLocaleString();
+            const duration = entry.durationMs ? `${(entry.durationMs / 1000).toFixed(1)}s` : '';
+            if (entry.error) {
+                el.innerHTML = `
+                    <span class="admin-log-time">${time}</span>
+                    <span class="admin-log-info">Grade ${entry.grade} / ${entry.category} — <span class="admin-log-error">❌ ${entry.error}</span></span>
+                    <span class="admin-log-duration">${duration}</span>
+                `;
             } else {
-                showDashboard();
+                el.innerHTML = `
+                    <span class="admin-log-time">${time}</span>
+                    <span class="admin-log-info">Grade ${entry.grade} / ${entry.category} — <span class="admin-log-count">✅ ${entry.count} questions</span></span>
+                    <span class="admin-log-duration">${duration}</span>
+                `;
             }
+            container.appendChild(el);
+        });
+    }
+
+    function initAdmin() {
+        // Save API Key
+        const saveKeyBtn = $('#btn-admin-save-key');
+        if (saveKeyBtn) {
+            saveKeyBtn.onclick = () => {
+                const keyInput = $('#admin-api-key');
+                const key = keyInput.value.trim();
+                if (key) {
+                    GeminiQuestionEngine.setApiKey(key);
+                    keyInput.value = '';
+                    showToast('✅ Gemini API key saved!', 'success');
+                    refreshAdminStats();
+                } else {
+                    showToast('Please enter an API key', 'error');
+                }
+            };
+        }
+
+        // Generate button
+        const genBtn = $('#btn-admin-generate');
+        if (genBtn) {
+            genBtn.onclick = async () => {
+                const grade = parseInt($('#admin-gen-grade').value);
+                const category = $('#admin-gen-category').value;
+                const count = parseInt($('#admin-gen-count').value) || 10;
+                const statusEl = $('#admin-gen-status');
+
+                if (!GeminiQuestionEngine.hasApiKey()) {
+                    statusEl.textContent = '❌ Please set a Gemini API key first!';
+                    statusEl.className = 'admin-gen-status error';
+                    return;
+                }
+
+                // Check free-tier daily limit
+                const rl = GeminiQuestionEngine.getRateLimitInfo();
+                if (rl.remaining <= 0) {
+                    statusEl.textContent = `🛑 Daily free-tier limit reached (${rl.today}/${rl.limit}). Resets at midnight PT.`;
+                    statusEl.className = 'admin-gen-status error';
+                    return;
+                }
+
+                genBtn.disabled = true;
+                statusEl.textContent = `🤖 Generating ${count} questions for Grade ${grade} / ${category}... (${rl.remaining} API calls left today)`;
+                statusEl.className = 'admin-gen-status loading';
+
+                try {
+                    const questions = await GeminiQuestionEngine.generateQuestions(grade, category, count);
+                    if (questions.length > 0) {
+                        statusEl.textContent = `✅ Generated ${questions.length} questions! They are now available for students.`;
+                        statusEl.className = 'admin-gen-status success';
+                        showToast(`🤖 Generated ${questions.length} AI questions!`, 'success');
+                    } else {
+                        statusEl.textContent = '⚠️ No questions generated. Check your API key and try again.';
+                        statusEl.className = 'admin-gen-status error';
+                    }
+                } catch (e) {
+                    statusEl.textContent = `❌ Error: ${e.message}`;
+                    statusEl.className = 'admin-gen-status error';
+                }
+
+                genBtn.disabled = false;
+                refreshAdminStats();
+            };
+        }
+
+        // Background generation
+        const bgStartBtn = $('#btn-admin-bg-start');
+        const bgStopBtn = $('#btn-admin-bg-stop');
+        const bgStatus = $('#admin-bg-status');
+        if (bgStartBtn) {
+            bgStartBtn.onclick = () => {
+                if (!GeminiQuestionEngine.hasApiKey()) {
+                    showToast('Set a Gemini API key first!', 'error');
+                    return;
+                }
+                const grade = state.player ? state.player.grade : 3;
+                GeminiQuestionEngine.startBackgroundGeneration(grade);
+                bgStatus.textContent = 'Running ⚡';
+                bgStatus.className = 'admin-bg-status running';
+                showToast('Background AI generation started!', 'success');
+            };
+        }
+        if (bgStopBtn) {
+            bgStopBtn.onclick = () => {
+                GeminiQuestionEngine.stopBackgroundGeneration();
+                bgStatus.textContent = 'Stopped';
+                bgStatus.className = 'admin-bg-status';
+                showToast('Background generation stopped', 'info');
+            };
+        }
+
+        // Purge buttons
+        const purgeBtn = $('#btn-admin-purge');
+        if (purgeBtn) {
+            purgeBtn.onclick = () => {
+                if (confirm('⚠️ Delete ALL locally cached AI questions? This cannot be undone.')) {
+                    GeminiQuestionEngine.purgeAllQuestions();
+                    showToast('🗑️ All local AI questions purged', 'info');
+                    refreshAdminStats();
+                }
+            };
+        }
+
+        const purgeCloudBtn = $('#btn-admin-purge-cloud');
+        if (purgeCloudBtn) {
+            purgeCloudBtn.onclick = async () => {
+                if (confirm('⚠️ Delete ALL AI questions from cloud (Firestore)? This cannot be undone.')) {
+                    await GeminiQuestionEngine.purgeFirestore();
+                    showToast('🗑️ Cloud AI questions purged', 'info');
+                    refreshAdminStats();
+                }
+            };
+        }
+
+        // Refresh button
+        const refreshBtn = $('#btn-admin-refresh');
+        if (refreshBtn) {
+            refreshBtn.onclick = () => {
+                refreshAdminStats();
+                showToast('Stats refreshed!', 'info');
+            };
+        }
+
+        // Back button
+        const backBtn = $('#btn-back-from-admin');
+        if (backBtn) {
+            backBtn.onclick = showDashboard;
         }
     }
 

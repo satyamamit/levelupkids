@@ -639,6 +639,38 @@ body {
     margin-bottom: 20px;
 }
 
+/* ---------- Smart Recommendation Widget ---------- */
+.smart-rec {
+    margin: 0 0 16px;
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(108,99,255,0.10), rgba(46,213,115,0.10));
+    border: 1px solid rgba(108,99,255,0.18);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.smart-rec .rec-emoji { font-size: 1.3rem; }
+.smart-rec .rec-btn {
+    padding: 5px 14px;
+    border-radius: var(--radius-full);
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.smart-rec .rec-btn:hover { transform: scale(1.05); }
+[data-theme="light"] .smart-rec {
+    background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(46,213,115,0.08));
+    border-color: rgba(108,99,255,0.12);
+}
+
 /* ---------- Subject Tabs ---------- */
 .subject-tabs {
     display: flex;
@@ -3387,6 +3419,24 @@ body {
     box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
 }
 
+/* Competition tag badge */
+.comp-tag {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: linear-gradient(135deg, #A855F7, #7C3AED);
+    color: #FFF;
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    line-height: 1.4;
+    box-shadow: 0 2px 6px rgba(168, 85, 247, 0.4);
+    z-index: 2;
+}
+
 /* Make cards relative for the tag positioning */
 .challenge-card {
     position: relative;
@@ -4324,4 +4374,499 @@ body {
 [data-theme="light"] .redemption-item {
     background: #FFFFFF !important;
     border: 1px solid #D0D0E0 !important;
+}
+
+/* ============================================================
+   AI Admin Panel Styles
+   ============================================================ */
+.admin-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-top: 80px;
+}
+
+.admin-section {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.admin-section h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    margin-bottom: 14px;
+    color: var(--text-primary);
+}
+
+.admin-api-section {
+    border: 2px solid var(--primary);
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(124, 115, 255, 0.05) 100%);
+}
+
+.admin-api-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.admin-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 14px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+}
+
+.admin-input:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.admin-key-status {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.admin-key-status.active {
+    color: var(--accent-green);
+}
+
+.admin-key-status.inactive {
+    color: var(--secondary);
+}
+
+.admin-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+.admin-hint a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.admin-hint a:hover {
+    text-decoration: underline;
+}
+
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    padding: 20px;
+    padding-top: 80px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.admin-stat-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.admin-stat-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+.admin-stat-value {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.admin-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admin-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-breakdown-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-highlight);
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.admin-breakdown-item .admin-breakdown-count {
+    background: var(--primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+}
+
+.admin-gen-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.admin-select {
+    padding: 10px 14px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.admin-select:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.admin-gen-status {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-height: 20px;
+}
+
+.admin-gen-status.loading {
+    background: rgba(124, 115, 255, 0.1);
+    color: var(--primary);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.admin-gen-status.success {
+    background: rgba(46, 213, 115, 0.1);
+    color: var(--accent-green);
+}
+
+.admin-gen-status.error {
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--secondary);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.admin-bg-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.admin-bg-status {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    background: var(--bg-highlight);
+    color: var(--text-secondary);
+}
+
+.admin-bg-status.running {
+    background: rgba(46, 213, 115, 0.15);
+    color: var(--accent-green);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.admin-questions-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.admin-question-card {
+    background: var(--bg-highlight);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 10px;
+    border-left: 4px solid var(--primary);
+    position: relative;
+}
+
+.admin-question-card:hover {
+    background: var(--bg-card-hover);
+}
+
+.admin-q-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+}
+
+.admin-q-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.admin-q-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admin-q-tag.ai-tag {
+    background: linear-gradient(135deg, #A855F7, #6C63FF);
+    color: white;
+}
+
+.admin-q-tag.grade-tag {
+    background: rgba(30, 144, 255, 0.15);
+    color: var(--accent-blue);
+}
+
+.admin-q-tag.cat-tag {
+    background: rgba(255, 165, 2, 0.15);
+    color: var(--accent-yellow);
+}
+
+.admin-q-tag.diff-tag {
+    background: rgba(46, 213, 115, 0.15);
+    color: var(--accent-green);
+}
+
+.admin-q-text {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+.admin-q-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.admin-q-option {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--bg-card);
+}
+
+.admin-q-option.correct {
+    background: rgba(46, 213, 115, 0.15);
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.admin-q-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.admin-q-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.admin-q-btn:hover {
+    border-color: var(--secondary);
+    color: var(--secondary);
+}
+
+.admin-q-btn.delete:hover {
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.admin-gen-log {
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+}
+
+.admin-log-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-log-item:last-child {
+    border-bottom: none;
+}
+
+.admin-log-time {
+    color: var(--text-light);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.admin-log-info {
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.admin-log-count {
+    font-weight: 700;
+    color: var(--accent-green);
+}
+
+.admin-log-error {
+    color: var(--secondary);
+}
+
+.admin-log-duration {
+    color: var(--text-light);
+    font-size: 0.75rem;
+}
+
+.admin-danger {
+    border-color: var(--secondary);
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255, 107, 107, 0.03) 100%);
+}
+
+.admin-danger h3 {
+    color: var(--secondary);
+}
+
+.admin-danger-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-danger {
+    padding: 10px 18px;
+    background: transparent;
+    border: 2px solid var(--secondary);
+    color: var(--secondary);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-danger:hover {
+    background: var(--secondary);
+    color: white;
+}
+
+/* ── AI Tag in quiz source badge ── */
+.source-badge.ai-source {
+    background: linear-gradient(135deg, #A855F7, #6C63FF) !important;
+    color: white !important;
+    font-weight: 700;
+}
+
+/* ── Light theme overrides for admin ── */
+[data-theme="light"] .admin-section {
+    background: #FFFFFF;
+    border-color: #D0D0E0;
+}
+
+[data-theme="light"] .admin-stat-card {
+    background: #FFFFFF;
+    border-color: #D0D0E0;
+}
+
+[data-theme="light"] .admin-question-card {
+    background: #F5F5FF;
+}
+
+[data-theme="light"] .admin-question-card:hover {
+    background: #EEEEF8;
+}
+
+[data-theme="light"] .admin-input,
+[data-theme="light"] .admin-select {
+    background: #F0F0F8;
+    border-color: #D0D0E0;
+}
+
+[data-theme="light"] .admin-q-option {
+    background: #F0F0F8;
+}
+
+[data-theme="light"] .admin-q-option.correct {
+    background: rgba(46, 213, 115, 0.1);
+}
+
+/* Mobile responsive for admin */
+@media (max-width: 600px) {
+    .admin-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 10px;
+    }
+    
+    .admin-stat-card {
+        padding: 10px;
+    }
+    
+    .admin-stat-value {
+        font-size: 1.2rem;
+    }
+    
+    .admin-gen-form {
+        flex-direction: column;
+    }
+    
+    .admin-gen-form > * {
+        width: 100%;
+    }
+    
+    .admin-api-form {
+        flex-direction: column;
+    }
+    
+    .admin-q-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .admin-danger-btns {
+        flex-direction: column;
+    }
 }
