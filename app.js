@@ -46,7 +46,7 @@
     // ===================== CONSTANTS =====================
     const POINTS_MAP = { easy: 5, medium: 10, hard: 20 };
     const HINT_PENALTY = 2;
-    const QUESTIONS_PER_QUIZ = 10;
+    const QUESTIONS_PER_QUIZ = 20;
     const TIMED_SECONDS = 90;
     const DAILY_CHALLENGE_COUNT = 5;
 
