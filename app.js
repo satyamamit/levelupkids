@@ -1731,7 +1731,17 @@
         }
         breakdown.appendChild(recBox);
 
-        if (accuracy >= 80) launchConfetti();
+        // Tiered celebration
+        if (accuracy === 100) {
+            launchConfetti(300); // massive
+            setTimeout(() => launchConfetti(200), 600); // second wave
+            showCelebrationBanner('🏆 PERFECT SCORE! 🏆', '#FFD700');
+        } else if (accuracy >= 80) {
+            launchConfetti(150);
+            showCelebrationBanner('🌟 Excellent! 🌟', '#2ED573');
+        } else if (accuracy >= 60) {
+            launchConfetti(80);
+        }
 
         $('#btn-play-again').onclick = () => startQuiz(quiz.category, quiz.difficulty, quiz.isDaily);
         $('#btn-back-dashboard').onclick = showDashboard;
@@ -2124,7 +2134,7 @@
     }
 
     // ===================== CONFETTI =====================
-    function launchConfetti() {
+    function launchConfetti(count = 150) {
         const canvas = $('#confetti-canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
@@ -2132,15 +2142,17 @@
 
         const particles = [];
         const colors = ['#6C63FF', '#FF6B6B', '#2ED573', '#FFA502', '#1E90FF', '#FF6B9D', '#A855F7', '#FFD700'];
+        const shapes = ['rect', 'circle', 'star'];
 
-        for (let i = 0; i < 150; i++) {
+        for (let i = 0; i < count; i++) {
             particles.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height - canvas.height,
                 w: Math.random() * 10 + 5,
                 h: Math.random() * 6 + 3,
                 color: colors[Math.floor(Math.random() * colors.length)],
-                vx: (Math.random() - 0.5) * 4,
+                shape: shapes[Math.floor(Math.random() * shapes.length)],
+                vx: (Math.random() - 0.5) * 6,
                 vy: Math.random() * 4 + 2,
                 rotation: Math.random() * 360,
                 rotSpeed: (Math.random() - 0.5) * 10,
@@ -2154,20 +2166,63 @@
             frame++;
             particles.forEach(p => {
                 p.x += p.vx; p.y += p.vy; p.rotation += p.rotSpeed; p.vy += 0.05;
-                if (frame > 100) p.opacity -= 0.02;
+                p.vx *= 0.999; // slight air drag
+                if (frame > 120) p.opacity -= 0.015;
                 if (p.opacity <= 0) return;
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate((p.rotation * Math.PI) / 180);
                 ctx.globalAlpha = Math.max(0, p.opacity);
                 ctx.fillStyle = p.color;
-                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                if (p.shape === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (p.shape === 'star') {
+                    drawStar(ctx, 0, 0, 5, p.w / 2, p.w / 4);
+                } else {
+                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                }
                 ctx.restore();
             });
-            if (frame < 200 && particles.some(p => p.opacity > 0)) requestAnimationFrame(animate);
+            if (frame < 250 && particles.some(p => p.opacity > 0)) requestAnimationFrame(animate);
             else ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
         animate();
+    }
+
+    function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+        let rot = Math.PI / 2 * 3, step = Math.PI / spikes;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - outerR);
+        for (let i = 0; i < spikes; i++) {
+            ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+            rot += step;
+            ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+            rot += step;
+        }
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function showCelebrationBanner(text, color) {
+        const banner = document.createElement('div');
+        banner.style.cssText = `
+            position:fixed;top:0;left:0;width:100%;z-index:10000;
+            display:flex;align-items:center;justify-content:center;
+            padding:16px;font-size:1.4rem;font-weight:800;
+            font-family:var(--font-display);color:#fff;
+            background:${color};text-shadow:0 2px 8px rgba(0,0,0,0.3);
+            transform:translateY(-100%);transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events:none;
+        `;
+        banner.textContent = text;
+        document.body.appendChild(banner);
+        requestAnimationFrame(() => { banner.style.transform = 'translateY(0)'; });
+        setTimeout(() => {
+            banner.style.transform = 'translateY(-100%)';
+            setTimeout(() => banner.remove(), 600);
+        }, 2500);
     }
 
     // ===================== INIT =====================
