@@ -507,7 +507,10 @@
 
     // ===================== WELCOME SCREEN =====================
     function migratePlayer(p) {
-        if (!p.totalXP) p.totalXP = (p.totalPointsEarned || 0) * 2;
+        // Unify XP = totalPointsEarned for existing players
+        if (!p.totalXP || p.totalXP < (p.totalPointsEarned || 0)) {
+            p.totalXP = (p.totalPointsEarned || 0);
+        }
         if (!p.maxCombo) p.maxCombo = 0;
         if (!p.dailyChallengesCompleted) p.dailyChallengesCompleted = 0;
         if (!p.dailyStreakDates) p.dailyStreakDates = [];
@@ -1404,7 +1407,6 @@
         const correct = selected === q.answer;
         const basePoints = POINTS_MAP[diff] || 10;
         let pointsEarned = 0;
-        let xpEarned = 0;
 
         // Mark buttons
         const buttons = $$('.answer-btn');
@@ -1429,11 +1431,9 @@
             if (quiz.hintUsedThisQuestion) pointsEarned = Math.max(1, pointsEarned - HINT_PENALTY);
             if (diff === 'hard') pointsEarned += 5;
 
-            xpEarned = Math.round((XP_PER_CORRECT[diff] || 20) * comboMult);
-
             quiz.score++;
             quiz.pointsEarned += pointsEarned;
-            quiz.xpEarned += xpEarned;
+            quiz.xpEarned += pointsEarned;  // XP = Points
             state.player.totalCorrect++;
             if (diff === 'hard') state.player.hardCorrect = (state.player.hardCorrect || 0) + 1;
         } else {
@@ -1448,7 +1448,7 @@
 
         quiz.results.push({
             question: q.q, correct, selected: q.options[selected],
-            answer: q.options[q.answer], pointsEarned, xpEarned, difficulty: diff,
+            answer: q.options[q.answer], pointsEarned, xpEarned: pointsEarned, difficulty: diff,
             hint: q.hint || '', explanation: q.explanation || '', options: q.options, correctIndex: q.answer
         });
 
@@ -1563,8 +1563,8 @@
         if (quiz.pointsEarned > 0) p.totalPointsEarned += quiz.pointsEarned;
         p.totalQuizzes++;
 
-        // XP
-        let totalXP = quiz.xpEarned + XP_QUIZ_COMPLETE;
+        // XP = Points (unified system) + bonuses
+        let totalXP = Math.max(0, quiz.pointsEarned) + XP_QUIZ_COMPLETE;
         if (quiz.score === quiz.questions.length) {
             totalXP += XP_PERFECT_BONUS;
             p.perfectScores = (p.perfectScores || 0) + 1;
@@ -1656,7 +1656,7 @@
         breakdown.innerHTML = `
             <h3 style="margin-bottom:12px;font-family:var(--font-display);">Question Breakdown</h3>
             <div style="text-align:center;margin-bottom:12px;color:var(--primary);font-weight:700;">
-                +${totalXP} XP earned${quiz.maxCombo >= 3 ? ` | Max Combo: ${quiz.maxCombo}🔥` : ''}
+                +${totalXP} XP (${quiz.pointsEarned >= 0 ? '+' : ''}${quiz.pointsEarned} quiz points + ${XP_QUIZ_COMPLETE} completion${quiz.score === quiz.questions.length ? ` + ${XP_PERFECT_BONUS} perfect` : ''}${quiz.isDaily ? ` + ${XP_DAILY_BONUS} daily` : ''})${quiz.maxCombo >= 3 ? ` | Max Combo: ${quiz.maxCombo}🔥` : ''}
             </div>`;
 
         const wrongOnes = [];
