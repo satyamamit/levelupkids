@@ -2267,8 +2267,9 @@ body {
 }
 
 .btn-daily-challenge:disabled {
-    background: #CCC;
-    box-shadow: none;
+    background: linear-gradient(135deg, #27AE60, #2ECC71);
+    color: white;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
     cursor: default;
     transform: none;
 }
@@ -2290,8 +2291,8 @@ body {
     justify-content: center;
     font-size: 0.75rem;
     font-weight: 700;
-    background: #F0F0F8;
-    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .cal-day.completed {
@@ -2301,13 +2302,14 @@ body {
 
 .cal-day.today {
     border: 2px solid var(--primary);
-    background: var(--primary-light);
+    background: linear-gradient(135deg, var(--primary), #7C4DFF);
     color: white;
+    box-shadow: 0 0 8px rgba(108, 92, 231, 0.5);
 }
 
 .cal-day.missed {
-    background: #FFE0E0;
-    color: #C62828;
+    background: rgba(198, 40, 40, 0.3);
+    color: #EF5350;
 }
 
 /* ============================================================
@@ -4274,6 +4276,16 @@ body {
 
 [data-theme="light"] .daily-progress-bar {
     background: #E8EAF0 !important;
+}
+
+[data-theme="light"] .cal-day {
+    background: #E8EAF0 !important;
+    color: #555 !important;
+}
+
+[data-theme="light"] .cal-day.missed {
+    background: #FFE0E0 !important;
+    color: #C62828 !important;
 }
 
 /* ── Modal ── */
