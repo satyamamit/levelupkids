@@ -375,18 +375,20 @@ const GeminiQuestionEngine = (function () {
 - Money problems with discount chains or buy-X-get-Y-free
 - Snail-on-wall / filling-pool with setback problems
 Avoid simple 1-step add/subtract/multiply. Each question should tell a mini-story that requires setting up a strategy to solve.`
-                : `COMPLEX multi-step word problems for Grade ${grade}. Each problem MUST require 3-5 steps of reasoning. Types to include:
-- Work/Rate problems (pipes filling pools, workers building walls)
-- Mixture/Alloy problems (ratios of two substances)
-- Boats upstream/downstream (speed of current)
-- Profit/Loss chains (markup then discount)
-- Compound interest and population growth
-- Speed/Distance with head starts or opposite directions
-- Inclusion-exclusion (Venn diagram word problems)
-- Investment/Partnership problems (money × time splitting)
-- Clock problems (angles between hands, gaining/losing time)
-- Consecutive number problems with constraints
-Every problem must be a rich story requiring multi-step algebra or arithmetic reasoning. Never generate simple 1-step calculations.`,
+                : `EXTREMELY CHALLENGING multi-step word problems for Grade ${grade}. Difficulty level: AMC 8 / Mathcounts / Singapore Math Olympiad. Each problem MUST require 3-5 steps of reasoning and should NOT be solvable in one step. Types to include:
+- Work/Rate problems (pipes filling pools with leaks, workers joining/leaving mid-task)
+- Mixture/Alloy problems (mixing concentrations, finding unknown quantities)
+- Boats upstream/downstream (finding current speed or still-water speed)
+- Profit/Loss chains (multiple markups and discounts, successive percentage changes)
+- Compound interest and population growth with multi-year calculations
+- Speed/Distance with head starts, opposite directions, or changing speeds mid-journey
+- Inclusion-exclusion with three sets (Venn diagram problems with "at least two" conditions)
+- Investment/Partnership problems (money × time splitting with unequal periods)
+- Clock problems (exact angles between hands at non-standard times)
+- Consecutive number problems requiring quadratic reasoning
+- Weighted averages (combining groups with different sizes and means)
+- Problems requiring setting up and solving simultaneous equations
+CRITICAL: Every problem MUST be a rich real-world story requiring ALGEBRAIC SETUP and MULTI-STEP REASONING. Problems must involve at least 2 unknowns or 3+ arithmetic operations. NEVER generate simple 1-step calculations or straightforward plug-and-chug problems. Think competition math level.`,
             mixed: `mixed math topics for Grade ${grade} covering: ${topics}. Include at least 40% multi-step word problems alongside computation and logic.`,
             // Competition — grade-aware
             olympiad: isElem

@@ -433,14 +433,130 @@ const QuestionAPI = (function () {
         },
       ];
 
+      // Middle school (6-8): competition-level multi-step problems
+      const middleSchoolTemplates = [
+        () => {
+          // Work/Rate: Two workers with different rates
+          const rateA = rand(4, 12), rateB = rand(4, 12);
+          const lcm = (rateA * rateB) / gcd(rateA, rateB);
+          const together = Math.round((rateA * rateB) / (rateA + rateB) * 10) / 10;
+          if (!Number.isFinite(together) || together !== Math.floor(together)) {
+            // Fallback to clean numbers
+            const a = rand(2, 5) * 3, b = rand(2, 5) * 2;
+            const ans = (a * b) / (a + b);
+            if (ans !== Math.floor(ans)) return { q: `${name} can paint a room in ${a} hours. ${pick(['Maya','Sam','Leo','Zara'])} can paint it in ${b} hours. Working together, what fraction of the room do they paint in 1 hour? Express as a percentage (round to nearest whole).`, ans: Math.round((1/a + 1/b) * 100), hint: `Add rates: 1/${a} + 1/${b}`, diff: 'hard' };
+            return { q: `${name} can finish a job in ${a} hours and another worker can do it in ${b} hours. How many hours to finish together?`, ans: ans, hint: `Combined rate = 1/${a} + 1/${b}`, diff: 'hard' };
+          }
+          return { q: `Machine A produces ${rateA} widgets/hour and Machine B produces ${rateB}/hour. They need ${rateA * rateB} widgets. How many hours working together?`, ans: together, hint: 'Combined rate, then divide total by rate.', diff: 'hard' };
+        },
+        () => {
+          // Upstream/Downstream
+          const boat = rand(10, 25), current = rand(2, 6);
+          const dist = (boat + current) * rand(2, 5);
+          const timeDown = dist / (boat + current), timeUp = dist / (boat - current);
+          const totalTime = timeDown + timeUp;
+          if (totalTime !== Math.floor(totalTime)) return { q: `A boat travels ${dist} km downstream (with current of ${current} km/h) at ${boat + current} km/h, then returns upstream. How many hours for the upstream trip?`, ans: timeUp, hint: 'Upstream speed = boat speed − current speed.', diff: 'hard' };
+          return { q: `A boat goes ${dist} km downstream and back. Boat speed = ${boat} km/h, current = ${current} km/h. Total round trip time?`, ans: totalTime, hint: 'Downstream speed ≠ upstream speed.', diff: 'hard' };
+        },
+        () => {
+          // Mixture problem
+          const pureA = rand(10, 40), pureB = rand(50, 90);
+          const qtyA = rand(2, 10), qtyB = rand(2, 10);
+          const mixture = Math.round((pureA * qtyA + pureB * qtyB) / (qtyA + qtyB));
+          return { q: `${name} mixes ${qtyA} liters of ${pureA}% salt solution with ${qtyB} liters of ${pureB}% salt solution. What is the concentration of the mixture (nearest whole %)?`, ans: mixture, hint: 'Total salt ÷ total volume × 100.', diff: 'hard' };
+        },
+        () => {
+          // Profit/Loss chain
+          const cost = rand(5, 20) * 10;
+          const markup = pick([20, 25, 30, 40, 50]);
+          const discount = pick([10, 15, 20, 25]);
+          const marked = cost * (1 + markup / 100);
+          const selling = Math.round(marked * (1 - discount / 100));
+          const profitPct = Math.round((selling - cost) / cost * 100);
+          return { q: `A shopkeeper buys an item for $${cost}, marks it up ${markup}%, then offers ${discount}% discount. What is the profit percentage?`, ans: profitPct, hint: 'Calculate marked price, then selling price, then profit %.', diff: 'hard' };
+        },
+        () => {
+          // Meeting trains from opposite directions
+          const dist = rand(10, 40) * 10;
+          const speedA = rand(40, 80), speedB = rand(40, 80);
+          const meetTime = dist / (speedA + speedB);
+          const distA = Math.round(speedA * meetTime);
+          return { q: `Two trains start ${dist} km apart heading toward each other at ${speedA} km/h and ${speedB} km/h. How far from the first train's station do they meet?`, ans: distA, hint: 'Find meeting time first, then distance = speed × time.', diff: 'hard' };
+        },
+        () => {
+          // Investment/Partnership
+          const investA = rand(2, 8) * 1000, investB = rand(2, 8) * 1000;
+          const monthsA = rand(6, 12), monthsB = rand(4, 12);
+          const totalProfit = rand(5, 20) * 100;
+          const ratioA = investA * monthsA, ratioB = investB * monthsB;
+          const shareA = Math.round(totalProfit * ratioA / (ratioA + ratioB));
+          return { q: `${name} invests $${investA} for ${monthsA} months. A partner invests $${investB} for ${monthsB} months. They earn $${totalProfit} profit. What is ${name}'s share?`, ans: shareA, hint: 'Profit ratio = investment × time for each person.', diff: 'hard' };
+        },
+        () => {
+          // Inclusion-Exclusion
+          const total = rand(30, 60);
+          const a = rand(Math.floor(total * 0.4), Math.floor(total * 0.8));
+          const b = rand(Math.floor(total * 0.3), Math.floor(total * 0.7));
+          const neither = rand(2, Math.floor(total * 0.15));
+          const both = a + b - (total - neither);
+          if (both < 1 || both > Math.min(a, b)) return { q: `In a class of 40 students, 25 play soccer, 20 play basketball, and 5 play neither. How many play both?`, ans: 10, hint: 'Use inclusion-exclusion: A + B − Both = Total − Neither.', diff: 'hard' };
+          return { q: `In a group of ${total}, ${a} like pizza, ${b} like burgers, and ${neither} like neither. How many like both?`, ans: both, hint: 'A + B − Both = Total − Neither.', diff: 'hard' };
+        },
+        () => {
+          // Consecutive numbers with product/sum constraint
+          const start = rand(5, 20);
+          const n = 3;
+          const sum = start * n + n * (n - 1) / 2;
+          const product = start * (start + 2);
+          return { q: `Three consecutive integers sum to ${sum}. What is the product of the smallest and largest?`, ans: product, hint: 'Middle number = sum ÷ 3.', diff: 'hard' };
+        },
+        () => {
+          // Compound percentage change
+          const original = rand(5, 20) * 100;
+          const inc = pick([10, 15, 20, 25]);
+          const dec = pick([10, 15, 20, 25]);
+          const final = Math.round(original * (1 + inc / 100) * (1 - dec / 100));
+          const netChange = final - original;
+          return { q: `A stock worth $${original} rises ${inc}% then falls ${dec}%. What is the net change in dollars?`, ans: netChange, hint: 'Apply increases/decreases sequentially, not by adding percentages.', diff: 'hard' };
+        },
+        () => {
+          // Head start / catch up
+          const slowSpeed = rand(30, 50), fastSpeed = slowSpeed + rand(10, 30);
+          const headStart = rand(1, 3);
+          const headDist = slowSpeed * headStart;
+          const catchTime = headDist / (fastSpeed - slowSpeed);
+          if (catchTime !== Math.floor(catchTime)) return { q: `Car A leaves at ${slowSpeed} mph. ${rand(1,3)} hours later, Car B follows at ${fastSpeed} mph. How far ahead is Car A when Car B starts?`, ans: headDist, hint: 'Distance = Speed × Time.', diff: 'medium' };
+          return { q: `Car A leaves at ${slowSpeed} mph. ${headStart} hour(s) later, Car B leaves at ${fastSpeed} mph in the same direction. How many hours after Car B leaves does it catch Car A?`, ans: catchTime, hint: 'Car B must close the gap. Gap ÷ speed difference.', diff: 'hard' };
+        },
+        () => {
+          // Weighted average
+          const n1 = rand(15, 30), avg1 = rand(60, 85);
+          const n2 = rand(10, 25), avg2 = rand(70, 95);
+          const combined = Math.round((n1 * avg1 + n2 * avg2) / (n1 + n2));
+          return { q: `Section A has ${n1} students averaging ${avg1} on a test. Section B has ${n2} students averaging ${avg2}. What is the combined average (rounded)?`, ans: combined, hint: 'Weighted average: (n₁×avg₁ + n₂×avg₂) ÷ (n₁+n₂).', diff: 'hard' };
+        },
+        () => {
+          // Clock angle
+          const hr = rand(1, 12), min = pick([0, 15, 30, 45]);
+          const hourAngle = hr * 30 + min * 0.5;
+          const minAngle = min * 6;
+          let angle = Math.abs(hourAngle - minAngle);
+          if (angle > 180) angle = 360 - angle;
+          return { q: `What is the angle between the clock hands at ${hr}:${min < 10 ? '0' + min : min}?`, ans: angle, hint: 'Hour hand: 0.5°/min. Minute hand: 6°/min.', diff: 'hard' };
+        },
+      ];
+
       // Pick templates based on grade
       let templates;
       if (grade <= 2) {
         templates = [...easyTemplates, ...mediumTemplates.slice(0, 1)];
       } else if (grade <= 4) {
         templates = [...mediumTemplates, ...hardTemplates.slice(0, 3)];
-      } else {
+      } else if (grade <= 5) {
         templates = [...hardTemplates, ...mediumTemplates.slice(0, 1)];
+      } else {
+        // Grades 6-8: competition-level only
+        templates = middleSchoolTemplates;
       }
 
       const t = pick(templates)();
