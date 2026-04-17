@@ -1750,7 +1750,7 @@
         $('#lb-points').textContent = p.points.toLocaleString();
         $('#lb-your-name').textContent = p.name;
         $('#lb-your-tier').textContent = `${tier.emoji} ${tier.name}`;
-        $('#lb-your-xp').textContent = `${(p.totalPointsEarned || 0).toLocaleString()} pts`;
+        $('#lb-your-xp').textContent = `${p.points.toLocaleString()} pts`;
         $('#lb-your-level').textContent = `Level ${levelInfo.level}`;
 
         // Stats
@@ -1804,6 +1804,7 @@
             // Use real players from Firestore, mark current user
             allPlayers = realPlayers.map(pl => ({
                 ...pl,
+                pts: pl.points || pl.totalPointsEarned || pl.totalXP || 0,
                 level: getLevelFromPoints(pl.totalPointsEarned || pl.totalXP || 0).level,
                 isYou: pl.uid === myUid,
                 isBot: false
@@ -1813,19 +1814,21 @@
             if (!meInList) {
                 const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
                 allPlayers.push({
-                    name: p.name, grade: p.grade, totalPointsEarned: p.totalPointsEarned || 0,
+                    name: p.name, grade: p.grade, pts: p.points,
                     level: levelInfo.level, totalQuizzes: p.totalQuizzes,
                     totalCorrect: p.totalCorrect, totalAttempted: p.totalAttempted,
                     maxStreak: p.maxStreak, isBot: false, isYou: true,
                     photoURL: state.authUser?.photoURL || null
                 });
+            } else {
+                meInList.pts = p.points; // Use local spendable balance
             }
         } else {
             // Fallback to bots
-            allPlayers = [...(state.bots || [])];
+            allPlayers = [...(state.bots || [])].map(b => ({ ...b, pts: b.totalPointsEarned || 0 }));
             const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
             allPlayers.push({
-                name: p.name, grade: p.grade, totalPointsEarned: p.totalPointsEarned || 0,
+                name: p.name, grade: p.grade, pts: p.points,
                 level: levelInfo.level, totalQuizzes: p.totalQuizzes,
                 totalCorrect: p.totalCorrect, totalAttempted: p.totalAttempted,
                 maxStreak: p.maxStreak, isBot: false, isYou: true
@@ -1836,16 +1839,16 @@
             } else if (tab === 'weekly') {
                 allPlayers = allPlayers.map(pl => ({
                     ...pl,
-                    weeklyPts: pl.isYou ? Math.floor((p.totalPointsEarned || 0) * 0.15) : Math.floor((pl.totalPointsEarned || 0) * (0.05 + Math.random() * 0.2))
+                    weeklyPts: pl.isYou ? Math.floor(p.points * 0.15) : Math.floor((pl.pts || 0) * (0.05 + Math.random() * 0.2))
                 }));
             }
         }
 
         // Sort
         if (tab === 'weekly' && !realPlayers.length) {
-            allPlayers.sort((a, b) => (b.weeklyPts || b.totalPointsEarned || 0) - (a.weeklyPts || a.totalPointsEarned || 0));
+            allPlayers.sort((a, b) => (b.weeklyPts || b.pts || 0) - (a.weeklyPts || a.pts || 0));
         } else {
-            allPlayers.sort((a, b) => (b.totalPointsEarned || b.totalXP || 0) - (a.totalPointsEarned || a.totalXP || 0));
+            allPlayers.sort((a, b) => (b.pts || 0) - (a.pts || 0));
         }
 
         // Find player rank
@@ -1862,11 +1865,11 @@
         }
 
         allPlayers.slice(0, 25).forEach((pl, i) => {
-            const plLevel = pl.level || getLevelFromPoints(pl.totalPointsEarned || pl.totalXP || 0).level;
+            const plLevel = pl.level || getLevelFromPoints(pl.pts || 0).level;
             const plTier = getTier(plLevel);
             const topClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
             const youClass = pl.isYou ? 'is-you' : '';
-            const ptsVal = tab === 'weekly' && pl.weeklyPts != null ? pl.weeklyPts : (pl.totalPointsEarned || pl.totalXP || 0);
+            const ptsVal = tab === 'weekly' && pl.weeklyPts != null ? pl.weeklyPts : (pl.pts || 0);
             const ptsDisplay = `${ptsVal.toLocaleString()} pts`;
 
             // Avatar: use photo if available, otherwise tier emoji
