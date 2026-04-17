@@ -9,6 +9,18 @@ const QuestionAPI = (function () {
   function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function pick(arr) { return arr[rand(0, arr.length - 1)]; }
   function shuffle(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  // Simple string hash for dedup — fast 53-bit hash
+  function hashQ(str) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h2 = Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    return ((h2 >>> 0) * 4294967296 + (h1 >>> 0)).toString(36);
+  }
   function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; }
   function lcm(a, b) { return Math.abs(a * b) / gcd(a, b); }
   function isPrime(n) { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; }
@@ -1459,10 +1471,11 @@ const QuestionAPI = (function () {
   }
 
   // ─── Main entry point ────────────────────────────────────
-  async function getQuestions(grade, category, count) {
+  async function getQuestions(grade, category, count, seenHashes) {
     grade = parseInt(grade) || 4;
     category = category || 'mixed';
     count = count || 10;
+    const seen = seenHashes instanceof Set ? seenHashes : new Set(seenHashes || []);
 
     let questions = [];
 
@@ -1507,6 +1520,18 @@ const QuestionAPI = (function () {
       }
     }
 
+    // Deduplicate: prefer unseen questions, fall back to seen if pool is too small
+    if (seen.size > 0) {
+      const unseen = questions.filter(q => !seen.has(hashQ(q.q)));
+      if (unseen.length >= count) {
+        questions = unseen;
+      } else {
+        // Use all unseen + fill remainder from seen (least-repeat is still better)
+        const seenOnes = questions.filter(q => seen.has(hashQ(q.q)));
+        questions = [...unseen, ...shuffle(seenOnes)];
+      }
+    }
+
     // Shuffle final set and return exactly count
     return shuffle(questions).slice(0, count);
   }
@@ -1517,6 +1542,7 @@ const QuestionAPI = (function () {
     getLocalQuestions,
     fetchOpenTDB,
     generateQuestions,
+    hashQ,
     Gen
   };
 

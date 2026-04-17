@@ -1227,11 +1227,14 @@
             ]);
         }
 
+        // Collect seen question hashes for dedup
+        const seenHashes = new Set(state.player.seenQuestions || []);
+
         let questions;
         try {
             // Use QuestionAPI — 3s timeout so quiz doesn't hang on slow external APIs
             if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
-                questions = await withTimeout(QuestionAPI.getQuestions(state.player.grade, category, count), 3000);
+                questions = await withTimeout(QuestionAPI.getQuestions(state.player.grade, category, count, seenHashes), 3000);
             } else {
                 questions = getQuestions(state.player.grade, category, count);
             }
@@ -1617,6 +1620,18 @@
             points: totalEarned, combo: quiz.maxCombo
         });
         if (p.sessions.length > 50) p.sessions = p.sessions.slice(0, 50);
+
+        // Track seen questions for dedup (rolling window of 300)
+        if (!p.seenQuestions) p.seenQuestions = [];
+        const hashFn = (typeof QuestionAPI !== 'undefined' && QuestionAPI.hashQ) ? QuestionAPI.hashQ : null;
+        if (hashFn) {
+            quiz.questions.forEach(q => {
+                const h = hashFn(q.q);
+                if (!p.seenQuestions.includes(h)) p.seenQuestions.push(h);
+            });
+            // Keep only last 300 to avoid localStorage bloat
+            if (p.seenQuestions.length > 300) p.seenQuestions = p.seenQuestions.slice(-300);
+        }
 
         checkAchievements();
         savePlayer();
