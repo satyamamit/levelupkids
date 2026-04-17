@@ -86,20 +86,19 @@
         'amit.satyam@gmail.com'
     ];
 
-    // ─── XP & LEVEL SYSTEM ─────────────────────────────────
-    const XP_PER_CORRECT = { easy: 10, medium: 20, hard: 40 };
-    const XP_QUIZ_COMPLETE = 25;
-    const XP_PERFECT_BONUS = 50;
-    const XP_DAILY_BONUS = 100;
+    // ─── LEVEL SYSTEM (based on total points earned) ──────
+    const BONUS_QUIZ_COMPLETE = 25;
+    const BONUS_PERFECT = 50;
+    const BONUS_DAILY = 100;
 
-    function getXPForLevel(level) { return Math.floor(100 * Math.pow(1.15, level - 1)); }
+    function getPointsForLevel(level) { return Math.floor(100 * Math.pow(1.15, level - 1)); }
 
-    function getLevelFromXP(totalXP) {
-        let level = 1, xpNeeded = 0;
+    function getLevelFromPoints(totalPoints) {
+        let level = 1, needed = 0;
         while (true) {
-            const req = getXPForLevel(level);
-            if (xpNeeded + req > totalXP) return { level, currentXP: totalXP - xpNeeded, nextLevelXP: req };
-            xpNeeded += req;
+            const req = getPointsForLevel(level);
+            if (needed + req > totalPoints) return { level, currentPoints: totalPoints - needed, nextLevelPoints: req };
+            needed += req;
             level++;
         }
     }
@@ -220,8 +219,8 @@
         { id: 'hard_crusher', emoji: '💥', name: 'Hard Crusher', desc: '20 hard questions correct', check: (p) => p.hardCorrect >= 20 },
         { id: 'combo_5', emoji: '🔗', name: 'Chain Reaction', desc: 'Get a 5-combo streak', check: (p) => p.maxCombo >= 5 },
         { id: 'combo_10', emoji: '⛓️', name: 'Unstoppable Combo', desc: 'Get a 10-combo streak', check: (p) => p.maxCombo >= 10 },
-        { id: 'level_10', emoji: '🎓', name: 'Scholar', desc: 'Reach Level 10', check: (p) => getLevelFromXP(p.totalXP || 0).level >= 10 },
-        { id: 'level_25', emoji: '🎖️', name: 'Expert', desc: 'Reach Level 25', check: (p) => getLevelFromXP(p.totalXP || 0).level >= 25 },
+        { id: 'level_10', emoji: '🎓', name: 'Scholar', desc: 'Reach Level 10', check: (p) => getLevelFromPoints(p.totalPointsEarned || 0).level >= 10 },
+        { id: 'level_25', emoji: '🎖️', name: 'Expert', desc: 'Reach Level 25', check: (p) => getLevelFromPoints(p.totalPointsEarned || 0).level >= 25 },
         { id: 'daily_7', emoji: '📅', name: 'Week Warrior', desc: 'Complete 7 daily challenges', check: (p) => (p.dailyChallengesCompleted || 0) >= 7 },
     ];
 
@@ -244,10 +243,10 @@
             do { name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)]; } while (used.has(name));
             used.add(name);
             const level = Math.max(1, Math.floor(Math.random() * 40) + 1);
-            const totalXP = Array.from({ length: level }, (_, l) => getXPForLevel(l + 1)).reduce((a, b) => a + b, 0) + Math.floor(Math.random() * getXPForLevel(level + 1));
+            const totalPts = Array.from({ length: level }, (_, l) => getPointsForLevel(l + 1)).reduce((a, b) => a + b, 0) + Math.floor(Math.random() * getPointsForLevel(level + 1));
             const grade = Math.max(1, Math.min(8, playerGrade + Math.floor(Math.random() * 3) - 1));
             bots.push({
-                name, grade, totalXP, level,
+                name, grade, totalPointsEarned: totalPts, level,
                 totalQuizzes: Math.floor(Math.random() * 100) + level * 3,
                 totalCorrect: Math.floor(Math.random() * 500) + level * 15,
                 totalAttempted: Math.floor(Math.random() * 600) + level * 20,
@@ -320,7 +319,7 @@
     // ===================== PLAYER DATA =====================
     function getDefaultPlayer(name, grade) {
         return {
-            name, grade, points: 0, totalPointsEarned: 0, totalXP: 0,
+            name, grade, points: 0, totalPointsEarned: 0,
             totalQuizzes: 0, totalCorrect: 0, totalAttempted: 0,
             perfectScores: 0, streak: 0, maxStreak: 0,
             lastPlayedDate: null, categoriesPlayed: {}, categoryStats: {},
@@ -385,7 +384,7 @@
     function mergePlayerData(a, b) {
         const merged = { ...a };
         const maxFields = [
-            'points', 'totalXP', 'totalQuizzes', 'totalCorrect', 'totalAttempted',
+            'points', 'totalPointsEarned', 'totalQuizzes', 'totalCorrect', 'totalAttempted',
             'totalPointsEarned', 'streak', 'maxStreak', 'perfectScores',
             'quizzesWithNoHints', 'blitzHighAccuracy', 'hardCorrect', 'maxCombo',
             'dailyChallengesCompleted', 'totalRedemptions'
@@ -493,23 +492,23 @@
         savePlayer();
     }
 
-    function addXP(amount) {
+    function checkLevelUp() {
         const p = state.player;
-        const oldLevel = getLevelFromXP(p.totalXP || 0).level;
-        p.totalXP = (p.totalXP || 0) + amount;
-        const newInfo = getLevelFromXP(p.totalXP);
-        if (newInfo.level > oldLevel) {
-            showToast(`🎉 Level Up! You're now Level ${newInfo.level}!`, 'success');
+        const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
+        if (!p._lastLevel) p._lastLevel = 1;
+        if (levelInfo.level > p._lastLevel) {
+            showToast(`🎉 Level Up! You're now Level ${levelInfo.level}!`, 'success');
             launchConfetti();
         }
+        p._lastLevel = levelInfo.level;
         savePlayer();
     }
 
     // ===================== WELCOME SCREEN =====================
     function migratePlayer(p) {
-        // Unify XP = totalPointsEarned for existing players
-        if (!p.totalXP || p.totalXP < (p.totalPointsEarned || 0)) {
-            p.totalXP = (p.totalPointsEarned || 0);
+        // Legacy: if player had totalXP but not enough totalPointsEarned, sync up
+        if (p.totalXP && (!p.totalPointsEarned || p.totalPointsEarned < p.totalXP)) {
+            p.totalPointsEarned = p.totalXP;
         }
         if (!p.maxCombo) p.maxCombo = 0;
         if (!p.dailyChallengesCompleted) p.dailyChallengesCompleted = 0;
@@ -824,7 +823,7 @@
     function showDashboard() {
         showScreen('dashboard');
         const p = state.player;
-        const levelInfo = getLevelFromXP(p.totalXP || 0);
+        const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
         const tier = getTier(levelInfo.level);
 
         // Top nav
@@ -841,13 +840,13 @@
             navAvatar.style.display = 'none';
         }
 
-        // XP Banner
+        // Level Banner
         $('#dash-rank-badge').textContent = tier.emoji;
         $('#dash-level').textContent = levelInfo.level;
         $('#dash-rank-title').textContent = tier.name;
-        $('#dash-xp').textContent = levelInfo.currentXP;
-        $('#dash-xp-next').textContent = levelInfo.nextLevelXP;
-        $('#dash-xp-bar').style.width = Math.min(100, (levelInfo.currentXP / levelInfo.nextLevelXP) * 100) + '%';
+        $('#dash-xp').textContent = levelInfo.currentPoints;
+        $('#dash-xp-next').textContent = levelInfo.nextLevelPoints;
+        $('#dash-xp-bar').style.width = Math.min(100, (levelInfo.currentPoints / levelInfo.nextLevelPoints) * 100) + '%';
 
         // Multiplier based on streak
         const streakMult = p.streak >= 7 ? '×2' : p.streak >= 3 ? '×1.5' : '×1';
@@ -1290,7 +1289,7 @@
         state.quiz = {
             category, difficulty, questions, isDaily,
             currentIndex: 0, score: 0, pointsEarned: 0,
-            xpEarned: 0, results: [], hintsUsed: 0,
+            results: [], hintsUsed: 0,
             hintUsedThisQuestion: false, answered: false,
             startTime: Date.now(), timedMode: category === 'mixed' && !isDaily,
             timeLeft: TIMED_SECONDS, combo: 0, maxCombo: 0
@@ -1433,7 +1432,6 @@
 
             quiz.score++;
             quiz.pointsEarned += pointsEarned;
-            quiz.xpEarned += pointsEarned;  // XP = Points
             state.player.totalCorrect++;
             if (diff === 'hard') state.player.hardCorrect = (state.player.hardCorrect || 0) + 1;
         } else {
@@ -1448,7 +1446,7 @@
 
         quiz.results.push({
             question: q.q, correct, selected: q.options[selected],
-            answer: q.options[q.answer], pointsEarned, xpEarned: pointsEarned, difficulty: diff,
+            answer: q.options[q.answer], pointsEarned, difficulty: diff,
             hint: q.hint || '', explanation: q.explanation || '', options: q.options, correctIndex: q.answer
         });
 
@@ -1557,32 +1555,28 @@
         const quiz = state.quiz;
         const p = state.player;
 
-        // Update stats (negative marking can make quiz.pointsEarned negative)
-        const netPoints = Math.max(0, quiz.pointsEarned); // Floor at 0 for awarding
-        p.points = Math.max(0, p.points + quiz.pointsEarned);
-        if (quiz.pointsEarned > 0) p.totalPointsEarned += quiz.pointsEarned;
-        p.totalQuizzes++;
-
-        // XP = Points (unified system) + bonuses
-        let totalXP = Math.max(0, quiz.pointsEarned) + XP_QUIZ_COMPLETE;
+        // Calculate total points: quiz points + bonuses
+        let bonusPoints = BONUS_QUIZ_COMPLETE; // Completion bonus
         if (quiz.score === quiz.questions.length) {
-            totalXP += XP_PERFECT_BONUS;
+            bonusPoints += BONUS_PERFECT;
             p.perfectScores = (p.perfectScores || 0) + 1;
         }
-
-        // Daily challenge completion
         if (quiz.isDaily) {
             const today = new Date().toDateString();
             p.dailyChallengeToday = today;
             p.dailyChallengesCompleted = (p.dailyChallengesCompleted || 0) + 1;
             if (!p.dailyStreakDates) p.dailyStreakDates = [];
             if (!p.dailyStreakDates.includes(today)) p.dailyStreakDates.push(today);
-            // Keep only last 30 days
             if (p.dailyStreakDates.length > 30) p.dailyStreakDates = p.dailyStreakDates.slice(-30);
-            totalXP += XP_DAILY_BONUS;
+            bonusPoints += BONUS_DAILY;
         }
 
-        addXP(totalXP);
+        const totalEarned = quiz.pointsEarned + bonusPoints;
+        p.points = Math.max(0, p.points + totalEarned);
+        p.totalPointsEarned = Math.max(0, (p.totalPointsEarned || 0) + totalEarned);
+        p.totalQuizzes++;
+
+        checkLevelUp();
 
         // No hints?
         if (quiz.hintsUsed === 0 && quiz.questions.length > 0) {
@@ -1621,16 +1615,16 @@
         p.sessions.unshift({
             date: new Date().toISOString(), category: quiz.category,
             correct: quiz.score, total: quiz.results.length,
-            points: quiz.pointsEarned, xp: totalXP, combo: quiz.maxCombo
+            points: totalEarned, combo: quiz.maxCombo
         });
         if (p.sessions.length > 50) p.sessions = p.sessions.slice(0, 50);
 
         checkAchievements();
         savePlayer();
-        showResults(quiz, totalXP);
+        showResults(quiz, totalEarned, bonusPoints);
     }
 
-    function showResults(quiz, totalXP) {
+    function showResults(quiz, totalEarned, bonusPoints) {
         showScreen('results');
         const total = quiz.results.length;
         const correct = quiz.score;
@@ -1648,7 +1642,7 @@
         $('#results-subtitle').textContent = `${CATEGORY_NAMES[quiz.category]} • Grade ${state.player.grade}${quiz.isDaily ? ' • Daily Challenge' : ''}`;
         $('#result-correct').textContent = correct;
         $('#result-total').textContent = total;
-        $('#result-points-earned').textContent = quiz.pointsEarned >= 0 ? `+${quiz.pointsEarned}` : `${quiz.pointsEarned}`;
+        $('#result-points-earned').textContent = totalEarned >= 0 ? `+${totalEarned}` : `${totalEarned}`;
         $('#result-accuracy').textContent = accuracy + '%';
 
         // Breakdown
@@ -1656,7 +1650,7 @@
         breakdown.innerHTML = `
             <h3 style="margin-bottom:12px;font-family:var(--font-display);">Question Breakdown</h3>
             <div style="text-align:center;margin-bottom:12px;color:var(--primary);font-weight:700;">
-                +${totalXP} XP (${quiz.pointsEarned >= 0 ? '+' : ''}${quiz.pointsEarned} quiz points + ${XP_QUIZ_COMPLETE} completion${quiz.score === quiz.questions.length ? ` + ${XP_PERFECT_BONUS} perfect` : ''}${quiz.isDaily ? ` + ${XP_DAILY_BONUS} daily` : ''})${quiz.maxCombo >= 3 ? ` | Max Combo: ${quiz.maxCombo}🔥` : ''}
+                ${totalEarned >= 0 ? '+' : ''}${totalEarned} points (${quiz.pointsEarned >= 0 ? '+' : ''}${quiz.pointsEarned} from questions + ${bonusPoints} bonus)${quiz.maxCombo >= 3 ? ` | Max Combo: ${quiz.maxCombo}🔥` : ''}
             </div>`;
 
         const wrongOnes = [];
@@ -1750,13 +1744,13 @@
     function showLeaderboard() {
         showScreen('leaderboard');
         const p = state.player;
-        const levelInfo = getLevelFromXP(p.totalXP || 0);
+        const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
         const tier = getTier(levelInfo.level);
 
         $('#lb-points').textContent = p.points.toLocaleString();
         $('#lb-your-name').textContent = p.name;
         $('#lb-your-tier').textContent = `${tier.emoji} ${tier.name}`;
-        $('#lb-your-xp').textContent = `${(p.totalXP || 0).toLocaleString()} XP`;
+        $('#lb-your-xp').textContent = `${(p.totalPointsEarned || 0).toLocaleString()} pts`;
         $('#lb-your-level').textContent = `Level ${levelInfo.level}`;
 
         // Stats
@@ -1810,16 +1804,16 @@
             // Use real players from Firestore, mark current user
             allPlayers = realPlayers.map(pl => ({
                 ...pl,
-                level: getLevelFromXP(pl.totalXP || 0).level,
+                level: getLevelFromPoints(pl.totalPointsEarned || pl.totalXP || 0).level,
                 isYou: pl.uid === myUid,
                 isBot: false
             }));
             // Ensure current player is in the list
             const meInList = allPlayers.find(pl => pl.isYou);
             if (!meInList) {
-                const levelInfo = getLevelFromXP(p.totalXP || 0);
+                const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
                 allPlayers.push({
-                    name: p.name, grade: p.grade, totalXP: p.totalXP || 0,
+                    name: p.name, grade: p.grade, totalPointsEarned: p.totalPointsEarned || 0,
                     level: levelInfo.level, totalQuizzes: p.totalQuizzes,
                     totalCorrect: p.totalCorrect, totalAttempted: p.totalAttempted,
                     maxStreak: p.maxStreak, isBot: false, isYou: true,
@@ -1829,9 +1823,9 @@
         } else {
             // Fallback to bots
             allPlayers = [...(state.bots || [])];
-            const levelInfo = getLevelFromXP(p.totalXP || 0);
+            const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
             allPlayers.push({
-                name: p.name, grade: p.grade, totalXP: p.totalXP || 0,
+                name: p.name, grade: p.grade, totalPointsEarned: p.totalPointsEarned || 0,
                 level: levelInfo.level, totalQuizzes: p.totalQuizzes,
                 totalCorrect: p.totalCorrect, totalAttempted: p.totalAttempted,
                 maxStreak: p.maxStreak, isBot: false, isYou: true
@@ -1842,16 +1836,16 @@
             } else if (tab === 'weekly') {
                 allPlayers = allPlayers.map(pl => ({
                     ...pl,
-                    weeklyXP: pl.isYou ? Math.floor((p.totalXP || 0) * 0.15) : Math.floor(pl.totalXP * (0.05 + Math.random() * 0.2))
+                    weeklyPts: pl.isYou ? Math.floor((p.totalPointsEarned || 0) * 0.15) : Math.floor((pl.totalPointsEarned || 0) * (0.05 + Math.random() * 0.2))
                 }));
             }
         }
 
         // Sort
         if (tab === 'weekly' && !realPlayers.length) {
-            allPlayers.sort((a, b) => (b.weeklyXP || b.totalXP) - (a.weeklyXP || a.totalXP));
+            allPlayers.sort((a, b) => (b.weeklyPts || b.totalPointsEarned || 0) - (a.weeklyPts || a.totalPointsEarned || 0));
         } else {
-            allPlayers.sort((a, b) => (b.totalXP || 0) - (a.totalXP || 0));
+            allPlayers.sort((a, b) => (b.totalPointsEarned || b.totalXP || 0) - (a.totalPointsEarned || a.totalXP || 0));
         }
 
         // Find player rank
@@ -1868,12 +1862,12 @@
         }
 
         allPlayers.slice(0, 25).forEach((pl, i) => {
-            const plLevel = pl.level || getLevelFromXP(pl.totalXP || 0).level;
+            const plLevel = pl.level || getLevelFromPoints(pl.totalPointsEarned || pl.totalXP || 0).level;
             const plTier = getTier(plLevel);
             const topClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
             const youClass = pl.isYou ? 'is-you' : '';
-            const xpVal = tab === 'weekly' && pl.weeklyXP != null ? pl.weeklyXP : (pl.totalXP || 0);
-            const xpDisplay = `${xpVal.toLocaleString()} XP`;
+            const ptsVal = tab === 'weekly' && pl.weeklyPts != null ? pl.weeklyPts : (pl.totalPointsEarned || pl.totalXP || 0);
+            const ptsDisplay = `${ptsVal.toLocaleString()} pts`;
 
             // Avatar: use photo if available, otherwise tier emoji
             const avatarContent = pl.photoURL
@@ -1890,7 +1884,7 @@
                     <div class="lb-player-meta">Level ${plLevel} · Grade ${pl.grade || '?'}</div>
                 </div>
                 <div class="lb-score">
-                    <div class="lb-score-value">${xpDisplay}</div>
+                    <div class="lb-score-value">${ptsDisplay}</div>
                     <div class="lb-score-label">${plTier.name}</div>
                 </div>
             `;
