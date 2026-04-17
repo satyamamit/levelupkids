@@ -45,7 +45,7 @@
 
     // ===================== CONSTANTS =====================
     const POINTS_MAP = { easy: 5, medium: 10, hard: 20 };
-    const WRONG_PENALTY = { easy: -1, medium: -2, hard: -3 };
+    const WRONG_PENALTY = { easy: -2, medium: -5, hard: -10 };
     const HINT_PENALTY = 2;
     const QUESTIONS_PER_QUIZ = 20;
     const TIMED_SECONDS = 90;
