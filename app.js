@@ -1256,9 +1256,15 @@
                     GeminiQuestionEngine.getUniqueQuestions(state.player.grade, category, aiCount), 2000
                 );
                 if (aiQuestions && aiQuestions.length > 0) {
+                    // Filter out seen AI questions too
+                    const hashFn = (typeof QuestionAPI !== 'undefined' && QuestionAPI.hashQ) ? QuestionAPI.hashQ : null;
+                    const freshAI = hashFn
+                        ? aiQuestions.filter(q => !seenHashes.has(hashFn(q.q)))
+                        : aiQuestions;
+                    const aiToUse = freshAI.length > 0 ? freshAI : aiQuestions;
                     // Replace some regular questions with AI ones to maintain total count
-                    const regularSlice = (questions || []).slice(0, count - aiQuestions.length);
-                    questions = [...regularSlice, ...aiQuestions];
+                    const regularSlice = (questions || []).slice(0, count - aiToUse.length);
+                    questions = [...regularSlice, ...aiToUse];
                     // Shuffle so AI questions are mixed in randomly
                     for (let i = questions.length - 1; i > 0; i--) {
                         const j = Math.floor(Math.random() * (i + 1));
