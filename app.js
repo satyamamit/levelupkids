@@ -281,7 +281,7 @@
         window.scrollTo(0, 0);
 
         // Update URL hash for routing (skip quiz/results — transient screens)
-        const routableScreens = ['dashboard', 'leaderboard', 'rewards', 'achievements', 'progress'];
+        const routableScreens = ['dashboard', 'leaderboard', 'rewards', 'achievements', 'progress', 'challenge'];
         if (routableScreens.includes(screenId)) {
             const newHash = '#' + screenId;
             if (window.location.hash !== newHash) {
@@ -305,6 +305,7 @@
             case 'rewards':      showRewardsStore(); break;
             case 'achievements': showAchievements(); break;
             case 'progress':     showProgress(); break;
+            case 'challenge':    showChallengeScreen(); break;
             default:             showDashboard(); break;
         }
     }
@@ -937,6 +938,10 @@
         $('#btn-rewards').onclick = showRewardsStore;
         $('#btn-achievements').onclick = showAchievements;
         $('#btn-history').onclick = showProgress;
+
+        // Challenge a Friend
+        const challengeCard = $('#challenge-friend-card');
+        if (challengeCard) challengeCard.onclick = showChallengeScreen;
 
         // Edit profile
         $('#btn-edit-profile').onclick = openEditProfile;
@@ -1641,7 +1646,13 @@
 
         checkAchievements();
         savePlayer();
-        showResults(quiz, totalEarned, bonusPoints);
+
+        // If this was a challenge quiz, show challenge results instead
+        if (quiz.isChallenge && state.pendingChallenge) {
+            showChallengeResults(quiz);
+        } else {
+            showResults(quiz, totalEarned, bonusPoints);
+        }
     }
 
     function showResults(quiz, totalEarned, bonusPoints) {
@@ -1769,6 +1780,351 @@
     }
 
     function truncate(str, len) { return str.length > len ? str.slice(0, len) + '...' : str; }
+
+    // ===================== CHALLENGE A FRIEND =====================
+    function showChallengeScreen() {
+        showScreen('challenge');
+        $('#btn-back-from-challenge').onclick = showDashboard;
+        $('#btn-create-challenge').onclick = createChallenge;
+        $('#btn-join-challenge').onclick = joinChallenge;
+        $('#challenge-code-input').value = '';
+        $('#challenge-join-status').style.display = 'none';
+
+        // Load my challenges
+        loadMyChallenges();
+
+        // Check URL for challenge code
+        const params = new URLSearchParams(window.location.search);
+        const urlCode = params.get('challenge');
+        if (urlCode) {
+            $('#challenge-code-input').value = urlCode;
+            joinChallenge();
+        }
+    }
+
+    async function loadMyChallenges() {
+        const container = $('#my-challenges-list');
+        if (!container) return;
+        container.innerHTML = '<span style="color:var(--text-dim);">Loading...</span>';
+
+        const uid = state.authUser?.uid;
+        if (!uid) {
+            container.innerHTML = '<span style="color:var(--text-dim);">Sign in to see your challenges.</span>';
+            return;
+        }
+
+        const challenges = await FirestoreDB.getMyChallenges(uid, 10);
+        if (!challenges || challenges.length === 0) {
+            container.innerHTML = '<span style="color:var(--text-dim);">No challenges yet. Create one above! 🎯</span>';
+            return;
+        }
+
+        container.innerHTML = '';
+        challenges.forEach(c => {
+            const card = document.createElement('div');
+            card.style.cssText = 'padding:14px;border-radius:12px;background:rgba(108,99,255,0.06);margin-bottom:10px;border:1px solid var(--border);';
+
+            const catName = CATEGORY_NAMES[c.category] || c.category;
+            const myScore = c.creatorResult;
+            const theirScore = c.challengerResult;
+            const hasResult = !!theirScore;
+
+            let statusHTML;
+            if (hasResult) {
+                const iWin = myScore && myScore.score > theirScore.score;
+                const tie = myScore && myScore.score === theirScore.score;
+                const icon = iWin ? '🏆' : tie ? '🤝' : '😤';
+                const label = iWin ? 'You won!' : tie ? 'Tie!' : `${theirScore.name || 'Friend'} won!`;
+                statusHTML = `
+                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.2rem;">${icon}</span>
+                        <span style="font-weight:700;color:${iWin ? '#2ED573' : tie ? 'var(--primary)' : '#FF6B6B'};">${label}</span>
+                        <span style="margin-left:auto;font-size:0.85rem;color:var(--text-dim);">
+                            You: ${myScore ? myScore.score + '/' + myScore.total : '?'} vs ${theirScore.name || 'Friend'}: ${theirScore.score}/${theirScore.total}
+                        </span>
+                    </div>`;
+            } else {
+                statusHTML = `
+                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1rem;">⏳</span>
+                        <span style="color:var(--text-dim);">Waiting for challenger...</span>
+                        <span style="margin-left:auto;font-size:0.8rem;font-weight:700;color:var(--primary);cursor:pointer;" data-code="${c.code}" class="copy-challenge-code">📋 ${c.code}</span>
+                    </div>`;
+            }
+
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div>
+                        <span style="font-weight:700;">${catName}</span>
+                        <span style="color:var(--text-dim);font-size:0.8rem;margin-left:8px;">Grade ${c.grade} • ${c.questionCount || '?'} Qs</span>
+                    </div>
+                    <span style="font-size:0.75rem;color:var(--text-dim);">${c.code}</span>
+                </div>
+                ${statusHTML}
+            `;
+            container.appendChild(card);
+        });
+
+        // Wire up copy buttons for pending challenges
+        container.querySelectorAll('.copy-challenge-code').forEach(el => {
+            el.onclick = (e) => {
+                e.stopPropagation();
+                const code = el.dataset.code;
+                navigator.clipboard.writeText(code).then(() => {
+                    el.textContent = '✅ Copied!';
+                    setTimeout(() => { el.textContent = `📋 ${code}`; }, 1500);
+                }).catch(() => showToast('Code: ' + code, 'info'));
+            };
+        });
+    }
+
+    async function createChallenge() {
+        const category = $('#challenge-category').value || 'mixed';
+        const btn = $('#btn-create-challenge');
+        btn.disabled = true;
+        btn.textContent = '⏳ Generating questions...';
+
+        try {
+            const grade = state.player.grade;
+            const count = 10;
+
+            // Get questions for the challenge
+            let questions;
+            if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
+                questions = await QuestionAPI.getQuestions(grade, category, count);
+            }
+            if (!questions || questions.length === 0) {
+                showToast('Could not generate questions. Try again!', 'error');
+                btn.disabled = false;
+                btn.textContent = '⚔️ Create Challenge & Play First!';
+                return;
+            }
+
+            // Strip non-serializable fields for Firestore
+            const cleanQs = questions.map(q => ({
+                q: q.q, options: q.options, answer: q.answer,
+                hint: q.hint || '', explanation: q.explanation || '',
+                difficulty: q.difficulty || 'medium'
+            }));
+
+            // Save challenge to Firestore
+            const code = await FirestoreDB.createChallenge({
+                creatorUid: state.authUser?.uid || 'anon',
+                creatorName: state.player.name,
+                grade, category, questions: cleanQs,
+                questionCount: cleanQs.length
+            });
+
+            if (!code) {
+                showToast('Could not create challenge. Check your connection!', 'error');
+                btn.disabled = false;
+                btn.textContent = '⚔️ Create Challenge & Play First!';
+                return;
+            }
+
+            // Store the code so we can show results after quiz
+            state.pendingChallenge = { code, isCreator: true };
+
+            // Start the quiz with these exact questions
+            showScreen('quiz');
+            $('#quiz-category-label').textContent = `⚔️ Challenge: ${CATEGORY_NAMES[category] || category}`;
+            $('#quiz-progress').textContent = `1 / ${cleanQs.length}`;
+            $('#question-text').textContent = '';
+            $('#answers-grid').innerHTML = '';
+
+            state.quiz = {
+                category, difficulty: 'medium', questions: cleanQs, isDaily: false,
+                isChallenge: true, challengeCode: code,
+                currentIndex: 0, score: 0, pointsEarned: 0,
+                results: [], hintsUsed: 0,
+                hintUsedThisQuestion: false, answered: false,
+                startTime: Date.now(), timedMode: false,
+                timeLeft: 0, combo: 0, maxCombo: 0
+            };
+
+            $('#timer-container').style.display = 'none';
+            $('#quiz-live-points').textContent = '0';
+            showQuestion();
+        } catch (e) {
+            console.error('Create challenge error:', e);
+            showToast('Something went wrong!', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '⚔️ Create Challenge & Play First!';
+        }
+    }
+
+    async function joinChallenge() {
+        const code = ($('#challenge-code-input').value || '').trim().toUpperCase();
+        if (code.length < 4) {
+            showToast('Please enter a valid challenge code', 'error');
+            return;
+        }
+
+        const status = $('#challenge-join-status');
+        status.style.display = 'block';
+        status.innerHTML = '⏳ Loading challenge...';
+        status.style.color = 'var(--text-dim)';
+
+        try {
+            const challenge = await FirestoreDB.getChallenge(code);
+            if (!challenge) {
+                status.innerHTML = '❌ Challenge not found. Check the code and try again.';
+                status.style.color = '#C62828';
+                return;
+            }
+
+            // Check if already completed by someone else
+            if (challenge.challengerResult) {
+                status.innerHTML = '⚠️ This challenge has already been played by someone!';
+                status.style.color = '#F57F17';
+                return;
+            }
+
+            // Check if creator is trying to play their own challenge
+            if (challenge.creatorUid === (state.authUser?.uid || 'anon') && challenge.creatorUid !== 'anon') {
+                status.innerHTML = '😅 You can\'t play your own challenge! Share the code with a friend.';
+                status.style.color = '#F57F17';
+                return;
+            }
+
+            // Store challenge context
+            state.pendingChallenge = { code, isCreator: false, creatorName: challenge.creatorName, creatorResult: challenge.creatorResult };
+
+            // Start quiz with the exact same questions
+            const questions = challenge.questions;
+            showScreen('quiz');
+            $('#quiz-category-label').textContent = `⚔️ vs ${challenge.creatorName}`;
+            $('#quiz-progress').textContent = `1 / ${questions.length}`;
+
+            state.quiz = {
+                category: challenge.category, difficulty: 'medium', questions, isDaily: false,
+                isChallenge: true, challengeCode: code,
+                currentIndex: 0, score: 0, pointsEarned: 0,
+                results: [], hintsUsed: 0,
+                hintUsedThisQuestion: false, answered: false,
+                startTime: Date.now(), timedMode: false,
+                timeLeft: 0, combo: 0, maxCombo: 0
+            };
+
+            $('#timer-container').style.display = 'none';
+            $('#quiz-live-points').textContent = '0';
+            showQuestion();
+        } catch (e) {
+            console.error('Join challenge error:', e);
+            status.innerHTML = '❌ Error loading challenge. Try again.';
+            status.style.color = '#C62828';
+        }
+    }
+
+    function showChallengeResults(quiz) {
+        const pc = state.pendingChallenge;
+        if (!pc) { showDashboard(); return; }
+
+        const myResult = {
+            name: state.player.name,
+            score: quiz.score,
+            total: quiz.results.length,
+            accuracy: quiz.results.length > 0 ? Math.round((quiz.score / quiz.results.length) * 100) : 0,
+            time: Math.round((Date.now() - quiz.startTime) / 1000)
+        };
+
+        showScreen('challenge-results');
+
+        if (pc.isCreator) {
+            // Creator just finished — save their result, show share screen
+            FirestoreDB.submitChallengeResult(pc.code, null); // Reserve the doc
+            // Update creator result
+            if (typeof firebaseDb !== 'undefined') {
+                try {
+                    firebaseDb.collection('challenges').doc(pc.code).update({ creatorResult: myResult });
+                } catch (e) { /* ok */ }
+            }
+
+            $('#challenge-result-emoji').textContent = '🎯';
+            $('#challenge-result-title').textContent = 'Challenge Created!';
+            $('#challenge-result-subtitle').textContent = `You scored ${myResult.score}/${myResult.total} (${myResult.accuracy}%) — now share the code!`;
+
+            const comparison = $('#challenge-result-comparison');
+            comparison.innerHTML = `
+                <div style="text-align:center;padding:24px;background:var(--card-bg);border-radius:16px;box-shadow:var(--card-shadow);">
+                    <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">Your Challenge Code</div>
+                    <div id="challenge-code-display" style="font-size:2.5rem;font-weight:900;letter-spacing:8px;color:var(--primary);font-family:var(--font-display);margin-bottom:16px;">${pc.code}</div>
+                    <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:16px;">Share this code with a friend — they'll play the same questions and you'll see who wins!</p>
+                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                        <button id="btn-copy-code" class="btn-primary" style="padding:10px 20px;">📋 Copy Code</button>
+                        <button id="btn-share-link" class="btn-secondary" style="padding:10px 20px;">🔗 Share Link</button>
+                    </div>
+                </div>
+            `;
+
+            const shareSection = $('#challenge-share-section');
+            shareSection.innerHTML = '';
+
+            setTimeout(() => {
+                const copyBtn = $('#btn-copy-code');
+                const shareBtn = $('#btn-share-link');
+                if (copyBtn) copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(pc.code).then(() => {
+                        copyBtn.textContent = '✅ Copied!';
+                        setTimeout(() => { copyBtn.textContent = '📋 Copy Code'; }, 2000);
+                    }).catch(() => showToast('Copy the code: ' + pc.code, 'info'));
+                };
+                if (shareBtn) shareBtn.onclick = () => {
+                    const url = `${window.location.origin}${window.location.pathname}?challenge=${pc.code}`;
+                    if (navigator.share) {
+                        navigator.share({ title: 'LevelUpKids Challenge!', text: `I challenge you! Can you beat my score? 🏆`, url });
+                    } else {
+                        navigator.clipboard.writeText(url).then(() => {
+                            shareBtn.textContent = '✅ Link Copied!';
+                            setTimeout(() => { shareBtn.textContent = '🔗 Share Link'; }, 2000);
+                        }).catch(() => showToast('Share this link: ' + url, 'info'));
+                    }
+                };
+            }, 100);
+
+        } else {
+            // Challenger finished — show comparison
+            const creator = pc.creatorResult || { name: pc.creatorName || 'Friend', score: 0, total: myResult.total, accuracy: 0 };
+            const iWin = myResult.score > creator.score;
+            const tie = myResult.score === creator.score;
+
+            // Submit result to Firestore
+            FirestoreDB.submitChallengeResult(pc.code, myResult);
+
+            $('#challenge-result-emoji').textContent = iWin ? '🏆' : tie ? '🤝' : '💪';
+            $('#challenge-result-title').textContent = iWin ? 'You Win!' : tie ? 'It\'s a Tie!' : `${creator.name} Wins!`;
+            $('#challenge-result-subtitle').textContent = tie
+                ? 'Great minds think alike!'
+                : iWin ? 'Amazing job beating the challenge!' : 'So close! Try creating your own challenge!';
+
+            if (iWin || tie) launchConfetti(200);
+
+            const comparison = $('#challenge-result-comparison');
+            comparison.innerHTML = `
+                <div style="display:flex;gap:12px;justify-content:center;align-items:stretch;">
+                    <div style="flex:1;max-width:200px;background:${!iWin && !tie ? 'linear-gradient(135deg,rgba(108,99,255,0.15),rgba(108,99,255,0.05))' : 'var(--card-bg)'};border-radius:16px;padding:20px;text-align:center;box-shadow:var(--card-shadow);${!iWin && !tie ? 'border:2px solid var(--primary);' : ''}">
+                        <div style="font-size:1.5rem;margin-bottom:4px;">${!iWin && !tie ? '🏆' : '👤'}</div>
+                        <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;">${creator.name}</div>
+                        <div style="font-size:2rem;font-weight:900;color:var(--primary);">${creator.score}/${creator.total}</div>
+                        <div style="font-size:0.85rem;color:var(--text-dim);margin-top:4px;">${creator.accuracy}%</div>
+                    </div>
+                    <div style="display:flex;align-items:center;font-size:1.5rem;font-weight:900;color:var(--text-dim);">VS</div>
+                    <div style="flex:1;max-width:200px;background:${iWin ? 'linear-gradient(135deg,rgba(46,213,115,0.15),rgba(46,213,115,0.05))' : 'var(--card-bg)'};border-radius:16px;padding:20px;text-align:center;box-shadow:var(--card-shadow);${iWin ? 'border:2px solid #2ED573;' : ''}">
+                        <div style="font-size:1.5rem;margin-bottom:4px;">${iWin ? '🏆' : '💪'}</div>
+                        <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;">You</div>
+                        <div style="font-size:2rem;font-weight:900;color:${iWin ? '#2ED573' : 'var(--primary)'};">${myResult.score}/${myResult.total}</div>
+                        <div style="font-size:0.85rem;color:var(--text-dim);margin-top:4px;">${myResult.accuracy}%</div>
+                    </div>
+                </div>
+            `;
+
+            $('#challenge-share-section').innerHTML = '';
+        }
+
+        $('#btn-challenge-home').onclick = showDashboard;
+        state.pendingChallenge = null;
+    }
 
     // ===================== LEADERBOARD =====================
     function showLeaderboard() {
@@ -2371,7 +2727,21 @@
             }
 
             updateStreak();
-            if (window.location.hash && window.location.hash !== '#') {
+
+            // Check for challenge code in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const challengeCode = urlParams.get('challenge');
+
+            if (challengeCode) {
+                // Clean URL
+                history.replaceState(null, '', window.location.pathname + window.location.hash);
+                showChallengeScreen();
+                // Auto-fill and join
+                setTimeout(() => {
+                    const input = $('#challenge-code-input');
+                    if (input) { input.value = challengeCode; joinChallenge(); }
+                }, 300);
+            } else if (window.location.hash && window.location.hash !== '#') {
                 navigateToHash(window.location.hash);
             } else {
                 showDashboard();

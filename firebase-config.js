@@ -295,5 +295,66 @@ const FirestoreDB = {
             console.error('❌ Firestore reset error:', err.code, err.message);
             return false;
         }
+    },
+
+    // ─── Challenge a Friend ─────────────────────────────────────
+    async createChallenge(challengeData) {
+        if (!firebaseReady || !firebaseDb) return null;
+        try {
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            await firebaseDb.collection('challenges').doc(code).set({
+                ...challengeData,
+                code,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000) // 48hr expiry
+            });
+            return code;
+        } catch (err) {
+            console.error('Challenge create error:', err);
+            return null;
+        }
+    },
+
+    async getChallenge(code) {
+        if (!firebaseReady || !firebaseDb) return null;
+        try {
+            const doc = await firebaseDb.collection('challenges').doc(code.toUpperCase()).get();
+            return doc.exists ? doc.data() : null;
+        } catch (err) {
+            console.error('Challenge load error:', err);
+            return null;
+        }
+    },
+
+    async submitChallengeResult(code, resultData) {
+        if (!firebaseReady || !firebaseDb) return false;
+        try {
+            const ref = firebaseDb.collection('challenges').doc(code.toUpperCase());
+            await ref.update({
+                challengerResult: resultData,
+                completedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return true;
+        } catch (err) {
+            console.error('Challenge result submit error:', err);
+            return false;
+        }
+    },
+
+    async getMyChallenges(uid, limit = 10) {
+        if (!firebaseReady || !firebaseDb || !uid) return [];
+        try {
+            const snapshot = await firebaseDb.collection('challenges')
+                .where('creatorUid', '==', uid)
+                .orderBy('createdAt', 'desc')
+                .limit(limit)
+                .get();
+            const challenges = [];
+            snapshot.forEach(doc => challenges.push(doc.data()));
+            return challenges;
+        } catch (err) {
+            console.error('Get my challenges error:', err);
+            return [];
+        }
     }
 };
