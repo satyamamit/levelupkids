@@ -45,6 +45,7 @@
 
     // ===================== CONSTANTS =====================
     const POINTS_MAP = { easy: 5, medium: 10, hard: 20 };
+    const WRONG_PENALTY = { easy: -1, medium: -2, hard: -3 };
     const HINT_PENALTY = 2;
     const QUESTIONS_PER_QUIZ = 20;
     const TIMED_SECONDS = 90;
@@ -1436,6 +1437,9 @@
             state.player.totalCorrect++;
             if (diff === 'hard') state.player.hardCorrect = (state.player.hardCorrect || 0) + 1;
         } else {
+            // Negative marking: deduct points for wrong answer
+            pointsEarned = WRONG_PENALTY[diff] || -1;
+            quiz.pointsEarned += pointsEarned;
             // Reset combo
             quiz.combo = 0;
         }
@@ -1478,7 +1482,7 @@
             const phrases = ['😮 Not quite!', '🤔 Close one!', '💡 Good try!', '📚 Keep learning!'];
             $('#feedback-icon').textContent = '❌';
             $('#feedback-message').textContent = phrases[Math.floor(Math.random() * phrases.length)];
-            $('#feedback-points').textContent = 'No points this time';
+            $('#feedback-points').textContent = `${points} point${points === -1 ? '' : 's'} ⚠️`;
             $('#feedback-points').style.color = '#C62828';
         }
 
@@ -1553,9 +1557,10 @@
         const quiz = state.quiz;
         const p = state.player;
 
-        // Update stats
-        p.points += quiz.pointsEarned;
-        p.totalPointsEarned += quiz.pointsEarned;
+        // Update stats (negative marking can make quiz.pointsEarned negative)
+        const netPoints = Math.max(0, quiz.pointsEarned); // Floor at 0 for awarding
+        p.points = Math.max(0, p.points + quiz.pointsEarned);
+        if (quiz.pointsEarned > 0) p.totalPointsEarned += quiz.pointsEarned;
         p.totalQuizzes++;
 
         // XP
@@ -1643,7 +1648,7 @@
         $('#results-subtitle').textContent = `${CATEGORY_NAMES[quiz.category]} • Grade ${state.player.grade}${quiz.isDaily ? ' • Daily Challenge' : ''}`;
         $('#result-correct').textContent = correct;
         $('#result-total').textContent = total;
-        $('#result-points-earned').textContent = `+${quiz.pointsEarned}`;
+        $('#result-points-earned').textContent = quiz.pointsEarned >= 0 ? `+${quiz.pointsEarned}` : `${quiz.pointsEarned}`;
         $('#result-accuracy').textContent = accuracy + '%';
 
         // Breakdown
