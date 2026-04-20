@@ -342,7 +342,8 @@ const GeminiQuestionEngine = (function () {
     function _getGradeLevel(grade) {
         if (grade <= 2) return 'early elementary (K-2)';
         if (grade <= 5) return 'upper elementary (3-5)';
-        return 'middle school (6-8)';
+        if (grade <= 8) return 'middle school (6-8)';
+        return 'high school (9-12)';
     }
 
     function _getGradeTopics(grade) {
@@ -350,7 +351,9 @@ const GeminiQuestionEngine = (function () {
         if (grade <= 3) return 'multiplication/division facts, place value to thousands, basic fractions, simple geometry, bar graphs, elapsed time';
         if (grade <= 5) return 'multi-digit operations, fractions/decimals/percents, area/perimeter, coordinate grids, order of operations, ratios, data analysis';
         if (grade <= 6) return 'ratios/proportions, integers, expressions/equations, area/volume, statistical measures, coordinate plane';
-        return 'pre-algebra, linear equations, proportional relationships, geometry proofs, probability, square roots, exponents, functions';
+        if (grade <= 8) return 'pre-algebra, linear equations, proportional relationships, geometry proofs, probability, square roots, exponents, functions';
+        if (grade <= 10) return 'algebra I/II, linear/quadratic/exponential functions, geometry proofs, trigonometry basics, probability, statistics, polynomials, rational expressions';
+        return 'pre-calculus, trigonometry, logarithms, complex numbers, sequences/series, limits, derivatives basics, combinatorics, probability distributions';
     }
 
     function _buildMathPrompt(grade, category, count) {
@@ -428,6 +431,14 @@ CRITICAL: Every problem MUST be a rich real-world story requiring ALGEBRAIC SETU
             singapore: isElem
                 ? `Singapore Math (elementary): bar model word problems, mental math strategies, multi-step word problems, number bonds — Grade ${grade} level`
                 : `Singapore Math (middle school): heuristic problem-solving, model drawing, ratio/proportion word problems, challenging multi-step scenarios`,
+            // ─── High School Exams ───
+            sat_math: `SAT Math for Grade ${grade}: Heart of Algebra (linear equations, systems, inequalities), Problem Solving & Data Analysis (ratios, percentages, proportional reasoning, statistics, probability), Passport to Advanced Math (quadratics, polynomials, exponentials, radicals), Additional Topics (geometry, trigonometry, complex numbers). Questions should match REAL SAT difficulty and format. Include word problems with data interpretation.`,
+            act_math: `ACT Math for Grade ${grade}: Pre-Algebra (fractions, decimals, percentages), Elementary Algebra (linear equations, substitution), Intermediate Algebra (quadratics, systems, inequalities), Coordinate Geometry (slopes, midpoints, distance), Plane Geometry (area, volume, angles, circles), Trigonometry (SOHCAHTOA, unit circle). Problems should be solvable in ~1 minute each. Mix of computation and word problems.`,
+            psat: `PSAT/NMSQT Math for Grade ${grade}: similar to SAT but slightly easier. Linear equations, data analysis, ratios/percentages, quadratic basics, geometry fundamentals. Questions should be accessible for 10th-11th graders preparing for National Merit.`,
+            amc10: `AMC 10 competition math: problems suitable for students through Grade 10. Topics: algebra, counting/probability, number theory, geometry. Difficulty should escalate — start medium, end hard. Problems should have elegant solutions and test mathematical insight, not just computation. No calculus or trigonometry beyond basic concepts.`,
+            amc12: `AMC 12 competition math: problems for advanced high school students. Topics: trigonometry, logarithms, complex numbers, sequences/series, advanced combinatorics, coordinate geometry, number theory. Problems should require creative mathematical thinking and multi-step reasoning. Harder than AMC 10.`,
+            ap_calc: `AP Calculus AB/BC prep for Grade ${grade}: limits and continuity, derivatives (power rule, chain rule, product/quotient rule), applications of derivatives (related rates, optimization, curve sketching), integrals (definite/indefinite, substitution, by parts), applications of integrals (area between curves, volumes of revolution), differential equations basics. Problems should match AP exam multiple-choice format.`,
+            ap_stats: `AP Statistics prep for Grade ${grade}: exploring data (distributions, boxplots, histograms, standard deviation), sampling and experimentation (bias, randomization, observational vs experimental), probability (independence, conditional, Bayes' theorem, normal distribution, binomial), statistical inference (confidence intervals, hypothesis tests, chi-square, regression, t-tests). Problems should match AP exam format with real-world data contexts.`,
         }[category] || `mixed math for Grade ${grade}`;
 
         let extra = '';
@@ -473,6 +484,7 @@ Return ONLY valid JSON.`;
             spelling_bee: isElem
                 ? `Scripps Spelling Bee style for ${level}: "Which word is spelled correctly?" with tricky misspellings. Include etymology hints. Words appropriate for Grade ${grade} regional bee level.`
                 : `Scripps Spelling Bee style for ${level}: challenging words with Latin/Greek roots, silent letters, unusual spellings. Include word origin and definition in the hint. Grade ${grade} bee level.`,
+            sat_english: `SAT Reading & Writing for Grade ${grade}: Evidence-based reading (inference, main idea, author's purpose, tone, vocabulary in context from short passages), Standard English Conventions (grammar rules: subject-verb agreement, pronoun clarity, parallel structure, modifier placement, punctuation — commas, semicolons, colons, dashes), Expression of Ideas (organization, transitions, precision of language, synthesis). Include a 2-4 sentence passage for reading questions. Match real SAT difficulty.`,
         }[category] || `mixed English language arts for Grade ${grade}`;
 
         return `Generate ${count} unique Grade ${grade} (${level}) English MCQs: ${catDesc}.
@@ -497,7 +509,7 @@ Return ONLY valid JSON.`;
 
         if (!Array.isArray(questions)) return [];
 
-        const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee'].includes(category);
+        const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english'].includes(category);
 
         // Validate and tag each question
         return questions
@@ -539,7 +551,7 @@ Return ONLY valid JSON.`;
         const startTime = Date.now();
 
         try {
-            const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee'].includes(category);
+            const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english'].includes(category);
             const prompt = isEnglish
                 ? _buildEnglishPrompt(grade, category, count)
                 : _buildMathPrompt(grade, category, count);
@@ -733,17 +745,23 @@ Return ONLY valid JSON.`;
 
         console.log('🤖 Starting background AI question generation (free tier mode)...');
 
-        // Grade-aware categories: different exams for elementary vs middle school
+        // Grade-aware categories: different exams for elementary vs middle vs high school
         function getCategoriesForGrade(grade) {
             const isElem = grade <= 5;
-            // School tests (all grades)
-            const school = ['fastbridge', 'highcap', 'cogat'];
+            const isHighSchool = grade >= 9;
+            // School tests
+            const school = isHighSchool ? [] : ['fastbridge', 'highcap', 'cogat'];
             // English exams
-            const english = ['fb_reading', 'spelling_bee'];
-            // Math competitions — elementary vs middle school
-            const competitions = isElem
-                ? ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool']
-                : ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool', 'mathcounts', 'aime'];
+            const english = isHighSchool ? ['sat_english', 'spelling_bee'] : ['fb_reading', 'spelling_bee'];
+            // Math competitions/exams
+            let competitions;
+            if (isHighSchool) {
+                competitions = ['sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'aime', 'ap_calc', 'ap_stats'];
+            } else if (isElem) {
+                competitions = ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool'];
+            } else {
+                competitions = ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool', 'mathcounts', 'aime'];
+            }
             // Internal topic keys (still generate for fallback pool)
             const core = ['arithmetic', 'logic', 'geometry', 'word'];
             return [...school, ...competitions, ...core, ...english];
@@ -764,7 +782,7 @@ Return ONLY valid JSON.`;
             // Rotate through ALL grades (1-8), 1 batch per cycle
             // Use a rotating index so each cycle picks a different grade+category
             if (!startBackgroundGeneration._rotateIdx) startBackgroundGeneration._rotateIdx = 0;
-            const allGrades = [1, 2, 3, 4, 5, 6, 7, 8];
+            const allGrades = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             let generated = false;
 
             // Build a flat list of all grade+category combos to rotate through
