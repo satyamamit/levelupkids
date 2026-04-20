@@ -70,6 +70,14 @@
         // ─── English Exams ───────────────────────────────────
         fb_reading: '📖 FastBridge aReading',
         spelling_bee: '🐝 Spelling Bee',
+        // ─── High School Exams ──────────────────────────────
+        sat_math: '📝 SAT Math',
+        act_math: '📊 ACT Math',
+        psat: '📋 PSAT Math',
+        ap_calc: '📈 AP Calculus',
+        ap_stats: '📉 AP Statistics',
+        amc10: '🏅 AMC 10',
+        amc12: '🏆 AMC 12',
         // ─── Internal keys (still used for routing) ──────────
         arithmetic: '🔢 Arithmetic',
         logic: '🧩 Logic',
@@ -79,6 +87,7 @@
         grammar: '✏️ Grammar',
         reading: '📖 Reading',
         spelling: '🔤 Spelling',
+        sat_english: '📖 SAT Reading & Writing',
     };
 
     // ─── ADMIN EMAILS (users who can see AI Admin panel) ─────
@@ -244,7 +253,7 @@
             used.add(name);
             const level = Math.max(1, Math.floor(Math.random() * 40) + 1);
             const totalPts = Array.from({ length: level }, (_, l) => getPointsForLevel(l + 1)).reduce((a, b) => a + b, 0) + Math.floor(Math.random() * getPointsForLevel(level + 1));
-            const grade = Math.max(1, Math.min(8, playerGrade + Math.floor(Math.random() * 3) - 1));
+            const grade = Math.max(1, Math.min(12, playerGrade + Math.floor(Math.random() * 3) - 1));
             bots.push({
                 name, grade, totalPointsEarned: totalPts, level,
                 totalQuizzes: Math.floor(Math.random() * 100) + level * 3,
@@ -723,6 +732,7 @@
     // Every card = a real exam. Kids pick which exam to prep for.
     function getChallengeCards(grade) {
         const isElem = grade <= 5;
+        const isHighSchool = grade >= 9;
         const cards = {
             math: [
                 // ── School Testing ──
@@ -772,7 +782,7 @@
         };
 
         // Middle school only: Mathcounts and AIME
-        if (!isElem) {
+        if (!isElem && !isHighSchool) {
             cards.math.splice(cards.math.length - 1, 0, // before Singapore
                 { cat: 'mathcounts', diff: 'hard', emoji: '📐', name: 'Mathcounts',
                   desc: 'Sprint, Target & Team round style — algebra, geometry & probability',
@@ -781,6 +791,45 @@
                   desc: 'Advanced: multi-step number theory, algebra, combinatorics & geometry',
                   diffLabel: '⭐⭐⭐ AIME', pts: '+25 pts each', tag: 'Competition' }
             );
+        }
+
+        // High school (grades 9-12): SAT, ACT, AP, AMC 10/12
+        if (isHighSchool) {
+            // Replace elementary/middle cards with high school ones
+            cards.math = [
+                { cat: 'sat_math', diff: 'hard', emoji: '📝', name: 'SAT Math',
+                  desc: 'Algebra, advanced math, problem solving & data analysis — College Board style',
+                  diffLabel: '⭐⭐⭐ SAT', pts: '+20 pts each', tag: 'College Prep' },
+                { cat: 'psat', diff: 'medium', emoji: '📋', name: 'PSAT / NMSQT',
+                  desc: 'National Merit prep: algebra, data analysis & advanced math',
+                  diffLabel: '⭐⭐ PSAT', pts: '+15 pts each', tag: 'College Prep' },
+                { cat: 'act_math', diff: 'hard', emoji: '📊', name: 'ACT Math',
+                  desc: 'Pre-algebra through trigonometry — 60 questions in 60 minutes style',
+                  diffLabel: '⭐⭐⭐ ACT', pts: '+20 pts each', tag: 'College Prep' },
+                { cat: 'amc10', diff: 'hard', emoji: '🏅', name: 'AMC 10',
+                  desc: 'Algebra, counting, probability, number theory & geometry — competition math',
+                  diffLabel: '⭐⭐⭐ AMC', pts: '+25 pts each', tag: 'Competition' },
+                { cat: 'amc12', diff: 'hard', emoji: '🏆', name: 'AMC 12',
+                  desc: 'Trigonometry, complex numbers, logarithms & advanced combinatorics',
+                  diffLabel: '⭐⭐⭐ AMC', pts: '+25 pts each', tag: 'Competition' },
+                { cat: 'aime', diff: 'hard', emoji: '🧠', name: 'AIME',
+                  desc: 'Proof-level: number theory, advanced algebra, geometry & combinatorics',
+                  diffLabel: '⭐⭐⭐ AIME', pts: '+25 pts each', tag: 'Competition' },
+                { cat: 'ap_calc', diff: 'hard', emoji: '📈', name: 'AP Calculus',
+                  desc: 'Limits, derivatives, integrals & applications — AB/BC prep',
+                  diffLabel: '⭐⭐⭐ AP', pts: '+25 pts each', tag: 'AP Exam' },
+                { cat: 'ap_stats', diff: 'hard', emoji: '📉', name: 'AP Statistics',
+                  desc: 'Probability, distributions, inference, regression & experimental design',
+                  diffLabel: '⭐⭐⭐ AP', pts: '+25 pts each', tag: 'AP Exam' },
+            ];
+            cards.english = [
+                { cat: 'sat_english', diff: 'hard', emoji: '📖', name: 'SAT Reading & Writing',
+                  desc: 'Evidence-based reading, grammar rules, rhetoric & synthesis',
+                  diffLabel: '⭐⭐⭐ SAT', pts: '+20 pts each', tag: 'College Prep', cssClass: 'challenge-card-english' },
+                { cat: 'spelling_bee', diff: 'hard', emoji: '🐝', name: 'Spelling Bee',
+                  desc: 'Advanced: Latin/Greek roots, etymology & championship-level words',
+                  diffLabel: '⭐⭐⭐ Spelling Bee', pts: '+20 pts each', tag: 'Competition', cssClass: 'challenge-card-english' },
+            ];
         }
 
         // Practice Blitz — at the end of math
@@ -1018,7 +1067,7 @@
         // Build grade buttons
         gradeGrid.innerHTML = '';
         let selectedGrade = state.player.grade;
-        for (let g = 1; g <= 8; g++) {
+        for (let g = 1; g <= 12; g++) {
             const btn = document.createElement('button');
             btn.className = 'grade-btn' + (g === selectedGrade ? ' selected' : '');
             btn.textContent = g;

@@ -63,6 +63,10 @@
                         <button class="grade-btn" data-grade="6">Grade 6</button>
                         <button class="grade-btn" data-grade="7">Grade 7</button>
                         <button class="grade-btn" data-grade="8">Grade 8</button>
+                        <button class="grade-btn" data-grade="9">Grade 9</button>
+                        <button class="grade-btn" data-grade="10">Grade 10</button>
+                        <button class="grade-btn" data-grade="11">Grade 11</button>
+                        <button class="grade-btn" data-grade="12">Grade 12</button>
                     </div>
                 </div>
                 <button id="btn-start" class="btn-primary btn-large" disabled>
@@ -685,12 +689,15 @@
                 <p style="color:var(--text-dim);font-size:0.9rem;margin-bottom:16px;">Pick a category, play a quiz, then share the code with a friend to see who scores higher!</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
                     <select id="challenge-category" style="flex:1;min-width:140px;padding:10px 14px;border-radius:10px;border:2px solid var(--border);background:var(--card-bg);color:var(--text);font-size:0.95rem;">
+                        <option value="mixed" selected>🎲 Mixed Math</option>
                         <option value="arithmetic">➕ Arithmetic</option>
                         <option value="word_problems">📝 Word Problems</option>
                         <option value="geometry">📐 Geometry</option>
-                        <option value="fractions">🍕 Fractions</option>
-                        <option value="mixed" selected>🎲 Mixed Math</option>
                         <option value="olympiad">🏅 Olympiad</option>
+                        <option value="sat_math">📝 SAT Math</option>
+                        <option value="act_math">📊 ACT Math</option>
+                        <option value="amc10">🏅 AMC 10</option>
+                        <option value="amc12">🏆 AMC 12</option>
                     </select>
                 </div>
                 <button id="btn-create-challenge" class="btn-primary btn-large" style="width:100%;">⚔️ Create Challenge & Play First!</button>

@@ -1222,10 +1222,19 @@ const QuestionAPI = (function () {
       // English exam categories — served from ENGLISH_QUESTIONS bank + AI
       fb_reading: [],  // FastBridge aReading — mix of vocabulary, grammar, reading, spelling
       spelling_bee: [], // Scripps Spelling Bee style
+      sat_english: [], // SAT R&W — served via AI + local bank
       vocabulary: [],
       grammar: [],
       reading: [],
       spelling: [],
+      // High School Exam Prep
+      sat_math: ['simpleEquation', 'inequality', 'percentages', 'percentChange', 'ratio', 'proportion', 'simpleProbability', 'meanMedianModeRange', 'coordinatePlane', 'area', 'aimeAlgebra', 'wordProblem'],
+      act_math: ['simpleEquation', 'inequality', 'percentages', 'orderOfOperations', 'ratio', 'area', 'coordinatePlane', 'simpleProbability', 'fractionMultDiv', 'meanMedianModeRange', 'wordProblem'],
+      psat: ['simpleEquation', 'inequality', 'percentages', 'percentChange', 'ratio', 'simpleProbability', 'meanMedianModeRange', 'coordinatePlane', 'wordProblem'],
+      amc10: ['aimeNumberTheory', 'aimeAlgebra', 'aimeCombinatorics', 'permutationCombo', 'countingPrinciple', 'gcdLcm', 'factorCount', 'primeCheck', 'simpleEquation', 'area', 'coordinatePlane'],
+      amc12: ['aimeNumberTheory', 'aimeAlgebra', 'aimeCombinatorics', 'aimeGeometry', 'permutationCombo', 'countingPrinciple', 'gcdLcm', 'simpleEquation', 'inequality'],
+      ap_calc: ['aimeAlgebra', 'simpleEquation', 'inequality', 'coordinatePlane', 'area', 'wordProblem'],
+      ap_stats: ['simpleProbability', 'meanMedianModeRange', 'percentages', 'percentChange', 'dataTable', 'wordProblem'],
     };
     const gens = map[category] || map.mixed;
     return gens.filter(g => typeof Gen[g] === 'function');
@@ -1256,7 +1265,7 @@ const QuestionAPI = (function () {
     const diffRank = { easy: 1, medium: 2, hard: 3 };
     const minRank = diffRank[minDifficulty] || 1;
     const existing = new Set(pool.map(q => q.q));
-    const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+    const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
     for (const g of searchGrades) {
       if (pool.length >= count * 2) break; // enough to choose from
       const gData = QUESTIONS[g] || {};
@@ -1275,7 +1284,7 @@ const QuestionAPI = (function () {
 
   // ─── Local question bank lookup ──────────────────────────
   const ENGLISH_CATS = ['vocabulary', 'grammar', 'reading', 'spelling'];
-  const ENGLISH_EXAM_CATS = ['fb_reading', 'spelling_bee'];
+  const ENGLISH_EXAM_CATS = ['fb_reading', 'spelling_bee', 'sat_english'];
 
   function getLocalQuestions(grade, category, count) {
     const pool = [];
@@ -1283,7 +1292,7 @@ const QuestionAPI = (function () {
     // fb_reading = FastBridge aReading → mix all English subcategories
     if (category === 'fb_reading') {
       if (typeof ENGLISH_QUESTIONS !== 'undefined') {
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = ENGLISH_QUESTIONS[g];
           if (gData) {
@@ -1299,7 +1308,7 @@ const QuestionAPI = (function () {
     // spelling_bee = heavy on spelling, supplemented with vocabulary
     if (category === 'spelling_bee') {
       if (typeof ENGLISH_QUESTIONS !== 'undefined') {
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = ENGLISH_QUESTIONS[g];
           if (gData) {
@@ -1314,7 +1323,7 @@ const QuestionAPI = (function () {
     // English subcategories → use ENGLISH_QUESTIONS bank
     if (ENGLISH_CATS.includes(category)) {
       if (typeof ENGLISH_QUESTIONS !== 'undefined') {
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = ENGLISH_QUESTIONS[g];
           if (gData && gData[category]) {
@@ -1328,7 +1337,7 @@ const QuestionAPI = (function () {
     // Singapore Math → pull Singapore Math tagged questions
     if (category === 'singapore') {
       if (typeof QUESTIONS !== 'undefined') {
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = QUESTIONS[g] || {};
           for (const cat of Object.keys(gData)) {
@@ -1344,7 +1353,7 @@ const QuestionAPI = (function () {
     // Math Kangaroo → pull Kangaroo-tagged questions
     if (category === 'kangaroo') {
       if (typeof QUESTIONS !== 'undefined') {
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = QUESTIONS[g] || {};
           for (const cat of Object.keys(gData)) {
@@ -1361,7 +1370,7 @@ const QuestionAPI = (function () {
     if (category === 'cogat') {
       if (typeof QUESTIONS !== 'undefined') {
         const cogCats = ['arithmetic', 'logic', 'geometry', 'word'];
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = QUESTIONS[g] || {};
           for (const cat of cogCats) {
@@ -1380,7 +1389,7 @@ const QuestionAPI = (function () {
     if (category === 'fastbridge') {
       if (typeof QUESTIONS !== 'undefined') {
         const fbCats = ['arithmetic', 'geometry', 'word', 'logic'];
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = QUESTIONS[g] || {};
           for (const cat of fbCats) {
@@ -1421,7 +1430,7 @@ const QuestionAPI = (function () {
     if (SOURCE_TAG_MAP[category]) {
       const tags = SOURCE_TAG_MAP[category];
       if (typeof QUESTIONS !== 'undefined') {
-        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 8);
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
         for (const g of searchGrades) {
           const gData = QUESTIONS[g] || {};
           for (const subcat of Object.keys(gData)) {
