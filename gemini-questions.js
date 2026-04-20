@@ -193,9 +193,12 @@ const GeminiQuestionEngine = (function () {
         const categories = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word', 'mixed', 'aime',
             'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
             'kangaroo', 'mathcounts', 'singapore', 'math_challenge', 'math_is_cool',
+            'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math',
+            'sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'ap_calc', 'ap_stats',
             'vocabulary', 'grammar', 'reading', 'spelling',
-            'fb_reading', 'spelling_bee'];
-        for (let grade = 1; grade <= 8; grade++) {
+            'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
+            'isee_verbal', 'ssat_verbal', 'wordly_wise'];
+        for (let grade = 1; grade <= 12; grade++) {
             for (const cat of categories) {
                 const cached = _getCached(grade, cat);
                 all.push(...cached);
@@ -431,6 +434,21 @@ CRITICAL: Every problem MUST be a rich real-world story requiring ALGEBRAIC SETU
             singapore: isElem
                 ? `Singapore Math (elementary): bar model word problems, mental math strategies, multi-step word problems, number bonds — Grade ${grade} level`
                 : `Singapore Math (middle school): heuristic problem-solving, model drawing, ratio/proportion word problems, challenging multi-step scenarios`,
+            // ─── Entrance Exams ───
+            isee_math: isElem
+                ? `ISEE Lower/Middle Level Quantitative Reasoning for Grade ${grade}: quantitative comparisons, number sense, arithmetic word problems, basic geometry, data reading — private school entrance exam style`
+                : `ISEE Upper Level Quantitative Reasoning for Grade ${grade}: quantitative comparisons, algebraic concepts, geometry, data analysis, proportional reasoning — private school entrance exam format`,
+            ssat_math: isElem
+                ? `SSAT Elementary/Middle Level Math for Grade ${grade}: number concepts, operations, word problems, basic geometry, estimation — independent school admissions test style`
+                : `SSAT Upper Level Math for Grade ${grade}: algebra, geometry, word problems, estimation, data interpretation — independent school admissions format`,
+            // ─── Additional Competitions ───
+            amc8: `AMC 8 competition math for Grade ${grade}: 25 multiple-choice problems covering number sense, counting & probability, geometry, algebra & number theory. Problems should be tricky but solvable without advanced math. Focus on creative problem-solving and mathematical insight.`,
+            cml: isElem
+                ? `Continental Math League (CML) for elementary Grade ${grade}: speed math, mental calculation, multi-step problem-solving, number puzzles — problems solvable in 2-3 minutes`
+                : `Continental Math League (CML) for middle school Grade ${grade}: algebraic thinking, geometry, number theory, multi-step problems — competition-level, timed format`,
+            math_league: isElem
+                ? `Math League competition for elementary Grade ${grade}: number sense, creative problem-solving, pattern recognition, logical reasoning — engaging problems with clever solutions`
+                : `Math League competition for Grade ${grade}: algebra, geometry, counting/probability, number theory — problems requiring mathematical insight and multi-step reasoning`,
             // ─── High School Exams ───
             sat_math: `SAT Math for Grade ${grade}: Heart of Algebra (linear equations, systems, inequalities), Problem Solving & Data Analysis (ratios, percentages, proportional reasoning, statistics, probability), Passport to Advanced Math (quadratics, polynomials, exponentials, radicals), Additional Topics (geometry, trigonometry, complex numbers). Questions should match REAL SAT difficulty and format. Include word problems with data interpretation.`,
             act_math: `ACT Math for Grade ${grade}: Pre-Algebra (fractions, decimals, percentages), Elementary Algebra (linear equations, substitution), Intermediate Algebra (quadratics, systems, inequalities), Coordinate Geometry (slopes, midpoints, distance), Plane Geometry (area, volume, angles, circles), Trigonometry (SOHCAHTOA, unit circle). Problems should be solvable in ~1 minute each. Mix of computation and word problems.`,
@@ -452,6 +470,12 @@ CRITICAL: Every problem MUST be a rich real-world story requiring ALGEBRAIC SETU
             extra = ' Focus on abstract patterns, analogies, and gifted-level quantitative thinking. Include story-based logic puzzles. No advanced math notation.';
         } else if (category === 'cogat') {
             extra = ' Focus on CogAT-style number analogies (A→B, C→D, E→?), number series (find next/missing), and number puzzles. Use → arrow notation for analogies. Problems should test pattern recognition, NOT computation skills.';
+        } else if (category === 'amc8') {
+            extra = ' Problems should match official AMC 8 difficulty and style. Focus on creative problem-solving, not rote computation. Include tricky distractors. Many problems should have elegant shortcuts.';
+        } else if (['cml', 'math_league'].includes(category)) {
+            extra = ' Problems should be quick to read but require careful thinking. Include tricky word problems and clever number puzzles. Solvable in 2-3 minutes each.';
+        } else if (['isee_math', 'ssat_math'].includes(category)) {
+            extra = ' Match the actual entrance exam format. Include quantitative comparison questions ("Column A vs Column B, which is greater?") alongside standard MCQs. Problems should test mathematical reasoning, not just computation.';
         }
 
         return `Generate ${count} unique Grade ${grade} (${level}) math MCQs: ${catDesc}.${extra}
@@ -485,6 +509,17 @@ Return ONLY valid JSON.`;
                 ? `Scripps Spelling Bee style for ${level}: "Which word is spelled correctly?" with tricky misspellings. Include etymology hints. Words appropriate for Grade ${grade} regional bee level.`
                 : `Scripps Spelling Bee style for ${level}: challenging words with Latin/Greek roots, silent letters, unusual spellings. Include word origin and definition in the hint. Grade ${grade} bee level.`,
             sat_english: `SAT Reading & Writing for Grade ${grade}: Evidence-based reading (inference, main idea, author's purpose, tone, vocabulary in context from short passages), Standard English Conventions (grammar rules: subject-verb agreement, pronoun clarity, parallel structure, modifier placement, punctuation — commas, semicolons, colons, dashes), Expression of Ideas (organization, transitions, precision of language, synthesis). Include a 2-4 sentence passage for reading questions. Match real SAT difficulty.`,
+            act_english: `ACT English for Grade ${grade}: Usage/Mechanics (grammar, punctuation — commas, apostrophes, semicolons, colons; sentence structure — fragments, run-ons, parallelism, modifiers), Rhetorical Skills (strategy, organization, style — transitions, conciseness, tone, redundancy). Include a short passage (2-4 sentences) and ask about underlined portions. Match real ACT format and difficulty.`,
+            ap_english: `AP English Language & Literature for Grade ${grade}: rhetorical analysis (ethos, pathos, logos, tone, purpose), argumentation (claims, evidence, reasoning, counterarguments), literary analysis (figurative language, symbolism, narrative technique, characterization), close reading of prose passages. Include a 2-4 sentence excerpt for passage-based questions. AP exam difficulty.`,
+            isee_verbal: isElem
+                ? `ISEE Lower/Middle Level Verbal Reasoning for Grade ${grade}: synonyms (pick the word closest in meaning), sentence completion (fill in the blank with best word) — vocabulary appropriate for Grade ${grade} private school entrance`
+                : `ISEE Upper Level Verbal Reasoning for Grade ${grade}: advanced synonyms, sentence completion with sophisticated vocabulary, reading comprehension with inference — private school entrance exam level`,
+            ssat_verbal: isElem
+                ? `SSAT Elementary/Middle Level Verbal for Grade ${grade}: synonyms (which word means the same) and analogies (A is to B as C is to ?) — age-appropriate vocabulary for independent school admission`
+                : `SSAT Upper Level Verbal for Grade ${grade}: advanced synonyms and analogies with sophisticated vocabulary, focus on word relationships and nuanced meanings — independent school admissions level`,
+            wordly_wise: isElem
+                ? `Wordly Wise / Vocabulary Workshop style for Grade ${grade}: vocabulary in context (read a sentence, pick the best word), synonyms, antonyms, word associations — school vocabulary program style, Grade ${grade} word list difficulty`
+                : `Wordly Wise / Vocabulary Workshop style for Grade ${grade}: advanced context clues, word roots/prefixes/suffixes, analogies, connotation vs denotation — school vocabulary enrichment program, Grade ${grade} level`,
         }[category] || `mixed English language arts for Grade ${grade}`;
 
         return `Generate ${count} unique Grade ${grade} (${level}) English MCQs: ${catDesc}.
@@ -509,7 +544,7 @@ Return ONLY valid JSON.`;
 
         if (!Array.isArray(questions)) return [];
 
-        const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english'].includes(category);
+        const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise'].includes(category);
 
         // Validate and tag each question
         return questions
@@ -551,7 +586,7 @@ Return ONLY valid JSON.`;
         const startTime = Date.now();
 
         try {
-            const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english'].includes(category);
+            const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise'].includes(category);
             const prompt = isEnglish
                 ? _buildEnglishPrompt(grade, category, count)
                 : _buildMathPrompt(grade, category, count);
@@ -752,15 +787,17 @@ Return ONLY valid JSON.`;
             // School tests
             const school = isHighSchool ? [] : ['fastbridge', 'highcap', 'cogat'];
             // English exams
-            const english = isHighSchool ? ['sat_english', 'spelling_bee'] : ['fb_reading', 'spelling_bee'];
+            const english = isHighSchool
+                ? ['sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'spelling_bee']
+                : ['fb_reading', 'spelling_bee', 'wordly_wise', 'isee_verbal', 'ssat_verbal'];
             // Math competitions/exams
             let competitions;
             if (isHighSchool) {
-                competitions = ['sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'aime', 'ap_calc', 'ap_stats'];
+                competitions = ['sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'aime', 'ap_calc', 'ap_stats', 'isee_math', 'ssat_math'];
             } else if (isElem) {
-                competitions = ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool'];
+                competitions = ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool', 'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math'];
             } else {
-                competitions = ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool', 'mathcounts', 'aime'];
+                competitions = ['olympiad', 'moems', 'noetic', 'kangaroo', 'imc', 'singapore', 'math_challenge', 'math_is_cool', 'mathcounts', 'aime', 'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math'];
             }
             // Internal topic keys (still generate for fallback pool)
             const core = ['arithmetic', 'logic', 'geometry', 'word'];
@@ -842,9 +879,12 @@ Return ONLY valid JSON.`;
         const categories = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word', 'mixed', 'aime',
             'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
             'kangaroo', 'mathcounts', 'singapore', 'math_challenge', 'math_is_cool',
+            'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math',
+            'sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'ap_calc', 'ap_stats',
             'vocabulary', 'grammar', 'reading', 'spelling',
-            'fb_reading', 'spelling_bee'];
-        for (let grade = 1; grade <= 8; grade++) {
+            'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
+            'isee_verbal', 'ssat_verbal', 'wordly_wise'];
+        for (let grade = 1; grade <= 12; grade++) {
             for (const cat of categories) {
                 const key = _getCacheKey(grade, cat);
                 localStorage.removeItem(key);
@@ -880,9 +920,12 @@ Return ONLY valid JSON.`;
         const categories = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word', 'mixed', 'aime',
             'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
             'kangaroo', 'mathcounts', 'singapore', 'math_challenge', 'math_is_cool',
+            'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math',
+            'sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'ap_calc', 'ap_stats',
             'vocabulary', 'grammar', 'reading', 'spelling',
-            'fb_reading', 'spelling_bee'];
-        for (let grade = 1; grade <= 8; grade++) {
+            'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
+            'isee_verbal', 'ssat_verbal', 'wordly_wise'];
+        for (let grade = 1; grade <= 12; grade++) {
             for (const cat of categories) {
                 const cached = _getCached(grade, cat);
                 const filtered = cached.filter(q => q._id !== questionId);
