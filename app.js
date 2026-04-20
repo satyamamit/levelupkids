@@ -53,6 +53,7 @@
 
     const CATEGORY_NAMES = {
         // ─── Math Exams ───────────────────────────────────────
+        sba_math: '📊 SBA Math',
         fastbridge: '📋 FastBridge aMath',
         moems: '🏅 MOEMS',
         noetic: '✨ Noetic Math',
@@ -68,6 +69,7 @@
         singapore: '🇸🇬 Singapore Math',
         mixed: '🎲 Practice Blitz',
         // ─── English Exams ───────────────────────────────────
+        sba_ela: '📊 SBA ELA',
         fb_reading: '📖 FastBridge aReading',
         spelling_bee: '🐝 Spelling Bee',
         // ─── High School Exams ──────────────────────────────
@@ -746,6 +748,9 @@
         const cards = {
             math: [
                 // ── School Testing ──
+                { cat: 'sba_math', diff: 'medium', emoji: '📊', name: 'SBA Math',
+                  desc: isElem ? 'Smarter Balanced: concepts & procedures, problem solving, reasoning — WA state test' : 'Smarter Balanced: expressions, equations, functions, geometry & statistics — WA state test',
+                  diffLabel: '⭐⭐ State Test', pts: '+10 pts each', tag: 'School' },
                 { cat: 'fastbridge', diff: 'medium', emoji: '📋', name: 'FastBridge aMath',
                   desc: isElem ? 'Estimation, number sense, data & measurement — LWSD benchmark' : 'Data analysis, proportional reasoning & statistics — LWSD benchmark',
                   diffLabel: '⭐⭐ School Test', pts: '+10 pts each', tag: 'School' },
@@ -797,6 +802,9 @@
                   diffLabel: '⭐⭐⭐ SSAT', pts: '+20 pts each', tag: 'Entrance Exam' },
             ],
             english: [
+                { cat: 'sba_ela', diff: 'medium', emoji: '📊', name: 'SBA ELA',
+                  desc: isElem ? 'Smarter Balanced: reading comprehension, writing, language conventions — WA state test' : 'Smarter Balanced: literary & informational text, research, writing & language — WA state test',
+                  diffLabel: '⭐⭐ State Test', pts: '+10 pts each', tag: 'School', cssClass: 'challenge-card-english' },
                 { cat: 'fb_reading', diff: 'medium', emoji: '📖', name: 'FastBridge aReading',
                   desc: isElem ? 'Vocabulary, grammar, reading comprehension & spelling — LWSD benchmark' : 'Context clues, inference, text structure & grammar — LWSD benchmark',
                   diffLabel: '⭐⭐ School Test', pts: '+10 pts each', tag: 'School', cssClass: 'challenge-card-english' },

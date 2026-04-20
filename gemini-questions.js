@@ -191,12 +191,12 @@ const GeminiQuestionEngine = (function () {
     function _getAllCached() {
         const all = [];
         const categories = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word', 'mixed', 'aime',
-            'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
+            'sba_math', 'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
             'kangaroo', 'mathcounts', 'singapore', 'math_challenge', 'math_is_cool',
             'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math',
             'sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'ap_calc', 'ap_stats',
             'vocabulary', 'grammar', 'reading', 'spelling',
-            'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
+            'sba_ela', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
             'isee_verbal', 'ssat_verbal', 'wordly_wise'];
         for (let grade = 1; grade <= 12; grade++) {
             for (const cat of categories) {
@@ -411,6 +411,9 @@ CRITICAL: Every problem MUST be a rich real-world story requiring ALGEBRAIC SETU
                 : `International Mathematics Competition (IMC) for middle school Grade ${grade}: number theory, combinatorics, geometry, algebraic manipulation — multi-step competition problems`,
             aime: `AIME-level competition math: number theory, algebra, combinatorics, geometry — challenging multi-step problems`,
             // Test Prep
+            sba_math: isElem
+                ? `Smarter Balanced Assessment (SBA/SBAC) Math for elementary Grade ${grade}: concepts & procedures (operations, fractions, place value), problem solving & modeling (multi-step word problems), communicating reasoning (explain your thinking). Standards-aligned for Grade ${grade}. Include real-world contexts.`
+                : `Smarter Balanced Assessment (SBA/SBAC) Math for Grade ${grade}: expressions & equations, ratios & proportional relationships, geometry, statistics & probability, functions. Problems should match SBAC format: multi-step, require reasoning and justification. Include performance-task style word problems.`,
             fastbridge: isElem
                 ? `FastBridge aMath (elementary): estimation, rounding, number sense, reading simple graphs, basic measurement, mental math — Grade ${grade} standards`
                 : `FastBridge aMath (middle school): data interpretation, statistical reasoning, proportional thinking, measurement conversions — Grade ${grade} standards`,
@@ -476,6 +479,8 @@ CRITICAL: Every problem MUST be a rich real-world story requiring ALGEBRAIC SETU
             extra = ' Problems should be quick to read but require careful thinking. Include tricky word problems and clever number puzzles. Solvable in 2-3 minutes each.';
         } else if (['isee_math', 'ssat_math'].includes(category)) {
             extra = ' Match the actual entrance exam format. Include quantitative comparison questions ("Column A vs Column B, which is greater?") alongside standard MCQs. Problems should test mathematical reasoning, not just computation.';
+        } else if (category === 'sba_math') {
+            extra = ' Match Smarter Balanced format: include multi-step word problems requiring explanation of reasoning. Focus on conceptual understanding, not just computation. Include problems with real-world contexts (measurement, data, money).';
         }
 
         return `Generate ${count} unique Grade ${grade} (${level}) math MCQs: ${catDesc}.${extra}
@@ -502,6 +507,9 @@ Return ONLY valid JSON.`;
                 ? `spelling for ${level}: commonly misspelled words appropriate for Grade ${grade}, identify correct/incorrect spellings`
                 : `spelling for ${level}: challenging words, homophones, commonly confused words — Grade ${grade} level`,
             // Exam-level English
+            sba_ela: isElem
+                ? `Smarter Balanced Assessment (SBA/SBAC) ELA for elementary Grade ${grade}: reading comprehension (literary & informational text — main idea, key details, inference), language conventions (grammar, usage, punctuation), writing (opinion & narrative). Include a 2-3 sentence passage for reading questions. Match Grade ${grade} standards.`
+                : `Smarter Balanced Assessment (SBA/SBAC) ELA for Grade ${grade}: reading comprehension (literary & informational text — central idea, inference, text structure, author's purpose), research & inquiry, language conventions (grammar, usage, punctuation), writing (argumentative & explanatory). Include a 3-4 sentence passage. Match SBAC format and Grade ${grade} complexity.`,
             fb_reading: isElem
                 ? `FastBridge aReading test prep for ${level}: MIX of vocabulary (synonyms/antonyms), grammar (parts of speech, punctuation), reading comprehension (2-3 sentence passage + question), and spelling — each question should be from a different area. Grade ${grade} standards.`
                 : `FastBridge aReading test prep for ${level}: MIX of vocabulary (context clues, roots), grammar (clauses, verb tenses), reading comprehension (3-4 sentence passage + inference question), and spelling (homophones, tricky words) — each question from a different area. Grade ${grade} standards.`,
@@ -544,7 +552,7 @@ Return ONLY valid JSON.`;
 
         if (!Array.isArray(questions)) return [];
 
-        const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise'].includes(category);
+        const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise', 'sba_ela'].includes(category);
 
         // Validate and tag each question
         return questions
@@ -586,7 +594,7 @@ Return ONLY valid JSON.`;
         const startTime = Date.now();
 
         try {
-            const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise'].includes(category);
+            const isEnglish = ['vocabulary', 'grammar', 'reading', 'spelling', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise', 'sba_ela'].includes(category);
             const prompt = isEnglish
                 ? _buildEnglishPrompt(grade, category, count)
                 : _buildMathPrompt(grade, category, count);
@@ -785,11 +793,11 @@ Return ONLY valid JSON.`;
             const isElem = grade <= 5;
             const isHighSchool = grade >= 9;
             // School tests
-            const school = isHighSchool ? [] : ['fastbridge', 'highcap', 'cogat'];
+            const school = isHighSchool ? [] : ['sba_math', 'fastbridge', 'highcap', 'cogat'];
             // English exams
             const english = isHighSchool
                 ? ['sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'spelling_bee']
-                : ['fb_reading', 'spelling_bee', 'wordly_wise', 'isee_verbal', 'ssat_verbal'];
+                : ['sba_ela', 'fb_reading', 'spelling_bee', 'wordly_wise', 'isee_verbal', 'ssat_verbal'];
             // Math competitions/exams
             let competitions;
             if (isHighSchool) {
@@ -877,12 +885,12 @@ Return ONLY valid JSON.`;
     // ─── Admin Functions ────────────────────────────────────
     function purgeAllQuestions() {
         const categories = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word', 'mixed', 'aime',
-            'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
+            'sba_math', 'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
             'kangaroo', 'mathcounts', 'singapore', 'math_challenge', 'math_is_cool',
             'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math',
             'sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'ap_calc', 'ap_stats',
             'vocabulary', 'grammar', 'reading', 'spelling',
-            'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
+            'sba_ela', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
             'isee_verbal', 'ssat_verbal', 'wordly_wise'];
         for (let grade = 1; grade <= 12; grade++) {
             for (const cat of categories) {
@@ -918,12 +926,12 @@ Return ONLY valid JSON.`;
 
     function deleteQuestion(questionId) {
         const categories = ['arithmetic', 'logic', 'geometry', 'olympiad', 'word', 'mixed', 'aime',
-            'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
+            'sba_math', 'fastbridge', 'highcap', 'cogat', 'moems', 'noetic', 'imc',
             'kangaroo', 'mathcounts', 'singapore', 'math_challenge', 'math_is_cool',
             'amc8', 'cml', 'math_league', 'isee_math', 'ssat_math',
             'sat_math', 'act_math', 'psat', 'amc10', 'amc12', 'ap_calc', 'ap_stats',
             'vocabulary', 'grammar', 'reading', 'spelling',
-            'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
+            'sba_ela', 'fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english',
             'isee_verbal', 'ssat_verbal', 'wordly_wise'];
         for (let grade = 1; grade <= 12; grade++) {
             for (const cat of categories) {

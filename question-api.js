@@ -1485,6 +1485,7 @@ const QuestionAPI = (function () {
       amc12: ['aimeNumberTheory', 'aimeAlgebra', 'aimeCombinatorics', 'aimeGeometry', 'permutationCombo', 'countingPrinciple', 'gcdLcm', 'simpleEquation', 'inequality'],
       cml: ['simpleEquation', 'orderOfOperations', 'gcdLcm', 'factorCount', 'area', 'percentages', 'ratio', 'wordProblem'],
       math_league: ['aimeNumberTheory', 'simpleEquation', 'inequality', 'area', 'permutationCombo', 'countingPrinciple', 'gcdLcm', 'wordProblem'],
+      sba_math: ['simpleEquation', 'inequality', 'percentages', 'ratio', 'area', 'fractionMultDiv', 'meanMedianModeRange', 'wordProblem', 'orderOfOperations', 'proportion'],
       isee_math: ['simpleEquation', 'inequality', 'percentages', 'ratio', 'area', 'coordinatePlane', 'meanMedianModeRange', 'wordProblem', 'fractionMultDiv'],
       ssat_math: ['simpleEquation', 'percentages', 'ratio', 'area', 'fractionMultDiv', 'orderOfOperations', 'wordProblem', 'meanMedianModeRange'],
       ap_calc: ['aimeAlgebra', 'simpleEquation', 'inequality', 'coordinatePlane', 'area', 'wordProblem'],
@@ -1538,7 +1539,7 @@ const QuestionAPI = (function () {
 
   // ─── Local question bank lookup ──────────────────────────
   const ENGLISH_CATS = ['vocabulary', 'grammar', 'reading', 'spelling'];
-  const ENGLISH_EXAM_CATS = ['fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise'];
+  const ENGLISH_EXAM_CATS = ['fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise', 'sba_ela'];
 
   function getLocalQuestions(grade, category, count) {
     const pool = [];
