@@ -1411,9 +1411,22 @@
             sourceBadge.className = 'source-badge';
         }
 
-        // Image
+        // Image (supports both URL images and inline SVG for CogAT visual questions)
         const imgEl = $('#question-image');
-        if (imgEl) imgEl.innerHTML = q.image ? `<img src="${q.image}" alt="Question image">` : '';
+        if (imgEl) {
+            if (q.imageSVG) {
+                imgEl.innerHTML = q.imageSVG;
+                imgEl.style.display = 'block';
+                imgEl.style.textAlign = 'center';
+                imgEl.style.margin = '12px auto';
+            } else if (q.image) {
+                imgEl.innerHTML = `<img src="${q.image}" alt="Question image">`;
+                imgEl.style.display = 'block';
+            } else {
+                imgEl.innerHTML = '';
+                imgEl.style.display = 'none';
+            }
+        }
 
         // Combo display
         if (quiz.combo >= 3) {
@@ -1424,9 +1437,12 @@
         const grid = $('#answers-grid');
         grid.innerHTML = '';
         const labels = ['A', 'B', 'C', 'D'];
+        const isVisual = q.isVisual;
+        if (isVisual) grid.classList.add('visual-answers');
+        else grid.classList.remove('visual-answers');
         q.options.forEach((opt, i) => {
             const btn = document.createElement('button');
-            btn.className = 'answer-btn';
+            btn.className = 'answer-btn' + (isVisual ? ' answer-btn-visual' : '');
             btn.innerHTML = `<span class="answer-label">${labels[i]}</span>${opt}`;
             btn.addEventListener('click', () => handleAnswer(i));
             grid.appendChild(btn);

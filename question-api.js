@@ -993,6 +993,255 @@ const QuestionAPI = (function () {
       return { q: gen.q, ...makeOptions(gen.correct, Math.max(5, Math.floor(gen.correct * 0.2))), hint: gen.hint, explanation: gen.explanation, difficulty: grade <= 4 ? 'medium' : 'hard', source: 'HCP / CogAT Prep' };
     },
 
+    // ── VISUAL FIGURE PATTERNS (CogAT Nonverbal Battery) ────
+    figureMatrix(grade) {
+      // SVG shape drawing helpers
+      const COLORS = ['#E53935','#1E88E5','#43A047','#FB8C00','#8E24AA','#00ACC1'];
+      const SHAPES = ['circle','square','triangle','diamond','star','hexagon'];
+      const FILLS = ['solid','empty','striped'];
+
+      function drawShape(shape, color, fill, cx, cy, size) {
+        const s = size * 0.38;
+        const fillAttr = fill === 'solid' ? `fill="${color}"` :
+                         fill === 'empty' ? `fill="none" stroke="${color}" stroke-width="2.5"` :
+                         `fill="none" stroke="${color}" stroke-width="2.5" stroke-dasharray="3,3"`;
+        switch(shape) {
+          case 'circle': return `<circle cx="${cx}" cy="${cy}" r="${s}" ${fillAttr}/>`;
+          case 'square': return `<rect x="${cx-s}" y="${cy-s}" width="${s*2}" height="${s*2}" ${fillAttr}/>`;
+          case 'triangle': { const pts = `${cx},${cy-s} ${cx-s},${cy+s*0.8} ${cx+s},${cy+s*0.8}`; return `<polygon points="${pts}" ${fillAttr}/>`; }
+          case 'diamond': { const pts = `${cx},${cy-s} ${cx+s*0.7},${cy} ${cx},${cy+s} ${cx-s*0.7},${cy}`; return `<polygon points="${pts}" ${fillAttr}/>`; }
+          case 'star': {
+            let pts = '';
+            for(let i=0;i<5;i++) {
+              const outerA = -Math.PI/2 + i*2*Math.PI/5;
+              const innerA = outerA + Math.PI/5;
+              pts += `${cx+s*Math.cos(outerA)},${cy+s*Math.sin(outerA)} `;
+              pts += `${cx+s*0.4*Math.cos(innerA)},${cy+s*0.4*Math.sin(innerA)} `;
+            }
+            return `<polygon points="${pts.trim()}" ${fillAttr}/>`;
+          }
+          case 'hexagon': {
+            let pts = '';
+            for(let i=0;i<6;i++) { const a = -Math.PI/2+i*Math.PI/3; pts += `${cx+s*Math.cos(a)},${cy+s*Math.sin(a)} `; }
+            return `<polygon points="${pts.trim()}" ${fillAttr}/>`;
+          }
+          default: return `<circle cx="${cx}" cy="${cy}" r="${s}" ${fillAttr}/>`;
+        }
+      }
+
+      function drawCell(shape, color, fill, x, y, cellSize) {
+        return drawShape(shape, color, fill, x + cellSize/2, y + cellSize/2, cellSize);
+      }
+
+      function makeSVGGrid(cells, cols, cellSize, showQ) {
+        // cells = array of {shape, color, fill} or null for "?"
+        const rows = Math.ceil(cells.length / cols);
+        const pad = 6;
+        const w = cols * cellSize + (cols+1)*pad;
+        const h = rows * cellSize + (rows+1)*pad;
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${Math.min(w, 340)}" style="background:#1a1a2e;border-radius:12px;">`;
+        // Grid lines
+        for(let r=0;r<=rows;r++) svg += `<line x1="0" y1="${r*(cellSize+pad)+pad/2}" x2="${w}" y2="${r*(cellSize+pad)+pad/2}" stroke="#333" stroke-width="1"/>`;
+        for(let c=0;c<=cols;c++) svg += `<line x1="${c*(cellSize+pad)+pad/2}" y1="0" x2="${c*(cellSize+pad)+pad/2}" y2="${h}" stroke="#333" stroke-width="1"/>`;
+        cells.forEach((cell, i) => {
+          const col = i % cols, row = Math.floor(i / cols);
+          const x = col*(cellSize+pad)+pad, y = row*(cellSize+pad)+pad;
+          if(cell === null && showQ) {
+            svg += `<text x="${x+cellSize/2}" y="${y+cellSize/2+8}" text-anchor="middle" fill="#FFD700" font-size="${cellSize*0.5}" font-weight="bold">?</text>`;
+          } else if(cell) {
+            svg += drawCell(cell.shape, cell.color, cell.fill, x, y, cellSize);
+          }
+        });
+        svg += '</svg>';
+        return svg;
+      }
+
+      function makeOptionSVG(cell, cellSize) {
+        const pad = 4;
+        const w = cellSize + pad*2, h = cellSize + pad*2;
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${Math.min(w, 55)}" style="display:inline-block;vertical-align:middle;">`;
+        svg += drawCell(cell.shape, cell.color, cell.fill, pad, pad, cellSize);
+        svg += '</svg>';
+        return svg;
+      }
+
+      // --- Pattern types ---
+      const patternTypes = [
+        // Type 1: Row pattern — each row uses same shape, color changes across columns
+        () => {
+          const shapes3 = shuffle(SHAPES.slice()).slice(0,3);
+          const colors3 = shuffle(COLORS.slice()).slice(0,3);
+          const fill = pick(FILLS);
+          const cells = [];
+          for(let r=0;r<3;r++) for(let c=0;c<3;c++) cells.push({shape:shapes3[r], color:colors3[c], fill});
+          const answer = cells[8];
+          cells[8] = null;
+          // Distractors: wrong shape or wrong color
+          const distractors = [
+            {shape:shapes3[0], color:colors3[2], fill},
+            {shape:shapes3[2], color:colors3[0], fill},
+            {shape:shapes3[1], color:colors3[2], fill},
+          ];
+          return { cells, answer, distractors, hint: 'Look at what shape each ROW uses, and what color each COLUMN uses.', explanation: `Each row has the same shape. Each column has the same color. The missing cell needs ${answer.shape} in ${answer.color}.` };
+        },
+        // Type 2: Rotating shapes — shape cycles through columns, color cycles through rows
+        () => {
+          const shapes3 = shuffle(SHAPES.slice()).slice(0,3);
+          const colors3 = shuffle(COLORS.slice()).slice(0,3);
+          const fills3 = shuffle(FILLS.slice());
+          const cells = [];
+          for(let r=0;r<3;r++) for(let c=0;c<3;c++) cells.push({shape:shapes3[(r+c)%3], color:colors3[r], fill:fills3[c]});
+          const answer = cells[8];
+          cells[8] = null;
+          const distractors = [
+            {shape:shapes3[0], color:colors3[2], fill:fills3[2]},
+            {shape:shapes3[2], color:colors3[1], fill:fills3[2]},
+            {shape:shapes3[2], color:colors3[2], fill:fills3[0]},
+          ];
+          return { cells, answer, distractors, hint: 'Shapes rotate diagonally. Look at the pattern in each row AND column.', explanation: `Shapes shift by 1 position each row. The missing cell completes the rotation pattern.` };
+        },
+        // Type 3: Fill changes — same shape per row, fill changes across columns
+        () => {
+          const shapes3 = shuffle(SHAPES.slice()).slice(0,3);
+          const color = pick(COLORS);
+          const fills3 = ['solid','empty','striped'];
+          const cells = [];
+          for(let r=0;r<3;r++) for(let c=0;c<3;c++) cells.push({shape:shapes3[r], color, fill:fills3[c]});
+          const answer = cells[8];
+          cells[8] = null;
+          const distractors = [
+            {shape:shapes3[2], color, fill:'solid'},
+            {shape:shapes3[2], color, fill:'empty'},
+            {shape:shapes3[0], color, fill:'striped'},
+          ];
+          return { cells, answer, distractors, hint: 'Each row has the same shape. Look at how the FILL PATTERN changes across columns.', explanation: `Column 1 = solid, Column 2 = empty, Column 3 = striped. Row 3 uses ${answer.shape}.` };
+        },
+        // Type 4: Sequence pattern — 6 shapes in a line, find the 7th
+        () => {
+          const s1 = pick(SHAPES), s2 = pick(SHAPES.filter(s=>s!==s1));
+          const c1 = pick(COLORS), c2 = pick(COLORS.filter(c=>c!==c1));
+          const fill = pick(FILLS);
+          // Alternating pattern
+          const cells = [];
+          for(let i=0;i<7;i++) cells.push({shape:i%2===0?s1:s2, color:i%2===0?c1:c2, fill});
+          const answer = cells[6];
+          cells[6] = null;
+          const distractors = [
+            {shape:s2, color:c2, fill},
+            {shape:s1, color:c2, fill},
+            {shape:s2, color:c1, fill},
+          ];
+          return { cells, answer, distractors, cols: 7, cellSize: 44, hint: 'Look at the alternating pattern of shapes and colors.', explanation: `The pattern alternates: ${s1}/${s2}/${s1}/${s2}... Position 7 should be ${answer.shape}.` };
+        },
+      ];
+
+      const pattern = pick(grade <= 4 ? [patternTypes[0], patternTypes[2], patternTypes[3]] : patternTypes)();
+      const cols = pattern.cols || 3;
+      const cellSize = pattern.cellSize || 60;
+
+      // Build the grid SVG
+      const gridSVG = makeSVGGrid(pattern.cells, cols, cellSize, true);
+
+      // Build answer options as small SVGs
+      const allOptions = shuffle([pattern.answer, ...pattern.distractors]);
+      const correctIdx = allOptions.indexOf(pattern.answer);
+      const optionLabels = allOptions.map(c => makeOptionSVG(c, 40));
+
+      return {
+        q: 'Which figure completes the pattern?',
+        imageSVG: gridSVG,
+        options: optionLabels,
+        answer: correctIdx,
+        hint: pattern.hint,
+        explanation: pattern.explanation,
+        difficulty: grade <= 4 ? 'medium' : 'hard',
+        source: 'CogAT Prep',
+        isVisual: true
+      };
+    },
+
+    // ── FIGURE CLASSIFICATION (CogAT Nonverbal) ─────────────
+    figureClassification(grade) {
+      const COLORS = ['#E53935','#1E88E5','#43A047','#FB8C00','#8E24AA','#00ACC1'];
+      const SHAPES = ['circle','square','triangle','diamond','star','hexagon'];
+
+      function drawShape(shape, color, cx, cy, size) {
+        const s = size * 0.38;
+        const fillAttr = `fill="${color}"`;
+        switch(shape) {
+          case 'circle': return `<circle cx="${cx}" cy="${cy}" r="${s}" ${fillAttr}/>`;
+          case 'square': return `<rect x="${cx-s}" y="${cy-s}" width="${s*2}" height="${s*2}" ${fillAttr}/>`;
+          case 'triangle': { const pts = `${cx},${cy-s} ${cx-s},${cy+s*0.8} ${cx+s},${cy+s*0.8}`; return `<polygon points="${pts}" ${fillAttr}/>`; }
+          case 'diamond': { const pts = `${cx},${cy-s} ${cx+s*0.7},${cy} ${cx},${cy+s} ${cx-s*0.7},${cy}`; return `<polygon points="${pts}" ${fillAttr}/>`; }
+          case 'star': { let pts=''; for(let i=0;i<5;i++){const oa=-Math.PI/2+i*2*Math.PI/5,ia=oa+Math.PI/5; pts+=`${cx+s*Math.cos(oa)},${cy+s*Math.sin(oa)} ${cx+s*0.4*Math.cos(ia)},${cy+s*0.4*Math.sin(ia)} `;} return `<polygon points="${pts.trim()}" ${fillAttr}/>`; }
+          case 'hexagon': { let pts=''; for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3; pts+=`${cx+s*Math.cos(a)},${cy+s*Math.sin(a)} `;} return `<polygon points="${pts.trim()}" ${fillAttr}/>`; }
+          default: return `<circle cx="${cx}" cy="${cy}" r="${s}" ${fillAttr}/>`;
+        }
+      }
+
+      function miniSVG(shape, color, size) {
+        const w = size+8, h = size+8;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${Math.min(w,55)}" style="display:inline-block;vertical-align:middle;">${drawShape(shape,color,w/2,h/2,size)}</svg>`;
+      }
+
+      // Classification rules
+      const rules = [
+        // Same color rule
+        () => {
+          const color = pick(COLORS);
+          const shapes = shuffle(SHAPES.slice()).slice(0,3);
+          const group = shapes.map(s => ({shape:s, color}));
+          const correctShape = pick(SHAPES.filter(s => !shapes.includes(s)));
+          const correct = {shape:correctShape, color};
+          const wrongColors = COLORS.filter(c => c !== color);
+          const distractors = [
+            {shape:correctShape, color:wrongColors[0]},
+            {shape:shapes[0], color:wrongColors[1]},
+            {shape:pick(SHAPES), color:wrongColors[2]},
+          ];
+          return { group, correct, distractors, hint: 'What do all three figures have in common? Look at their COLOR.', explanation: `All figures share the same color. The answer must also be that color.` };
+        },
+        // Same shape rule
+        () => {
+          const shape = pick(SHAPES);
+          const colors = shuffle(COLORS.slice()).slice(0,3);
+          const group = colors.map(c => ({shape, color:c}));
+          const correctColor = pick(COLORS.filter(c => !colors.includes(c)));
+          const correct = {shape, color:correctColor};
+          const wrongShapes = SHAPES.filter(s => s !== shape);
+          const distractors = [
+            {shape:wrongShapes[0], color:correctColor},
+            {shape:wrongShapes[1], color:colors[0]},
+            {shape:wrongShapes[2], color:pick(COLORS)},
+          ];
+          return { group, correct, distractors, hint: 'What SHAPE do all three figures share?', explanation: `All figures are ${shape}s in different colors. The answer must also be a ${shape}.` };
+        },
+      ];
+
+      const rule = pick(rules)();
+      // Build group display SVG (3 shapes in a row)
+      const pad = 6, cs = 55;
+      const gw = 3*(cs+pad)+pad;
+      let groupSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${gw} ${cs+pad*2}" width="${Math.min(gw,240)}" style="background:#1a1a2e;border-radius:10px;">`;
+      rule.group.forEach((g,i) => { groupSVG += drawShape(g.shape, g.color, pad+(cs+pad)*i+cs/2, pad+cs/2, cs); });
+      groupSVG += '</svg>';
+
+      const allOpts = shuffle([rule.correct, ...rule.distractors]);
+      const correctIdx = allOpts.indexOf(rule.correct);
+
+      return {
+        q: 'Which figure belongs with the group above?',
+        imageSVG: groupSVG,
+        options: allOpts.map(o => miniSVG(o.shape, o.color, 40)),
+        answer: correctIdx,
+        hint: rule.hint,
+        explanation: rule.explanation,
+        difficulty: grade <= 4 ? 'medium' : 'hard',
+        source: 'CogAT Prep',
+        isVisual: true
+      };
+    },
+
     // ── MENTAL MATH / NUMBER SENSE (HCP) ────────────────────
     mentalMath(grade) {
       const types = grade <= 3 ? [
@@ -1203,8 +1452,8 @@ const QuestionAPI = (function () {
       fastbridge: ['estimation', 'rounding', 'mentalMath', 'meanMedianModeRange', 'dataTable', 'unitConversion', 'numberPattern', 'numberAnalogy', 'simpleProbability'],
       highcap: ['numberAnalogy', 'numberPattern', 'missingNumber', 'logicPuzzle', 'magicSquare', 'mentalMath', 'digitSum'],
       cogat: isElem
-        ? ['numberAnalogy', 'numberPattern', 'missingNumber', 'logicPuzzle', 'digitSum', 'mentalMath', 'magicSquare']
-        : ['numberAnalogy', 'numberPattern', 'logicPuzzle', 'missingNumber', 'simpleEquation', 'permutationCombo', 'magicSquare'],
+        ? ['numberAnalogy', 'numberPattern', 'missingNumber', 'logicPuzzle', 'digitSum', 'mentalMath', 'figureMatrix', 'figureClassification']
+        : ['numberAnalogy', 'numberPattern', 'logicPuzzle', 'missingNumber', 'simpleEquation', 'figureMatrix', 'figureClassification', 'magicSquare'],
       // Additional Math Competitions
       kangaroo: isElem
         ? ['logicPuzzle', 'numberPattern', 'missingNumber', 'wordProblem', 'perimeter', 'area', 'mentalMath']
