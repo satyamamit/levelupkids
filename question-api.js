@@ -1515,16 +1515,26 @@ const QuestionAPI = (function () {
 
   // ─── Helper: fill pool from all subcategories (grade-aware) ───
   // minDifficulty: 'easy' (any), 'medium' (medium+hard only), 'hard' (hard only)
-  function _supplementFromAllSubcats(pool, grade, count, minDifficulty) {
+  // Subcategory keys that hold ELA/English content inside QUESTIONS
+  const ELA_SUBCAT_KEYS = new Set(['sba_ela']);
+  // Subcategory keys that are explicitly math inside QUESTIONS
+  const MATH_SUBCAT_KEYS = new Set(['sba_math', 'arithmetic', 'geometry', 'word', 'logic', 'fractions', 'measurement', 'algebra', 'statistics', 'number_sense', 'data', 'patterns']);
+
+  function _supplementFromAllSubcats(pool, grade, count, minDifficulty, forCategory) {
     if (typeof QUESTIONS === 'undefined') return;
     const diffRank = { easy: 1, medium: 2, hard: 3 };
     const minRank = diffRank[minDifficulty] || 1;
     const existing = new Set(pool.map(q => q.q));
+    // Determine if requesting category is ELA or Math to avoid cross-contamination
+    const isElaRequest = forCategory && (ELA_SUBCAT_KEYS.has(forCategory) || ENGLISH_EXAM_CATS.includes(forCategory) || ENGLISH_CATS.includes(forCategory));
     const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
     for (const g of searchGrades) {
-      if (pool.length >= count * 2) break; // enough to choose from
+      if (pool.length >= count * 2) break;
       const gData = QUESTIONS[g] || {};
-      for (const arr of Object.values(gData)) {
+      for (const [subcat, arr] of Object.entries(gData)) {
+        // Skip ELA subcats when supplementing math, and skip math subcats when supplementing ELA
+        if (isElaRequest && !ELA_SUBCAT_KEYS.has(subcat)) continue;
+        if (!isElaRequest && ELA_SUBCAT_KEYS.has(subcat)) continue;
         arr.forEach(q => {
           if (!existing.has(q.q)) {
             const qRank = diffRank[q.difficulty] || 2;
@@ -1658,7 +1668,7 @@ const QuestionAPI = (function () {
       }
       // If source-tagged questions are sparse, supplement with general questions
       if (pool.length < count) {
-        _supplementFromAllSubcats(pool, grade, count, 'easy');
+        _supplementFromAllSubcats(pool, grade, count, 'easy', category);
       }
       return shuffle(pool).slice(0, count);
     }
@@ -1700,7 +1710,19 @@ const QuestionAPI = (function () {
       // Supplement: competitions get medium/hard, school tests get any
       const minDiff = COMPETITION_CATS.has(category) ? 'medium' : 'easy';
       if (pool.length < count) {
-        _supplementFromAllSubcats(pool, grade, count, minDiff);
+        _supplementFromAllSubcats(pool, grade, count, minDiff, category);
+      }
+      return shuffle(pool).slice(0, count);
+    }
+
+    // SBA ELA → pull from QUESTIONS[grade].sba_ela directly (not from ENGLISH_QUESTIONS)
+    if (category === 'sba_ela') {
+      if (typeof QUESTIONS !== 'undefined') {
+        const searchGrades = [grade, grade - 1, grade + 1].filter(g => g >= 1 && g <= 12);
+        for (const g of searchGrades) {
+          const gData = QUESTIONS[g] || {};
+          if (gData.sba_ela) pool.push(...gData.sba_ela);
+        }
       }
       return shuffle(pool).slice(0, count);
     }
@@ -1710,7 +1732,10 @@ const QuestionAPI = (function () {
     const gradeData = QUESTIONS[grade] || {};
 
     if (category === 'mixed') {
-      Object.values(gradeData).forEach(arr => pool.push(...arr));
+      // Exclude ELA subcats from mixed math pool
+      Object.entries(gradeData).forEach(([subcat, arr]) => {
+        if (!ELA_SUBCAT_KEYS.has(subcat)) pool.push(...arr);
+      });
     } else if (gradeData[category]) {
       pool.push(...gradeData[category]);
     }
@@ -1720,7 +1745,9 @@ const QuestionAPI = (function () {
       const adj = QUESTIONS[g];
       if (!adj) return;
       if (category === 'mixed') {
-        Object.values(adj).forEach(arr => pool.push(...arr));
+        Object.entries(adj).forEach(([subcat, arr]) => {
+          if (!ELA_SUBCAT_KEYS.has(subcat)) pool.push(...arr);
+        });
       } else if (adj[category]) {
         pool.push(...adj[category]);
       }
@@ -1728,7 +1755,7 @@ const QuestionAPI = (function () {
 
     // If still empty (unknown category), grab from all subcats as fallback
     if (pool.length === 0) {
-      _supplementFromAllSubcats(pool, grade, count, 'easy');
+      _supplementFromAllSubcats(pool, grade, count, 'easy', category);
     }
 
     return shuffle(pool).slice(0, count);
