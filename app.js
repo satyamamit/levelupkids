@@ -208,6 +208,8 @@
             { id: 'pizza_party', emoji: '🍕', name: 'Pizza Party', desc: 'Invite friends over for a pizza party!', cost: 20000, tier: 'legendary' },
             { id: 'boss_of_house', emoji: '👑', name: 'Boss of the House', desc: 'You make ALL the family decisions for an evening!', cost: 12000, tier: 'legendary' },
             { id: 'yes_day_legendary', emoji: '🎉', name: 'ULTIMATE YES Day', desc: 'Parents say YES to everything — the whole day!', cost: 30000, tier: 'legendary' },
+            { id: 'go_karting', emoji: '🏎️', name: 'Go-Karting Trip', desc: 'Hit the track for a thrilling go-karting session!', cost: 50000, tier: 'legendary' },
+            { id: 'dave_busters', emoji: '🕹️', name: 'Dave & Buster\'s Trip', desc: 'Arcade games, prizes & fun at Dave & Buster\'s!', cost: 45000, tier: 'legendary' },
         ]
     };
 
