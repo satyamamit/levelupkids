@@ -2337,24 +2337,14 @@
                 meInList.pts = p.points; // Use local spendable balance
             }
         } else {
-            // Fallback to bots
-            allPlayers = [...(state.bots || [])].map(b => ({ ...b, pts: b.totalPointsEarned || 0 }));
+            // No real players found — show only the current player (no bots)
             const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
-            allPlayers.push({
+            allPlayers = [{
                 name: p.name, grade: p.grade, pts: p.points,
                 level: levelInfo.level, totalQuizzes: p.totalQuizzes,
                 totalCorrect: p.totalCorrect, totalAttempted: p.totalAttempted,
                 maxStreak: p.maxStreak, isBot: false, isYou: true
-            });
-
-            if (tab === 'grade') {
-                allPlayers = allPlayers.filter(pl => pl.grade === p.grade);
-            } else if (tab === 'weekly') {
-                allPlayers = allPlayers.map(pl => ({
-                    ...pl,
-                    weeklyPts: pl.isYou ? Math.floor(p.points * 0.15) : Math.floor((pl.pts || 0) * (0.05 + Math.random() * 0.2))
-                }));
-            }
+            }];
         }
 
         // Sort
