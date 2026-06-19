@@ -178,26 +178,27 @@ const FirestoreDB = {
     async getLeaderboard(limit = 50, gradeFilter = null) {
         if (!firebaseReady) return [];
         try {
-            let query = firebaseDb.collection('players')
-                .orderBy('totalXP', 'desc')
-                .limit(limit);
-
+            // NOTE: Do NOT use .orderBy('totalXP') here — Firestore omits any
+            // document that lacks that field, which would hide newer players
+            // who only have `totalPointsEarned`. Fetch all, then sort in JS.
+            let query = firebaseDb.collection('players');
             if (gradeFilter) {
-                query = firebaseDb.collection('players')
-                    .where('grade', '==', gradeFilter)
-                    .orderBy('totalXP', 'desc')
-                    .limit(limit);
+                query = query.where('grade', '==', gradeFilter);
             }
 
             const snapshot = await query.get();
             const players = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
+                const score = data.totalPointsEarned ?? data.totalXP ?? data.points ?? 0;
                 players.push({
                     uid: doc.id,
                     name: data.name || 'Unknown',
                     grade: data.grade || 1,
+                    points: data.points || 0,
+                    totalPointsEarned: data.totalPointsEarned || 0,
                     totalXP: data.totalXP || 0,
+                    _score: score,
                     totalQuizzes: data.totalQuizzes || 0,
                     totalCorrect: data.totalCorrect || 0,
                     totalAttempted: data.totalAttempted || 0,
@@ -206,7 +207,8 @@ const FirestoreDB = {
                     isBot: false
                 });
             });
-            return players;
+            players.sort((a, b) => b._score - a._score);
+            return players.slice(0, limit);
         } catch (err) {
             console.error('Firestore leaderboard error:', err);
             return [];
@@ -222,18 +224,21 @@ const FirestoreDB = {
 
             const snapshot = await firebaseDb.collection('players')
                 .where('updatedAt', '>=', weekAgo)
-                .orderBy('updatedAt', 'desc')
                 .limit(limit)
                 .get();
 
             const players = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
+                const score = data.totalPointsEarned ?? data.totalXP ?? data.points ?? 0;
                 players.push({
                     uid: doc.id,
                     name: data.name || 'Unknown',
                     grade: data.grade || 1,
+                    points: data.points || 0,
+                    totalPointsEarned: data.totalPointsEarned || 0,
                     totalXP: data.totalXP || 0,
+                    _score: score,
                     totalQuizzes: data.totalQuizzes || 0,
                     totalCorrect: data.totalCorrect || 0,
                     totalAttempted: data.totalAttempted || 0,
@@ -242,8 +247,8 @@ const FirestoreDB = {
                     isBot: false
                 });
             });
-            // Sort by XP since Firestore can't do compound where + orderBy on different fields easily
-            players.sort((a, b) => b.totalXP - a.totalXP);
+            // Sort by score since Firestore can't do compound where + orderBy on different fields easily
+            players.sort((a, b) => b._score - a._score);
             return players;
         } catch (err) {
             console.error('Firestore weekly leaderboard error:', err);
