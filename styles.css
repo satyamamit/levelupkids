@@ -4338,35 +4338,56 @@ body {
 
 /* Hero card */
 .summer-hero-card {
-    background: linear-gradient(135deg, #FF8C42 0%, #FFD700 100%);
+    background: linear-gradient(135deg, #6C63FF 0%, #A855F7 55%, #EC4899 100%);
     border-radius: 20px;
-    padding: 20px;
+    padding: 22px;
     margin-bottom: 16px;
     color: #fff;
-    box-shadow: 0 4px 20px rgba(255,140,66,0.4);
+    box-shadow: 0 8px 28px rgba(108,99,255,0.35);
 }
 .summer-hero-top {
     display: flex;
     align-items: center;
     gap: 14px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
-.summer-hero-emoji { font-size: 2.4rem; }
-.summer-hero-title { font-size: 1.2rem; font-weight: 800; }
-.summer-hero-sub { font-size: 0.85rem; opacity: 0.9; margin-top: 2px; }
+.summer-hero-emoji {
+    font-size: 2.4rem;
+    background: rgba(255,255,255,0.18);
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.summer-hero-title { font-size: 1.25rem; font-weight: 800; }
+.summer-hero-sub { font-size: 0.85rem; opacity: 0.92; margin-top: 3px; }
 .summer-points-row {
     display: flex;
     gap: 10px;
 }
 .summer-stat-box {
     flex: 1;
-    background: rgba(255,255,255,0.25);
-    border-radius: 12px;
-    padding: 10px 6px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 14px;
+    padding: 12px 6px;
     text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
-.summer-stat-val { font-size: 1.5rem; font-weight: 800; }
-.summer-stat-lbl { font-size: 0.72rem; opacity: 0.9; margin-top: 2px; }
+.summer-stat-val {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #6C3FC9;
+    line-height: 1.1;
+}
+.summer-stat-lbl {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #555;
+    margin-top: 3px;
+}
 
 /* How-to earn */
 .summer-howto {
