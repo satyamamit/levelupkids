@@ -2640,11 +2640,11 @@
         function _renderSummerStats() {
             const p = state.player;
             const books = p.summerBooks || [];
-            const totalHours = books.reduce((s, b) => s + (b.hours || 0), 0);
+            const totalMinutes = books.reduce((s, b) => s + (b.minutes || 0), 0);
             const totalPts = books.reduce((s, b) => s + (b.pointsEarned || 0), 0);
             $('#summer-total-pts').textContent = totalPts.toLocaleString();
             $('#summer-books-read').textContent = books.length;
-            $('#summer-hours-read').textContent = Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1);
+            $('#summer-hours-read').textContent = totalMinutes;
         }
 
         function _renderSummerBookList() {
@@ -2661,7 +2661,7 @@
                 el.className = 'summer-book-entry';
                 const dateStr = book.date ? new Date(book.date).toLocaleDateString() : '';
                 const aiSection = book.aiScore ? `
-                    <div class="summer-ai-score">✨ <strong>AI Report Score:</strong> ${book.aiScore}/50 — ${book.aiFeedback || ''}</div>
+                    <div class="summer-ai-score">✨ <strong>AI Report Score:</strong> ${book.aiScore}/200 — ${book.aiFeedback || ''}</div>
                 ` : (book.report ? '<div class="summer-ai-score" style="opacity:0.6;">⏳ Report submitted — no AI key set yet</div>' : '');
                 el.innerHTML = `
                     <div class="summer-book-entry-top">
@@ -2672,7 +2672,7 @@
                         <span class="summer-pts-badge">+${book.pointsEarned} 🪙</span>
                     </div>
                     <div class="summer-book-meta">
-                        <span class="summer-book-badge">⏱️ ${book.hours} hr${book.hours !== 1 ? 's' : ''}</span>
+                        <span class="summer-book-badge">⏱️ ${book.minutes} min</span>
                         ${dateStr ? `<span class="summer-book-badge">📅 ${dateStr}</span>` : ''}
                         ${book.report ? '<span class="summer-book-badge">📝 Report included</span>' : ''}
                     </div>
@@ -2685,7 +2685,7 @@
         function _initSummerForm() {
             const titleEl = $('#sf-book-title');
             const authorEl = $('#sf-book-author');
-            const hoursEl = $('#sf-hours');
+            const minutesEl = $('#sf-hours');
             const reportEl = $('#sf-report');
             const charCount = $('#sf-char-count');
             const submitBtn = $('#btn-summer-submit');
@@ -2694,7 +2694,7 @@
             // Reset form
             if (titleEl) titleEl.value = '';
             if (authorEl) authorEl.value = '';
-            if (hoursEl) hoursEl.value = '';
+            if (minutesEl) minutesEl.value = '';
             if (reportEl) reportEl.value = '';
             if (charCount) charCount.textContent = '0';
             if (statusEl) statusEl.style.display = 'none';
@@ -2710,9 +2710,9 @@
             if (submitBtn) {
                 submitBtn.onclick = async () => {
                     const title = (titleEl && titleEl.value.trim()) || '';
-                    const hours = parseFloat(hoursEl && hoursEl.value) || 0;
+                    const minutes = parseInt(minutesEl && minutesEl.value, 10) || 0;
                     if (!title) { showToast('Please enter the book title!', 'error'); return; }
-                    if (hours <= 0) { showToast('Please enter hours read (at least 0.5)!', 'error'); return; }
+                    if (minutes <= 0) { showToast('Please enter minutes read (at least 5)!', 'error'); return; }
 
                     const author = (authorEl && authorEl.value.trim()) || '';
                     const report = (reportEl && reportEl.value.trim()) || '';
@@ -2721,8 +2721,8 @@
                     submitBtn.textContent = '⏳ Saving…';
                     if (statusEl) { statusEl.style.display = 'none'; }
 
-                    // Base points: 15 for logging + 5 per hour
-                    const basePoints = 15 + Math.round(hours * 5);
+                    // Base points: 15 for logging + 1 coin per minute read
+                    const basePoints = 15 + minutes;
                     let aiScore = null;
                     let aiFeedback = '';
                     let reportPoints = 0;
@@ -2745,15 +2745,15 @@
                             aiFeedback = 'AI grading unavailable — report recorded!';
                         }
                     } else if (report) {
-                        // No API key — give partial flat bonus for the effort
-                        reportPoints = 10;
+                        // No API key — give a flat bonus for the effort
+                        reportPoints = 100;
                     }
 
                     const totalEarned = basePoints + reportPoints;
 
                     // Build book entry
                     const bookEntry = {
-                        title, author, hours,
+                        title, author, minutes,
                         report: report || null,
                         pointsEarned: totalEarned,
                         date: new Date().toISOString(),
@@ -2799,7 +2799,7 @@
                     // Reset form
                     if (titleEl) titleEl.value = '';
                     if (authorEl) authorEl.value = '';
-                    if (hoursEl) hoursEl.value = '';
+                    if (minutesEl) minutesEl.value = '';
                     if (reportEl) { reportEl.value = ''; if (charCount) charCount.textContent = '0'; }
 
                     _renderSummerStats();
@@ -2819,13 +2819,14 @@
     ${report}
     """
 
-    Grade this report on a scale of 0 to 50 points total:
-    - Comprehension (0-20): Does the student show they understood the book?
-    - Detail & Effort (0-15): Did they include specific details, characters, or events?
-    - Reflection (0-15): Did they share an opinion, lesson learned, or personal connection?
+    Grade this report and award between 100 and 200 points total:
+    - Comprehension (up to 80): Does the student show they understood the book?
+    - Detail & Effort (up to 60): Did they include specific details, characters, or events?
+    - Reflection (up to 60): Did they share an opinion, lesson learned, or personal connection?
+    Every genuine report earns at least 100 points; outstanding reports earn up to 200.
 
     Respond in JSON exactly:
-    {"score": <number 0-50>, "feedback": "<one encouraging sentence of 10-20 words for the student>"}`;
+    {"score": <number 100-200>, "feedback": "<one encouraging sentence of 10-20 words for the student>"}`;
 
             const url = `${GeminiQuestionEngine._getApiUrl ? GeminiQuestionEngine._getApiUrl() : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'}?key=${GeminiQuestionEngine.getApiKey()}`;
             const body = {
@@ -2843,7 +2844,7 @@
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!text) throw new Error('Empty Gemini response');
             const parsed = JSON.parse(text);
-            return { score: Math.min(50, Math.max(0, parseInt(parsed.score) || 0)), feedback: (parsed.feedback || '').slice(0, 150) };
+            return { score: Math.min(200, Math.max(100, parseInt(parsed.score) || 100)), feedback: (parsed.feedback || '').slice(0, 150) };
         }
 
         // ===================== TOASTS =====================

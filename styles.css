@@ -4324,6 +4324,7 @@ body {
 
 [data-theme="light"] .progress-bar-track {
     background: #E8EAF0 !important;
+}
 
 /* =============================================
    SUMMER FUN SCREEN
@@ -4413,19 +4414,24 @@ body {
     margin-bottom: 14px;
 }
 .summer-form-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+    margin-bottom: 16px;
 }
 .summer-form-grid .form-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
+    min-width: 0;
+}
+/* Hours field sits next to author on its own row; report spans full width */
+.summer-form-grid .sf-report-group {
+    grid-column: 1 / -1;
 }
 .summer-form-grid label {
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.88rem;
+    font-weight: 700;
     color: var(--text-secondary);
 }
 .summer-form-grid input,
@@ -4433,17 +4439,29 @@ body {
     background: var(--input-bg, var(--bg));
     border: 2px solid var(--border);
     border-radius: 10px;
-    padding: 10px 14px;
+    padding: 12px 14px;
     color: var(--text);
     font-size: 0.95rem;
     font-family: inherit;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+.summer-form-grid textarea {
     resize: vertical;
+    min-height: 220px;
+    line-height: 1.55;
 }
 .summer-form-grid input:focus,
 .summer-form-grid textarea:focus {
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     outline: none;
+}
+@media (max-width: 560px) {
+    .summer-form-grid {
+        grid-template-columns: 1fr;
+    }
 }
 .summer-optional { font-weight: 400; opacity: 0.65; font-size: 0.78rem; }
 .summer-char-count {
