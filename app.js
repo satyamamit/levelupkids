@@ -434,8 +434,22 @@
         merged.dailyStreakDates = [...new Set([...(a.dailyStreakDates || []), ...(b.dailyStreakDates || [])])].sort();
         merged.redeemedRewards = (a.redeemedRewards || []).length >= (b.redeemedRewards || []).length
             ? (a.redeemedRewards || []) : (b.redeemedRewards || []);
-        merged.sessions = (a.sessions || []).length >= (b.sessions || []).length
-            ? (a.sessions || []) : (b.sessions || []);
+        // Union history arrays (deduped by date) so progress is never lost on merge.
+        const _unionByDate = (arrA, arrB, cap) => {
+            const seen = new Set();
+            const out = [];
+            for (const item of [...(arrA || []), ...(arrB || [])]) {
+                const key = item && item.date ? item.date : JSON.stringify(item);
+                if (seen.has(key)) continue;
+                seen.add(key);
+                out.push(item);
+            }
+            out.sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0));
+            return cap ? out.slice(0, cap) : out;
+        };
+        merged.sessions = _unionByDate(a.sessions, b.sessions, 50);
+        merged.redemptions = _unionByDate(a.redemptions, b.redemptions);
+        merged.summerBooks = _unionByDate(a.summerBooks, b.summerBooks);
         merged.name = a.name || b.name;
         merged.grade = a.grade || b.grade;
         if (a.lastPlayedDate && b.lastPlayedDate) {
@@ -2712,7 +2726,7 @@
                     const title = (titleEl && titleEl.value.trim()) || '';
                     const minutes = parseInt(minutesEl && minutesEl.value, 10) || 0;
                     if (!title) { showToast('Please enter the book title!', 'error'); return; }
-                    if (minutes <= 0) { showToast('Please enter minutes read (at least 5)!', 'error'); return; }
+                    if (minutes < 5) { showToast('Please enter minutes read (at least 5)!', 'error'); return; }
 
                     const author = (authorEl && authorEl.value.trim()) || '';
                     const report = (reportEl && reportEl.value.trim()) || '';
