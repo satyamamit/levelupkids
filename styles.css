@@ -4324,6 +4324,205 @@ body {
 
 [data-theme="light"] .progress-bar-track {
     background: #E8EAF0 !important;
+
+/* =============================================
+   SUMMER FUN SCREEN
+   ============================================= */
+.summer-content {
+    padding: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+}
+
+/* Hero card */
+.summer-hero-card {
+    background: linear-gradient(135deg, #FF8C42 0%, #FFD700 100%);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(255,140,66,0.4);
+}
+.summer-hero-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+.summer-hero-emoji { font-size: 2.4rem; }
+.summer-hero-title { font-size: 1.2rem; font-weight: 800; }
+.summer-hero-sub { font-size: 0.85rem; opacity: 0.9; margin-top: 2px; }
+.summer-points-row {
+    display: flex;
+    gap: 10px;
+}
+.summer-stat-box {
+    flex: 1;
+    background: rgba(255,255,255,0.25);
+    border-radius: 12px;
+    padding: 10px 6px;
+    text-align: center;
+}
+.summer-stat-val { font-size: 1.5rem; font-weight: 800; }
+.summer-stat-lbl { font-size: 0.72rem; opacity: 0.9; margin-top: 2px; }
+
+/* How-to earn */
+.summer-howto {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--card-shadow);
+}
+.summer-howto-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+}
+.summer-howto-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.summer-howto-pts {
+    background: linear-gradient(135deg,#6C63FF,#A855F7);
+    color: #fff;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Form card */
+.summer-form-card, .summer-log-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--card-shadow);
+}
+.summer-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+.summer-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.summer-form-grid .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.summer-form-grid label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.summer-form-grid input,
+.summer-form-grid textarea {
+    background: var(--input-bg, var(--bg));
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    resize: vertical;
+}
+.summer-form-grid input:focus,
+.summer-form-grid textarea:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+.summer-optional { font-weight: 400; opacity: 0.65; font-size: 0.78rem; }
+.summer-char-count {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: right;
+}
+.summer-submit-btn { width: 100%; margin-top: 4px; }
+
+/* Book entry in log */
+.summer-book-entry {
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    position: relative;
+}
+.summer-book-entry-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+.summer-book-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+.summer-book-author {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+.summer-book-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.summer-book-badge {
+    background: var(--bg);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+.summer-pts-badge {
+    background: linear-gradient(135deg,#FF8C42,#FFD700);
+    color: #fff;
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+.summer-ai-score {
+    margin-top: 8px;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    background: rgba(108,99,255,0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--primary);
+}
+.summer-empty {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 24px;
+    font-size: 0.9rem;
+}
+
+/* Light theme overrides */
+[data-theme="light"] .summer-form-grid input,
+[data-theme="light"] .summer-form-grid textarea {
+    background: #fff !important;
+    border-color: #D0D0E0 !important;
+}
+[data-theme="light"] .summer-book-entry { border-color: #D0D0E0 !important; }
+[data-theme="light"] .summer-book-badge { background: #F5F5FA !important; }
 }
 
 [data-theme="light"] .session-reviewable:hover {

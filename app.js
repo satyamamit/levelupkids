@@ -352,6 +352,7 @@
             blitzHighAccuracy: 0, hardCorrect: 0, maxCombo: 0,
             achievements: [], dailyChallengesCompleted: 0,
             dailyChallengeToday: null, dailyStreakDates: []
+                ,summerBooks: []
         };
     }
 
@@ -1089,6 +1090,10 @@
                 adminTab.onclick = showAdmin;
             }
         }
+
+            // Summer Fun tab
+            const summerTab = $('#btn-summer');
+            if (summerTab) summerTab.onclick = showSummer;
 
         // Start background AI question generation if API key is set
         if (typeof GeminiQuestionEngine !== 'undefined' && GeminiQuestionEngine.hasApiKey()) {
@@ -2614,6 +2619,234 @@
     }
 
     // ===================== TOASTS =====================
+        // ===================== SUMMER FUN =====================
+        function showSummer() {
+            showScreen('summer');
+            const p = state.player;
+            if (!p.summerBooks) p.summerBooks = [];
+
+            // Back button
+            $('#btn-back-from-summer').onclick = showDashboard;
+
+            // Update nav points
+            const navPts = $('#summer-points-display');
+            if (navPts) navPts.textContent = (p.points || 0).toLocaleString();
+
+            _renderSummerStats();
+            _renderSummerBookList();
+            _initSummerForm();
+        }
+
+        function _renderSummerStats() {
+            const p = state.player;
+            const books = p.summerBooks || [];
+            const totalHours = books.reduce((s, b) => s + (b.hours || 0), 0);
+            const totalPts = books.reduce((s, b) => s + (b.pointsEarned || 0), 0);
+            $('#summer-total-pts').textContent = totalPts.toLocaleString();
+            $('#summer-books-read').textContent = books.length;
+            $('#summer-hours-read').textContent = Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1);
+        }
+
+        function _renderSummerBookList() {
+            const p = state.player;
+            const container = $('#summer-book-list');
+            const books = (p.summerBooks || []).slice().reverse(); // newest first
+            if (!books.length) {
+                container.innerHTML = '<div class="summer-empty">No books logged yet — start reading! 🌟</div>';
+                return;
+            }
+            container.innerHTML = '';
+            books.forEach(book => {
+                const el = document.createElement('div');
+                el.className = 'summer-book-entry';
+                const dateStr = book.date ? new Date(book.date).toLocaleDateString() : '';
+                const aiSection = book.aiScore ? `
+                    <div class="summer-ai-score">✨ <strong>AI Report Score:</strong> ${book.aiScore}/50 — ${book.aiFeedback || ''}</div>
+                ` : (book.report ? '<div class="summer-ai-score" style="opacity:0.6;">⏳ Report submitted — no AI key set yet</div>' : '');
+                el.innerHTML = `
+                    <div class="summer-book-entry-top">
+                        <div>
+                            <div class="summer-book-title">📖 ${book.title}</div>
+                            ${book.author ? `<div class="summer-book-author">by ${book.author}</div>` : ''}
+                        </div>
+                        <span class="summer-pts-badge">+${book.pointsEarned} 🪙</span>
+                    </div>
+                    <div class="summer-book-meta">
+                        <span class="summer-book-badge">⏱️ ${book.hours} hr${book.hours !== 1 ? 's' : ''}</span>
+                        ${dateStr ? `<span class="summer-book-badge">📅 ${dateStr}</span>` : ''}
+                        ${book.report ? '<span class="summer-book-badge">📝 Report included</span>' : ''}
+                    </div>
+                    ${aiSection}
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function _initSummerForm() {
+            const titleEl = $('#sf-book-title');
+            const authorEl = $('#sf-book-author');
+            const hoursEl = $('#sf-hours');
+            const reportEl = $('#sf-report');
+            const charCount = $('#sf-char-count');
+            const submitBtn = $('#btn-summer-submit');
+            const statusEl = $('#summer-submit-status');
+
+            // Reset form
+            if (titleEl) titleEl.value = '';
+            if (authorEl) authorEl.value = '';
+            if (hoursEl) hoursEl.value = '';
+            if (reportEl) reportEl.value = '';
+            if (charCount) charCount.textContent = '0';
+            if (statusEl) statusEl.style.display = 'none';
+
+            // Char counter
+            if (reportEl) {
+                reportEl.oninput = () => {
+                    if (charCount) charCount.textContent = reportEl.value.length;
+                };
+            }
+
+            // Submit
+            if (submitBtn) {
+                submitBtn.onclick = async () => {
+                    const title = (titleEl && titleEl.value.trim()) || '';
+                    const hours = parseFloat(hoursEl && hoursEl.value) || 0;
+                    if (!title) { showToast('Please enter the book title!', 'error'); return; }
+                    if (hours <= 0) { showToast('Please enter hours read (at least 0.5)!', 'error'); return; }
+
+                    const author = (authorEl && authorEl.value.trim()) || '';
+                    const report = (reportEl && reportEl.value.trim()) || '';
+
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '⏳ Saving…';
+                    if (statusEl) { statusEl.style.display = 'none'; }
+
+                    // Base points: 15 for logging + 5 per hour
+                    const basePoints = 15 + Math.round(hours * 5);
+                    let aiScore = null;
+                    let aiFeedback = '';
+                    let reportPoints = 0;
+
+                    // Ask Gemini to grade the book report (if report + API key available)
+                    if (report && typeof GeminiQuestionEngine !== 'undefined' && GeminiQuestionEngine.hasApiKey()) {
+                        try {
+                            if (statusEl) {
+                                statusEl.style.display = 'block';
+                                statusEl.style.background = 'rgba(108,99,255,0.1)';
+                                statusEl.textContent = '✨ AI is reading your book report…';
+                            }
+                            const geminiResult = await _gradeBookReportWithGemini(title, author, report, state.player.grade);
+                            aiScore = geminiResult.score;
+                            aiFeedback = geminiResult.feedback;
+                            // Map score (0–50) → bonus points (0–50)
+                            reportPoints = geminiResult.score || 0;
+                        } catch (e) {
+                            console.warn('Gemini book report grading failed:', e);
+                            aiFeedback = 'AI grading unavailable — report recorded!';
+                        }
+                    } else if (report) {
+                        // No API key — give partial flat bonus for the effort
+                        reportPoints = 10;
+                    }
+
+                    const totalEarned = basePoints + reportPoints;
+
+                    // Build book entry
+                    const bookEntry = {
+                        title, author, hours,
+                        report: report || null,
+                        pointsEarned: totalEarned,
+                        date: new Date().toISOString(),
+                        aiScore, aiFeedback: aiFeedback || null
+                    };
+
+                    // Save to player
+                    const p = state.player;
+                    if (!p.summerBooks) p.summerBooks = [];
+                    p.summerBooks.push(bookEntry);
+
+                    // Award points to main pool
+                    p.points = Math.max(0, (p.points || 0) + totalEarned);
+                    p.totalPointsEarned = Math.max(0, (p.totalPointsEarned || 0) + totalEarned);
+                    checkLevelUp();
+                    checkAchievements();
+                    savePlayer();
+
+                    // Update nav
+                    const navPts = $('#summer-points-display');
+                    if (navPts) navPts.textContent = p.points.toLocaleString();
+                    // Update dashboard nav too
+                    const navPtsMain = $('#nav-points');
+                    if (navPtsMain) navPtsMain.textContent = p.points.toLocaleString();
+
+                    // Feedback
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '➕ Add Book & Earn Coins';
+
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.style.background = 'rgba(46,213,115,0.12)';
+                        let msg = `🎉 +${totalEarned} 🪙 earned! (${basePoints} for reading`;
+                        if (reportPoints > 0) msg += ` + ${reportPoints} report bonus`;
+                        msg += ')';
+                        if (aiFeedback) msg += ` — AI says: "${aiFeedback}"`;
+                        statusEl.textContent = msg;
+                    }
+
+                    showToast(`📚 "${title}" logged! +${totalEarned} coins earned!`, 'success');
+                    launchConfetti(60);
+
+                    // Reset form
+                    if (titleEl) titleEl.value = '';
+                    if (authorEl) authorEl.value = '';
+                    if (hoursEl) hoursEl.value = '';
+                    if (reportEl) { reportEl.value = ''; if (charCount) charCount.textContent = '0'; }
+
+                    _renderSummerStats();
+                    _renderSummerBookList();
+                };
+            }
+        }
+
+        async function _gradeBookReportWithGemini(title, author, report, grade) {
+            const gradeLevel = grade <= 2 ? 'K-2' : grade <= 5 ? '3-5' : grade <= 8 ? '6-8' : '9-12';
+            const prompt = `You are a kind, encouraging teacher grading a book report written by a Grade ${grade} student (level ${gradeLevel}).
+
+    Book: "${title}"${author ? ` by ${author}` : ''}
+
+    Student's report:
+    """
+    ${report}
+    """
+
+    Grade this report on a scale of 0 to 50 points total:
+    - Comprehension (0-20): Does the student show they understood the book?
+    - Detail & Effort (0-15): Did they include specific details, characters, or events?
+    - Reflection (0-15): Did they share an opinion, lesson learned, or personal connection?
+
+    Respond in JSON exactly:
+    {"score": <number 0-50>, "feedback": "<one encouraging sentence of 10-20 words for the student>"}`;
+
+            const url = `${GeminiQuestionEngine._getApiUrl ? GeminiQuestionEngine._getApiUrl() : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'}?key=${GeminiQuestionEngine.getApiKey()}`;
+            const body = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.4,
+                    maxOutputTokens: 200,
+                    responseMimeType: 'application/json',
+                    thinkingConfig: { thinkingBudget: 0 }
+                }
+            };
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!res.ok) throw new Error(`Gemini ${res.status}`);
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error('Empty Gemini response');
+            const parsed = JSON.parse(text);
+            return { score: Math.min(50, Math.max(0, parseInt(parsed.score) || 0)), feedback: (parsed.feedback || '').slice(0, 150) };
+        }
+
+        // ===================== TOASTS =====================
     function showToast(message, type = 'info') {
         const container = $('#toast-container');
         const toast = document.createElement('div');
