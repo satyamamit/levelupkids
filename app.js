@@ -352,7 +352,7 @@
             blitzHighAccuracy: 0, hardCorrect: 0, maxCombo: 0,
             achievements: [], dailyChallengesCompleted: 0,
             dailyChallengeToday: null, dailyStreakDates: []
-                ,summerBooks: [], joinedSummerChallenge: false
+                ,summerBooks: [], joinedSummerChallenge: false, deletedSummerBooks: []
         };
     }
 
@@ -449,7 +449,21 @@
         };
         merged.sessions = _unionByDate(a.sessions, b.sessions, 50);
         merged.redemptions = _unionByDate(a.redemptions, b.redemptions);
-        merged.summerBooks = _unionByDate(a.summerBooks, b.summerBooks);
+        // Tombstones: a deleted book must stay deleted, even if a stale copy
+        // still has it. Union both delete lists, then filter them out.
+        const _bookSig = (bk) => `${bk && bk.date}|${bk && bk.title}`;
+        const deletedSigs = new Set([
+            ...((a.deletedSummerBooks || []).map(_bookSig)),
+            ...((b.deletedSummerBooks || []).map(_bookSig))
+        ]);
+        merged.deletedSummerBooks = [
+            ...new Map([
+                ...((a.deletedSummerBooks || []).map(d => [_bookSig(d), d])),
+                ...((b.deletedSummerBooks || []).map(d => [_bookSig(d), d]))
+            ]).values()
+        ];
+        merged.summerBooks = _unionByDate(a.summerBooks, b.summerBooks)
+            .filter(bk => !deletedSigs.has(_bookSig(bk)));
         merged.joinedSummerChallenge = !!(a.joinedSummerChallenge || b.joinedSummerChallenge);
         merged.name = a.name || b.name;
         merged.grade = a.grade || b.grade;
@@ -553,6 +567,8 @@
         if (!p.maxCombo) p.maxCombo = 0;
         if (!p.dailyChallengesCompleted) p.dailyChallengesCompleted = 0;
         if (!p.dailyStreakDates) p.dailyStreakDates = [];
+        if (!p.summerBooks) p.summerBooks = [];
+        if (!p.deletedSummerBooks) p.deletedSummerBooks = [];
         return p;
     }
 
@@ -2815,13 +2831,27 @@
         function _deleteSummerBook(book) {
             const p = state.player;
             const books = p.summerBooks || [];
-            const idx = books.findIndex(b => b.date === book.date && b.title === book.title);
-            if (idx === -1) { showToast('Entry not found.', 'error'); return; }
-            const removed = books.splice(idx, 1)[0];
-            const refund = removed.pointsEarned || 0;
-            // Take back the coins this entry awarded (never go below 0)
+            // Match all copies of the same logical entry (same title + minutes),
+            // since a buggy sync may have duplicated it under different timestamps.
+            const sameEntry = (b) => b.title === book.title
+                && (b.minutes || 0) === (book.minutes || 0)
+                && (b.author || '') === (book.author || '');
+            const matches = books.filter(sameEntry);
+            if (matches.length === 0) { showToast('Entry not found.', 'error'); return; }
+            let refund = 0;
+            if (!p.deletedSummerBooks) p.deletedSummerBooks = [];
+            matches.forEach(m => {
+                refund += m.pointsEarned || 0;
+                if (!p.deletedSummerBooks.some(d => d.date === m.date && d.title === m.title)) {
+                    p.deletedSummerBooks.push({ date: m.date, title: m.title });
+                }
+            });
+            // Remove every matching copy from the active list
+            p.summerBooks = books.filter(b => !sameEntry(b));
+            // Take back the coins these entries awarded (never go below 0)
             p.points = Math.max(0, (p.points || 0) - refund);
             p.totalPointsEarned = Math.max(0, (p.totalPointsEarned || 0) - refund);
+            const removed = matches[0];
             checkLevelUp();
             savePlayer();
 
