@@ -1913,6 +1913,15 @@ body {
     margin-left: 2px;
 }
 
+.session-review-link {
+    color: var(--primary);
+    font-weight: 700;
+    text-decoration: underline;
+}
+.session-head:hover .session-review-link {
+    color: var(--accent-yellow-dark, #d48806);
+}
+
 /* ---------- Session question review ---------- */
 .session-review {
     margin-top: 10px;

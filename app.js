@@ -2660,7 +2660,7 @@
                             <span class="session-cat-emoji">${catEmojis[s.category] || '📝'}</span>
                             <div>
                                 <div class="session-cat-name">${CATEGORY_NAMES[s.category] || s.category}</div>
-                                <div class="session-date">${date}${reviewable ? ` · ${wrongCount > 0 ? '❌ ' + wrongCount + ' to review' : '✅ all correct'}` : ''}</div>
+                                <div class="session-date">${date}${reviewable ? ` · <span class="session-review-link">${wrongCount > 0 ? '🔍 Review ' + wrongCount + ' missed' : '🔍 Review answers'}</span>` : ''}</div>
                             </div>
                         </div>
                         <div class="session-right">
@@ -2996,6 +2996,19 @@
                         return;
                     }
 
+                    // Token-free gibberish check — runs even without the AI key
+                    const gibberish = _looksLikeGibberish(report);
+                    if (gibberish) {
+                        showToast('That doesn\'t look like a real report. Please write about the book.', 'error');
+                        if (statusEl) {
+                            statusEl.style.display = 'block';
+                            statusEl.style.background = 'rgba(255,71,87,0.12)';
+                            statusEl.textContent = `🚫 ${gibberish}`;
+                        }
+                        if (reportEl) reportEl.focus();
+                        return;
+                    }
+
                     submitBtn.disabled = true;
                     submitBtn.textContent = '⏳ Saving…';
                     if (statusEl) { statusEl.style.display = 'none'; }
@@ -3033,10 +3046,13 @@
                             reportPoints = geminiResult.score || 0;
                         } catch (e) {
                             console.warn('Gemini book report grading failed:', e);
-                            aiFeedback = 'AI grading unavailable — report recorded!';
+                            // AI unavailable — the local gibberish check above already
+                            // passed, so accept the report with the flat effort bonus.
+                            reportPoints = 100;
+                            aiFeedback = 'Report recorded! (AI grading was unavailable.)';
                         }
                     } else if (report) {
-                        // No API key — give a flat bonus for the effort
+                        // No API key — local gibberish check passed; flat effort bonus
                         reportPoints = 100;
                     }
 
@@ -3182,6 +3198,49 @@
             return String(s).replace(/[&<>"']/g, c => (
                 { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
             ));
+        }
+
+        // Token-free heuristic gibberish detector for book reports.
+        // Returns a reason string if the text looks fake, or '' if it seems real.
+        function _looksLikeGibberish(text) {
+            const raw = (text || '').trim();
+            if (!raw) return 'Please write a book report.';
+            const words = raw.toLowerCase().match(/[a-z']+/g) || [];
+            if (words.length < 40) return 'Please write more about the book in real sentences.';
+
+            // 1) Vowel check — real English words almost always contain a vowel.
+            const noVowel = words.filter(w => !/[aeiouy]/.test(w));
+            if (noVowel.length / words.length > 0.25) {
+                return 'This looks like random letters. Write real sentences about the book.';
+            }
+
+            // 2) Very long unbroken letter runs (e.g. "asdkfjaslkdfj") signal mashing.
+            const longRuns = words.filter(w => w.length >= 15);
+            if (longRuns.length >= 3) {
+                return 'This looks like random typing. Please write a real report.';
+            }
+
+            // 3) Repetition — pasting the same word/phrase to pad length.
+            const counts = {};
+            words.forEach(w => { counts[w] = (counts[w] || 0) + 1; });
+            const meaningful = Object.entries(counts).filter(([w]) => w.length > 3);
+            const topRepeat = meaningful.reduce((m, [, c]) => Math.max(m, c), 0);
+            if (topRepeat > words.length * 0.18) {
+                return 'Please write a real report instead of repeating the same words.';
+            }
+
+            // 4) Vocabulary variety — genuine writing uses many distinct words.
+            const unique = new Set(words).size;
+            if (unique / words.length < 0.28) {
+                return 'Please use your own words to describe the book.';
+            }
+
+            // 5) Needs sentence structure (some spaces and punctuation/letters).
+            const avgWordLen = words.join('').length / words.length;
+            if (avgWordLen > 12) {
+                return 'Please write in normal sentences about the book.';
+            }
+            return '';
         }
 
         // ─── Generate an AI quiz about the book ──
