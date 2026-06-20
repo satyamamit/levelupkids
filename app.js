@@ -2337,7 +2337,7 @@
             // Use real players from Firestore, mark current user
             allPlayers = realPlayers.map(pl => ({
                 ...pl,
-                pts: pl.points || pl.totalPointsEarned || pl.totalXP || 0,
+                pts: pl.totalPointsEarned ?? pl.totalXP ?? pl.points ?? 0,
                 level: getLevelFromPoints(pl.totalPointsEarned || pl.totalXP || 0).level,
                 isYou: pl.uid === myUid,
                 isBot: false
@@ -2347,20 +2347,20 @@
             if (!meInList) {
                 const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
                 allPlayers.push({
-                    name: p.name, grade: p.grade, pts: p.points,
+                    name: p.name, grade: p.grade, pts: p.totalPointsEarned || 0,
                     level: levelInfo.level, totalQuizzes: p.totalQuizzes,
                     totalCorrect: p.totalCorrect, totalAttempted: p.totalAttempted,
                     maxStreak: p.maxStreak, isBot: false, isYou: true,
                     photoURL: state.authUser?.photoURL || null
                 });
             } else {
-                meInList.pts = p.points; // Use local spendable balance
+                meInList.pts = p.totalPointsEarned || 0; // Leaderboard shows total points earned
             }
         } else {
             // No real players found — show only the current player (no bots)
             const levelInfo = getLevelFromPoints(p.totalPointsEarned || 0);
             allPlayers = [{
-                name: p.name, grade: p.grade, pts: p.points,
+                name: p.name, grade: p.grade, pts: p.totalPointsEarned || 0,
                 level: levelInfo.level, totalQuizzes: p.totalQuizzes,
                 totalCorrect: p.totalCorrect, totalAttempted: p.totalAttempted,
                 maxStreak: p.maxStreak, isBot: false, isYou: true
@@ -2423,8 +2423,18 @@
         showScreen('rewards');
         const p = state.player;
 
-        $('#rewards-points').textContent = p.points.toLocaleString();
-        $('#rewards-balance').textContent = p.points.toLocaleString();
+        const remaining = p.points || 0;
+        const redeemed = (p.redemptions || []).reduce((s, r) => s + (r.cost || 0), 0);
+        const totalEarned = p.totalPointsEarned ?? (remaining + redeemed);
+
+        $('#rewards-points').textContent = remaining.toLocaleString();
+        $('#rewards-balance').textContent = remaining.toLocaleString();
+        const totalEl = $('#rewards-total');
+        if (totalEl) totalEl.textContent = totalEarned.toLocaleString();
+        const remEl = $('#rewards-remaining');
+        if (remEl) remEl.textContent = remaining.toLocaleString();
+        const redEl = $('#rewards-redeemed');
+        if (redEl) redEl.textContent = redeemed.toLocaleString();
 
         renderRewardSection('rewards-activities', REWARDS.activities);
         renderRewardSection('rewards-privileges', REWARDS.privileges);
