@@ -1788,10 +1788,22 @@
 
         // Session history
         if (!p.sessions) p.sessions = [];
+        // Keep the questions answered this session so they can be reviewed later
+        // (wrong ones especially). Trim fields to keep storage small.
+        const reviewQuestions = (quiz.results || []).map(r => ({
+            question: r.question,
+            options: r.options || [],
+            correctIndex: r.correctIndex,
+            answer: r.answer,
+            selected: r.selected,
+            correct: !!r.correct,
+            explanation: r.explanation || ''
+        }));
         p.sessions.unshift({
             date: new Date().toISOString(), category: quiz.category,
             correct: quiz.score, total: quiz.results.length,
-            points: totalEarned, combo: quiz.maxCombo
+            points: totalEarned, combo: quiz.maxCombo,
+            questions: reviewQuestions
         });
         if (p.sessions.length > 50) p.sessions = p.sessions.slice(0, 50);
 
@@ -2639,24 +2651,68 @@
                 const item = document.createElement('div');
                 item.className = 'session-item';
                 const date = new Date(s.date).toLocaleDateString();
+                const qs = Array.isArray(s.questions) ? s.questions : [];
+                const wrongCount = qs.filter(q => !q.correct).length;
+                const reviewable = qs.length > 0;
                 item.innerHTML = `
-                    <div class="session-left">
-                        <span class="session-cat-emoji">${catEmojis[s.category] || '📝'}</span>
-                        <div>
-                            <div class="session-cat-name">${CATEGORY_NAMES[s.category] || s.category}</div>
-                            <div class="session-date">${date}</div>
+                    <div class="session-head">
+                        <div class="session-left">
+                            <span class="session-cat-emoji">${catEmojis[s.category] || '📝'}</span>
+                            <div>
+                                <div class="session-cat-name">${CATEGORY_NAMES[s.category] || s.category}</div>
+                                <div class="session-date">${date}${reviewable ? ` · ${wrongCount > 0 ? '❌ ' + wrongCount + ' to review' : '✅ all correct'}` : ''}</div>
+                            </div>
+                        </div>
+                        <div class="session-right">
+                            <span class="session-score">${s.correct}/${s.total}</span>
+                            <span class="session-pts">+${s.points} pts${s.combo >= 3 ? ' 🔥' + s.combo : ''}</span>
+                            ${reviewable ? '<span class="session-expand">▼</span>' : ''}
                         </div>
                     </div>
-                    <div class="session-right">
-                        <span class="session-score">${s.correct}/${s.total}</span>
-                        <span class="session-pts">+${s.points} pts${s.combo >= 3 ? ' 🔥' + s.combo : ''}</span>
-                    </div>
                 `;
+                if (reviewable) {
+                    const head = item.querySelector('.session-head');
+                    head.style.cursor = 'pointer';
+                    const review = document.createElement('div');
+                    review.className = 'session-review';
+                    review.style.display = 'none';
+                    review.innerHTML = _renderSessionReview(qs);
+                    item.appendChild(review);
+                    head.onclick = () => {
+                        const open = review.style.display !== 'none';
+                        review.style.display = open ? 'none' : 'block';
+                        const caret = item.querySelector('.session-expand');
+                        if (caret) caret.textContent = open ? '▼' : '▲';
+                    };
+                }
                 sessContainer.appendChild(item);
             });
         }
 
         $('#btn-back-from-progress').onclick = showDashboard;
+    }
+
+    // Build the expandable review of a past session's questions.
+    function _renderSessionReview(questions) {
+        // Wrong answers first so they're easy to find and revisit.
+        const ordered = [...questions].sort((a, b) => (a.correct === b.correct ? 0 : a.correct ? 1 : -1));
+        return ordered.map(q => {
+            const opts = (q.options || []).map((opt, i) => {
+                const isCorrect = i === q.correctIndex;
+                const isPicked = opt === q.selected;
+                let cls = 'review-opt';
+                if (isCorrect) cls += ' review-opt-correct';
+                else if (isPicked && !q.correct) cls += ' review-opt-wrong';
+                const mark = isCorrect ? '✅' : (isPicked && !q.correct ? '❌' : '');
+                return `<div class="${cls}">${mark} ${_escapeHtml(String(opt))}</div>`;
+            }).join('');
+            return `
+                <div class="review-q ${q.correct ? 'review-q-right' : 'review-q-wrong'}">
+                    <div class="review-q-text">${q.correct ? '✅' : '❌'} ${_escapeHtml(String(q.question))}</div>
+                    <div class="review-opts">${opts}</div>
+                    ${q.explanation ? `<div class="review-explain">💡 ${_escapeHtml(String(q.explanation))}</div>` : ''}
+                </div>`;
+        }).join('');
     }
 
     // ===================== TOASTS =====================
