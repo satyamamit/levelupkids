@@ -129,7 +129,7 @@
             </button>
             <button id="btn-summer" class="tab-item" data-tab="summer">
                 <span class="tab-icon">☀️</span>
-                <span class="tab-label">Summer Reading</span>
+                <span class="tab-label">Summer Reading Challenge</span>
             </button>
             <button id="btn-admin" class="tab-item admin-only" data-tab="admin" style="display:none;">
                 <span class="tab-icon">🤖</span>
@@ -794,13 +794,30 @@
                     <div class="summer-howto-row"><span class="summer-howto-pts">+100–200</span> for a book report graded by AI ✨</div>
             </div>
 
+            <!-- Challenge join + leaderboard -->
+            <div class="summer-challenge-card">
+                <div class="summer-challenge-head">
+                    <div>
+                        <div class="summer-challenge-title">🏆 Summer Reading Challenge</div>
+                        <div class="summer-challenge-sub">Join and see how you stack up against other readers!</div>
+                    </div>
+                    <button id="btn-join-summer-challenge" class="btn-primary summer-join-btn">Join Challenge</button>
+                </div>
+                <div id="summer-challenge-list" class="summer-challenge-list">
+                    <div class="summer-empty">Loading readers…</div>
+                </div>
+            </div>
+
             <!-- Add new book form -->
             <div class="summer-form-card">
                 <h3 class="summer-section-title">📖 Log a Book</h3>
                 <div class="summer-form-grid">
                     <div class="form-group">
                         <label for="sf-book-title">Book Title *</label>
-                        <input type="text" id="sf-book-title" placeholder="e.g. Charlotte's Web" maxlength="100">
+                        <div class="sf-autocomplete-wrap">
+                            <input type="text" id="sf-book-title" placeholder="Start typing a book name…" maxlength="100" autocomplete="off">
+                            <div id="sf-title-suggestions" class="sf-autocomplete" style="display:none;"></div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="sf-book-author">Author</label>
@@ -811,9 +828,9 @@
                         <input type="number" id="sf-hours" placeholder="e.g. 30" min="5" max="600" step="5">
                     </div>
                     <div class="form-group sf-report-group">
-                        <label for="sf-report">Book Report <span class="summer-optional">(optional — AI gives bonus coins!)</span></label>
-                        <textarea id="sf-report" rows="9" maxlength="2000" placeholder="Write a few sentences: What was the book about? What was your favorite part? What did you learn?"></textarea>
-                        <div class="summer-char-count"><span id="sf-char-count">0</span>/2000</div>
+                        <label for="sf-report">Book Report <span class="summer-required">(required — at least 200 words, AI gives bonus coins!)</span></label>
+                        <textarea id="sf-report" rows="9" maxlength="4000" placeholder="Write at least 200 words: What was the book about? Who were the main characters? What was your favorite part? What did you learn? Would you recommend it?"></textarea>
+                        <div class="summer-char-count"><span id="sf-char-count">0</span>/200 words</div>
                     </div>
                 </div>
                 <button id="btn-summer-submit" class="btn-primary btn-large summer-submit-btn">

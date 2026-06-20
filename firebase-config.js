@@ -215,6 +215,38 @@ const FirestoreDB = {
         }
     },
 
+    // Get Summer Reading Challenge participants (kids who joined or logged books)
+    async getSummerParticipants() {
+        if (!firebaseReady) return [];
+        try {
+            const snapshot = await firebaseDb.collection('players').get();
+            const participants = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const books = Array.isArray(data.summerBooks) ? data.summerBooks : [];
+                const joined = data.joinedSummerChallenge === true;
+                if (!joined) return; // only show players who joined the challenge
+                const summerPoints = books.reduce((s, b) => s + (b.pointsEarned || 0), 0);
+                const summerMinutes = books.reduce((s, b) => s + (b.minutes || 0), 0);
+                participants.push({
+                    uid: doc.id,
+                    name: data.name || 'Reader',
+                    grade: data.grade || 1,
+                    photoURL: data.photoURL || null,
+                    booksCount: books.length,
+                    summerPoints,
+                    summerMinutes,
+                    books: books.slice().sort((x, y) => new Date(y.date || 0) - new Date(x.date || 0))
+                });
+            });
+            participants.sort((a, b) => b.summerPoints - a.summerPoints);
+            return participants;
+        } catch (err) {
+            console.error('Firestore summer participants error:', err);
+            return [];
+        }
+    },
+
     // Get weekly leaderboard (players active in last 7 days)
     async getWeeklyLeaderboard(limit = 50) {
         if (!firebaseReady) return [];

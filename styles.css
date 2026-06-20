@@ -4391,7 +4391,7 @@ body {
 
 /* How-to earn */
 .summer-howto {
-    background: var(--card-bg);
+    background: var(--bg-card, #1A1A2E);
     border-radius: 14px;
     padding: 16px;
     margin-bottom: 16px;
@@ -4423,7 +4423,7 @@ body {
 
 /* Form card */
 .summer-form-card, .summer-log-card {
-    background: var(--card-bg);
+    background: var(--bg-card, #1A1A2E);
     border-radius: 16px;
     padding: 20px;
     margin-bottom: 16px;
@@ -4485,12 +4485,210 @@ body {
     }
 }
 .summer-optional { font-weight: 400; opacity: 0.65; font-size: 0.78rem; }
+.summer-required { font-weight: 600; color: #FF9F43; font-size: 0.78rem; }
 .summer-char-count {
     font-size: 0.75rem;
     color: var(--text-dim);
     text-align: right;
 }
+.summer-char-count.summer-words-ok { color: #2ED573; font-weight: 700; }
 .summer-submit-btn { width: 100%; margin-top: 4px; }
+
+/* Book title autocomplete */
+.sf-autocomplete-wrap { position: relative; }
+.sf-autocomplete {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--bg-card, #1A1A2E);
+    background-color: var(--bg-card, #1A1A2E);
+    backdrop-filter: none;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    max-height: 280px;
+    overflow-y: auto;
+}
+.sf-autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card, #1A1A2E);
+}
+.sf-autocomplete-item:last-child { border-bottom: none; }
+.sf-autocomplete-item:hover,
+.sf-autocomplete-item.active { background: var(--bg-card-hover, #242442); }
+.sf-ac-thumb {
+    width: 30px;
+    height: 42px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--bg);
+}
+.sf-ac-text { min-width: 0; }
+.sf-ac-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sf-ac-author {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sf-autocomplete-empty {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+/* Book quiz */
+.sf-quiz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.sf-quiz-btn { padding: 7px 14px; font-size: 0.85rem; white-space: nowrap; }
+.sf-quiz-btn:disabled { opacity: 0.6; cursor: default; }
+#sf-quiz-container { margin-top: 6px; }
+.sf-quiz-q {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 10px;
+}
+.sf-quiz-q-text { font-weight: 700; font-size: 0.9rem; margin-bottom: 10px; }
+.sf-quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.sf-quiz-option {
+    text-align: left;
+    background: var(--bg-card, #1A1A2E);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 0.88rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.sf-quiz-option:hover { border-color: var(--primary); }
+.sf-quiz-option.selected {
+    border-color: var(--primary);
+    background: rgba(108,99,255,0.15);
+    font-weight: 700;
+}
+.sf-quiz-option.correct {
+    border-color: #2ED573;
+    background: rgba(46,213,115,0.18);
+}
+.sf-quiz-option.wrong {
+    border-color: #FF4757;
+    background: rgba(255,71,87,0.15);
+}
+.sf-quiz-loading {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Summer Reading Challenge feed */
+.summer-challenge-card {
+    background: var(--bg-card, #1A1A2E);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--card-shadow);
+}
+.summer-challenge-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+.summer-challenge-title { font-weight: 800; font-size: 1.05rem; }
+.summer-challenge-sub { font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px; }
+.summer-join-btn { padding: 9px 18px; font-size: 0.9rem; white-space: nowrap; }
+.summer-join-btn.joined {
+    background: rgba(46,213,115,0.18);
+    color: #14924a;
+    cursor: default;
+    box-shadow: none;
+}
+.summer-challenge-list { display: flex; flex-direction: column; gap: 10px; }
+.summer-participant {
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.summer-participant-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+}
+.summer-participant-rank {
+    font-weight: 800;
+    font-size: 0.95rem;
+    min-width: 28px;
+    text-align: center;
+}
+.summer-participant-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: linear-gradient(135deg,#6C63FF,#A855F7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.summer-participant-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.summer-participant-info { flex: 1; min-width: 0; }
+.summer-participant-name { font-weight: 700; font-size: 0.92rem; }
+.summer-participant-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 1px; }
+.summer-participant-pts {
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: #6C3FC9;
+    white-space: nowrap;
+}
+.summer-participant-caret { font-size: 0.8rem; color: var(--text-secondary); transition: transform 0.2s; }
+.summer-participant.open .summer-participant-caret { transform: rotate(180deg); }
+.summer-participant-books {
+    display: none;
+    padding: 0 14px 12px 14px;
+    flex-direction: column;
+    gap: 8px;
+}
+.summer-participant.open .summer-participant-books { display: flex; }
+.summer-pbook {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.83rem;
+}
+.summer-pbook-title { font-weight: 700; }
+.summer-pbook-meta { font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px; }
+.summer-participant.is-you { border-color: var(--primary); }
 
 /* Book entry in log */
 .summer-book-entry {
@@ -4500,11 +4698,30 @@ body {
     margin-bottom: 10px;
     position: relative;
 }
+.summer-book-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 8px;
+    opacity: 0.55;
+    transition: opacity 0.15s, background 0.15s;
+}
+.summer-book-delete:hover {
+    opacity: 1;
+    background: rgba(239,68,68,0.12);
+}
 .summer-book-entry-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
+    padding-right: 28px;
 }
 .summer-book-title {
     font-weight: 700;

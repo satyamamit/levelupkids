@@ -352,7 +352,7 @@
             blitzHighAccuracy: 0, hardCorrect: 0, maxCombo: 0,
             achievements: [], dailyChallengesCompleted: 0,
             dailyChallengeToday: null, dailyStreakDates: []
-                ,summerBooks: []
+                ,summerBooks: [], joinedSummerChallenge: false
         };
     }
 
@@ -450,6 +450,7 @@
         merged.sessions = _unionByDate(a.sessions, b.sessions, 50);
         merged.redemptions = _unionByDate(a.redemptions, b.redemptions);
         merged.summerBooks = _unionByDate(a.summerBooks, b.summerBooks);
+        merged.joinedSummerChallenge = !!(a.joinedSummerChallenge || b.joinedSummerChallenge);
         merged.name = a.name || b.name;
         merged.grade = a.grade || b.grade;
         if (a.lastPlayedDate && b.lastPlayedDate) {
@@ -2634,6 +2635,8 @@
 
     // ===================== TOASTS =====================
         // ===================== SUMMER FUN =====================
+        let _bookQuizState = null;
+        let _bookAcTimer = null;
         function showSummer() {
             showScreen('summer');
             const p = state.player;
@@ -2649,6 +2652,96 @@
             _renderSummerStats();
             _renderSummerBookList();
             _initSummerForm();
+            _initSummerChallenge();
+        }
+
+        function _initSummerChallenge() {
+            const p = state.player;
+            const joinBtn = $('#btn-join-summer-challenge');
+            const setJoinedUI = () => {
+                if (!joinBtn) return;
+                if (p.joinedSummerChallenge) {
+                    joinBtn.textContent = '✅ Joined';
+                    joinBtn.classList.add('joined');
+                    joinBtn.disabled = true;
+                } else {
+                    joinBtn.textContent = 'Join Challenge';
+                    joinBtn.classList.remove('joined');
+                    joinBtn.disabled = false;
+                }
+            };
+            setJoinedUI();
+            if (joinBtn) {
+                joinBtn.onclick = () => {
+                    p.joinedSummerChallenge = true;
+                    savePlayer();
+                    setJoinedUI();
+                    showToast('🏆 You joined the Summer Reading Challenge!', 'success');
+                    launchConfetti(40);
+                    _renderSummerChallenge();
+                };
+            }
+            _renderSummerChallenge();
+        }
+
+        async function _renderSummerChallenge() {
+            const container = $('#summer-challenge-list');
+            if (!container) return;
+            const myUid = state.authUser?.uid;
+
+            if (!state.useFirebase || !state.authUser || typeof FirestoreDB === 'undefined') {
+                container.innerHTML = '<div class="summer-empty">Sign in with Google to join the challenge and see other readers! 🌟</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="summer-empty">Loading readers…</div>';
+            let participants = [];
+            try {
+                participants = await FirestoreDB.getSummerParticipants();
+            } catch (e) {
+                console.warn('Summer challenge load failed:', e);
+            }
+
+            if (!participants.length) {
+                container.innerHTML = '<div class="summer-empty">No readers yet — be the first to log a book! 📚</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            participants.forEach((pt, i) => {
+                const isYou = pt.uid === myUid;
+                const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
+                const avatar = pt.photoURL
+                    ? `<img src="${pt.photoURL}" alt="">`
+                    : _escapeHtml((pt.name || '?').charAt(0).toUpperCase());
+                const row = document.createElement('div');
+                row.className = 'summer-participant' + (isYou ? ' is-you' : '');
+                const booksHtml = pt.books.map(b => {
+                    const d = b.date ? new Date(b.date).toLocaleDateString() : '';
+                    const quiz = (b.quizTotal ? ` · 📚 ${b.quizCorrect || 0}/${b.quizTotal} quiz` : '');
+                    return `<div class="summer-pbook">
+                        <div class="summer-pbook-title">📖 ${_escapeHtml(b.title || 'Untitled')}${b.author ? ` <span style="font-weight:400;opacity:0.7;">by ${_escapeHtml(b.author)}</span>` : ''}</div>
+                        <div class="summer-pbook-meta">⏱️ ${b.minutes || 0} min · +${b.pointsEarned || 0} 🪙${d ? ' · ' + d : ''}${quiz}</div>
+                    </div>`;
+                }).join('') || '<div class="summer-pbook"><div class="summer-pbook-meta">No books logged yet.</div></div>';
+
+                row.innerHTML = `
+                    <div class="summer-participant-head">
+                        <div class="summer-participant-rank">${rankIcon}</div>
+                        <div class="summer-participant-avatar">${avatar}</div>
+                        <div class="summer-participant-info">
+                            <div class="summer-participant-name">${_escapeHtml(pt.name)}${isYou ? ' (You)' : ''}</div>
+                            <div class="summer-participant-meta">Grade ${pt.grade} · 📖 ${pt.booksCount} book${pt.booksCount !== 1 ? 's' : ''} · ⏱️ ${pt.summerMinutes} min</div>
+                        </div>
+                        <div class="summer-participant-pts">${pt.summerPoints.toLocaleString()} 🪙</div>
+                        <div class="summer-participant-caret">▼</div>
+                    </div>
+                    <div class="summer-participant-books">${booksHtml}</div>
+                `;
+                const head = row.querySelector('.summer-participant-head');
+                if (head) head.onclick = () => row.classList.toggle('open');
+                container.appendChild(row);
+            });
         }
 
         function _renderSummerStats() {
@@ -2678,6 +2771,7 @@
                     <div class="summer-ai-score">✨ <strong>AI Report Score:</strong> ${book.aiScore}/200 — ${book.aiFeedback || ''}</div>
                 ` : (book.report ? '<div class="summer-ai-score" style="opacity:0.6;">⏳ Report submitted — no AI key set yet</div>' : '');
                 el.innerHTML = `
+                    <button class="summer-book-delete" title="Delete this entry">🗑️</button>
                     <div class="summer-book-entry-top">
                         <div>
                             <div class="summer-book-title">📖 ${book.title}</div>
@@ -2692,8 +2786,44 @@
                     </div>
                     ${aiSection}
                 `;
+                const delBtn = el.querySelector('.summer-book-delete');
+                if (delBtn) delBtn.onclick = () => _confirmDeleteSummerBook(book);
                 container.appendChild(el);
             });
+        }
+
+        function _confirmDeleteSummerBook(book) {
+            const overlay = $('#modal-overlay');
+            overlay.style.display = 'flex';
+            $('#modal-icon').textContent = '🗑️';
+            $('#modal-title').textContent = 'Delete this entry?';
+            $('#modal-message').textContent = `Remove "${book.title}" and take back the ${(book.pointsEarned || 0).toLocaleString()} coins it earned?`;
+            $('#modal-cancel').onclick = () => { overlay.style.display = 'none'; };
+            $('#modal-confirm').onclick = () => { overlay.style.display = 'none'; _deleteSummerBook(book); };
+        }
+
+        function _deleteSummerBook(book) {
+            const p = state.player;
+            const books = p.summerBooks || [];
+            const idx = books.findIndex(b => b.date === book.date && b.title === book.title);
+            if (idx === -1) { showToast('Entry not found.', 'error'); return; }
+            const removed = books.splice(idx, 1)[0];
+            const refund = removed.pointsEarned || 0;
+            // Take back the coins this entry awarded (never go below 0)
+            p.points = Math.max(0, (p.points || 0) - refund);
+            p.totalPointsEarned = Math.max(0, (p.totalPointsEarned || 0) - refund);
+            checkLevelUp();
+            savePlayer();
+
+            // Update nav points
+            const navPts = $('#summer-points-display');
+            if (navPts) navPts.textContent = (p.points || 0).toLocaleString();
+            const navPtsMain = $('#nav-points');
+            if (navPtsMain) navPtsMain.textContent = (p.points || 0).toLocaleString();
+
+            _renderSummerStats();
+            _renderSummerBookList();
+            showToast(`🗑️ "${removed.title}" deleted — ${refund.toLocaleString()} coins removed.`, 'info');
         }
 
         function _initSummerForm() {
@@ -2713,11 +2843,37 @@
             if (charCount) charCount.textContent = '0';
             if (statusEl) statusEl.style.display = 'none';
 
-            // Char counter
-            if (reportEl) {
-                reportEl.oninput = () => {
-                    if (charCount) charCount.textContent = reportEl.value.length;
+            // Reset quiz + autocomplete
+            _bookQuizState = null;
+            const quizContainer = $('#sf-quiz-container');
+            if (quizContainer) quizContainer.innerHTML = '';
+            const suggestBox = $('#sf-title-suggestions');
+            if (suggestBox) { suggestBox.style.display = 'none'; suggestBox.innerHTML = ''; }
+
+            // Book title autocomplete (Google Books)
+            _initBookAutocomplete(titleEl, authorEl);
+
+            // "Quiz Me!" button — generate AI questions about the book
+            const quizBtn = $('#btn-generate-quiz');
+            if (quizBtn) {
+                quizBtn.onclick = () => {
+                    const t = (titleEl && titleEl.value.trim()) || '';
+                    const a = (authorEl && authorEl.value.trim()) || '';
+                    _generateBookQuiz(t, a, quizBtn);
                 };
+            }
+
+            // Char + word counter (report requires 200+ words)
+            if (reportEl) {
+                const updateCount = () => {
+                    if (!charCount) return;
+                    const words = reportEl.value.trim() ? reportEl.value.trim().split(/\s+/).filter(Boolean).length : 0;
+                    charCount.textContent = words;
+                    const wrap = charCount.closest('.summer-char-count');
+                    if (wrap) wrap.classList.toggle('summer-words-ok', words >= 200);
+                };
+                reportEl.oninput = updateCount;
+                updateCount();
             }
 
             // Submit
@@ -2730,6 +2886,19 @@
 
                     const author = (authorEl && authorEl.value.trim()) || '';
                     const report = (reportEl && reportEl.value.trim()) || '';
+
+                    // Book report is mandatory — at least 200 words
+                    const wordCount = report ? report.split(/\s+/).filter(Boolean).length : 0;
+                    if (wordCount < 200) {
+                        showToast(`Book report is required — write at least 200 words (you have ${wordCount}).`, 'error');
+                        if (statusEl) {
+                            statusEl.style.display = 'block';
+                            statusEl.style.background = 'rgba(255,71,87,0.12)';
+                            statusEl.textContent = `✍️ Your book report needs at least 200 words. You currently have ${wordCount}.`;
+                        }
+                        if (reportEl) reportEl.focus();
+                        return;
+                    }
 
                     submitBtn.disabled = true;
                     submitBtn.textContent = '⏳ Saving…';
@@ -2752,7 +2921,19 @@
                             const geminiResult = await _gradeBookReportWithGemini(title, author, report, state.player.grade);
                             aiScore = geminiResult.score;
                             aiFeedback = geminiResult.feedback;
-                            // Map score (0–50) → bonus points (0–50)
+                            // If the AI flagged the report as fake/off-topic, reject the submission
+                            if (geminiResult.valid === false) {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = '➕ Add Book & Earn Coins';
+                                if (statusEl) {
+                                    statusEl.style.display = 'block';
+                                    statusEl.style.background = 'rgba(255,71,87,0.12)';
+                                    statusEl.textContent = `🚫 ${geminiResult.feedback || 'Please write a real report about this book.'}`;
+                                }
+                                showToast('Report needs to be a genuine summary of the book.', 'error');
+                                return;
+                            }
+                            // Map score (100–200) → bonus points
                             reportPoints = geminiResult.score || 0;
                         } catch (e) {
                             console.warn('Gemini book report grading failed:', e);
@@ -2763,7 +2944,21 @@
                         reportPoints = 100;
                     }
 
-                    const totalEarned = basePoints + reportPoints;
+                    // Grade the optional book quiz (+25 per correct answer)
+                    let quizPoints = 0;
+                    let quizCorrect = 0;
+                    let quizTotal = 0;
+                    if (_bookQuizState && Array.isArray(_bookQuizState.questions) && _bookQuizState.questions.length) {
+                        quizTotal = _bookQuizState.questions.length;
+                        _bookQuizState.questions.forEach((qq, qi) => {
+                            if (_bookQuizState.answers[qi] === qq.answer) {
+                                quizCorrect++;
+                                quizPoints += 25;
+                            }
+                        });
+                    }
+
+                    const totalEarned = basePoints + reportPoints + quizPoints;
 
                     // Build book entry
                     const bookEntry = {
@@ -2771,7 +2966,8 @@
                         report: report || null,
                         pointsEarned: totalEarned,
                         date: new Date().toISOString(),
-                        aiScore, aiFeedback: aiFeedback || null
+                        aiScore, aiFeedback: aiFeedback || null,
+                        quizCorrect, quizTotal
                     };
 
                     // Save to player
@@ -2802,6 +2998,7 @@
                         statusEl.style.background = 'rgba(46,213,115,0.12)';
                         let msg = `🎉 +${totalEarned} 🪙 earned! (${basePoints} for reading`;
                         if (reportPoints > 0) msg += ` + ${reportPoints} report bonus`;
+                        if (quizPoints > 0) msg += ` + ${quizPoints} quiz (${quizCorrect}/${quizTotal})`;
                         msg += ')';
                         if (aiFeedback) msg += ` — AI says: "${aiFeedback}"`;
                         statusEl.textContent = msg;
@@ -2815,16 +3012,172 @@
                     if (authorEl) authorEl.value = '';
                     if (minutesEl) minutesEl.value = '';
                     if (reportEl) { reportEl.value = ''; if (charCount) charCount.textContent = '0'; }
+                    _bookQuizState = null;
+                    const quizContainer = $('#sf-quiz-container');
+                    if (quizContainer) quizContainer.innerHTML = '';
 
                     _renderSummerStats();
                     _renderSummerBookList();
+                    _renderSummerChallenge();
                 };
             }
         }
 
+        // ─── Book title autocomplete via Google Books API (no key needed) ──
+        function _initBookAutocomplete(titleEl, authorEl) {
+            if (!titleEl) return;
+            const box = $('#sf-title-suggestions');
+            if (!box) return;
+
+            const hide = () => { box.style.display = 'none'; };
+
+            titleEl.oninput = () => {
+                const q = titleEl.value.trim();
+                clearTimeout(_bookAcTimer);
+                if (q.length < 3) { hide(); return; }
+                _bookAcTimer = setTimeout(() => _searchBooks(q, box, titleEl, authorEl), 300);
+            };
+            titleEl.onblur = () => { setTimeout(hide, 200); }; // allow click to register
+            titleEl.onfocus = () => { if (box.children.length) box.style.display = 'block'; };
+        }
+
+        async function _searchBooks(query, box, titleEl, authorEl) {
+            try {
+                // Open Library search — free, no API key, no per-project quota.
+                const url = 'https://openlibrary.org/search.json?limit=6&fields=title,author_name,cover_i&title='
+                    + encodeURIComponent(query);
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('books ' + res.status);
+                const data = await res.json();
+                const items = (data.docs || []).filter(d => d && d.title);
+                box.innerHTML = '';
+                if (!items.length) {
+                    box.innerHTML = '<div class="sf-autocomplete-empty">No matches — just type the title.</div>';
+                    box.style.display = 'block';
+                    return;
+                }
+                items.forEach(d => {
+                    const title = d.title;
+                    const author = (d.author_name && d.author_name[0]) || '';
+                    const thumb = d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : '';
+                    const row = document.createElement('div');
+                    row.className = 'sf-autocomplete-item';
+                    row.innerHTML = `
+                        ${thumb ? `<img class="sf-ac-thumb" src="${thumb}" alt="">` : '<div class="sf-ac-thumb"></div>'}
+                        <div class="sf-ac-text">
+                            <div class="sf-ac-title">${_escapeHtml(title)}</div>
+                            ${author ? `<div class="sf-ac-author">by ${_escapeHtml(author)}</div>` : ''}
+                        </div>`;
+                    row.onclick = () => {
+                        titleEl.value = title;
+                        if (authorEl && author) authorEl.value = author;
+                        box.style.display = 'none';
+                    };
+                    box.appendChild(row);
+                });
+                box.style.display = 'block';
+            } catch (e) {
+                console.warn('Book search failed:', e);
+                box.style.display = 'none';
+            }
+        }
+
+        function _escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
+        }
+
+        // ─── Generate an AI quiz about the book ──
+        async function _generateBookQuiz(title, author, btn) {
+            const container = $('#sf-quiz-container');
+            if (!title) { showToast('Enter a book title first!', 'error'); return; }
+            if (!container) return;
+            if (typeof GeminiQuestionEngine === 'undefined' || !GeminiQuestionEngine.hasApiKey()) {
+                showToast('Book quiz needs the AI key (ask your parent to set it in Admin).', 'info');
+                return;
+            }
+            btn.disabled = true;
+            const oldLabel = btn.textContent;
+            btn.textContent = '⏳ Thinking…';
+            container.innerHTML = '<div class="sf-quiz-loading">🧠 Creating questions about your book…</div>';
+            try {
+                const questions = await _generateBookQuizWithGemini(title, author, state.player.grade);
+                if (!questions.length) throw new Error('No questions');
+                _bookQuizState = { title, questions, answers: {} };
+                _renderBookQuiz();
+            } catch (e) {
+                console.warn('Book quiz generation failed:', e);
+                container.innerHTML = '<div class="sf-quiz-loading">😕 Could not make a quiz for this book. Try another title.</div>';
+                _bookQuizState = null;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = oldLabel;
+            }
+        }
+
+        function _renderBookQuiz() {
+            const container = $('#sf-quiz-container');
+            if (!container || !_bookQuizState) return;
+            container.innerHTML = '';
+            _bookQuizState.questions.forEach((qq, qi) => {
+                const qEl = document.createElement('div');
+                qEl.className = 'sf-quiz-q';
+                qEl.innerHTML = `<div class="sf-quiz-q-text">${qi + 1}. ${_escapeHtml(qq.q)}</div>`;
+                const opts = document.createElement('div');
+                opts.className = 'sf-quiz-options';
+                qq.options.forEach((opt, oi) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'sf-quiz-option';
+                    b.textContent = opt;
+                    b.onclick = () => {
+                        if (_bookQuizState.answers[qi] != null) return; // lock after answering
+                        _bookQuizState.answers[qi] = oi;
+                        opts.querySelectorAll('.sf-quiz-option').forEach((bn, bi) => {
+                            bn.disabled = true;
+                            if (bi === qq.answer) bn.classList.add('correct');
+                            else if (bi === oi) bn.classList.add('wrong');
+                        });
+                    };
+                    opts.appendChild(b);
+                });
+                qEl.appendChild(opts);
+                container.appendChild(qEl);
+            });
+        }
+
+        async function _generateBookQuizWithGemini(title, author, grade) {
+            const prompt = `Create 3 simple multiple-choice reading-comprehension questions about the children's book "${title}"${author ? ` by ${author}` : ''}, suitable for a Grade ${grade} student. Focus on main characters, plot, setting, and themes that a child who read the book would know. Each question has exactly 4 options with one correct answer.
+
+Respond in JSON exactly:
+{"questions":[{"q":"<question>","options":["<a>","<b>","<c>","<d>"],"answer":<index 0-3>}]}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GeminiQuestionEngine.MODEL || 'gemini-2.5-flash-lite'}:generateContent?key=${GeminiQuestionEngine.getApiKey()}`;
+            const body = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.6,
+                    maxOutputTokens: 700,
+                    responseMimeType: 'application/json',
+                    thinkingConfig: { thinkingBudget: 0 }
+                }
+            };
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!res.ok) throw new Error('Gemini ' + res.status);
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error('Empty Gemini response');
+            const parsed = JSON.parse(text);
+            const out = (parsed.questions || []).filter(q =>
+                q && typeof q.q === 'string' && Array.isArray(q.options) && q.options.length === 4
+                && Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 3
+            ).slice(0, 3);
+            return out;
+        }
+
         async function _gradeBookReportWithGemini(title, author, report, grade) {
             const gradeLevel = grade <= 2 ? 'K-2' : grade <= 5 ? '3-5' : grade <= 8 ? '6-8' : '9-12';
-            const prompt = `You are a kind, encouraging teacher grading a book report written by a Grade ${grade} student (level ${gradeLevel}).
+            const prompt = `You are a fair but kind teacher grading a book report written by a Grade ${grade} student (level ${gradeLevel}).
 
     Book: "${title}"${author ? ` by ${author}` : ''}
 
@@ -2833,21 +3186,28 @@
     ${report}
     """
 
-    Grade this report and award between 100 and 200 points total:
+    STEP 1 — Validate the report is genuine before scoring. Mark it INVALID if any of these are true:
+    - It is gibberish, random words, or keyboard mashing.
+    - It is repeated/padded text just to reach a word count.
+    - It is clearly NOT about this book (off-topic or generic with no real book details).
+    - It looks copy-pasted from a description rather than written by a child.
+
+    STEP 2 — If VALID, award between 100 and 200 points:
     - Comprehension (up to 80): Does the student show they understood the book?
-    - Detail & Effort (up to 60): Did they include specific details, characters, or events?
-    - Reflection (up to 60): Did they share an opinion, lesson learned, or personal connection?
-    Every genuine report earns at least 100 points; outstanding reports earn up to 200.
+    - Detail & Effort (up to 60): Specific details, characters, or events?
+    - Reflection (up to 60): An opinion, lesson learned, or personal connection?
+    A genuine on-topic report earns at least 100; outstanding reports earn up to 200.
+    If INVALID, set valid=false and score=0.
 
     Respond in JSON exactly:
-    {"score": <number 100-200>, "feedback": "<one encouraging sentence of 10-20 words for the student>"}`;
+    {"valid": <true|false>, "score": <number 0, or 100-200>, "feedback": "<one encouraging sentence of 10-20 words; if invalid, gently tell them to write a real report about the book>"}`;
 
             const url = `${GeminiQuestionEngine._getApiUrl ? GeminiQuestionEngine._getApiUrl() : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'}?key=${GeminiQuestionEngine.getApiKey()}`;
             const body = {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
-                    temperature: 0.4,
-                    maxOutputTokens: 200,
+                    temperature: 0.3,
+                    maxOutputTokens: 250,
                     responseMimeType: 'application/json',
                     thinkingConfig: { thinkingBudget: 0 }
                 }
@@ -2858,7 +3218,9 @@
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!text) throw new Error('Empty Gemini response');
             const parsed = JSON.parse(text);
-            return { score: Math.min(200, Math.max(100, parseInt(parsed.score) || 100)), feedback: (parsed.feedback || '').slice(0, 150) };
+            const valid = parsed.valid !== false;
+            const score = valid ? Math.min(200, Math.max(100, parseInt(parsed.score) || 100)) : 0;
+            return { valid, score, feedback: (parsed.feedback || '').slice(0, 150) };
         }
 
         // ===================== TOASTS =====================
