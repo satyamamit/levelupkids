@@ -465,6 +465,9 @@
         merged.summerBooks = _unionByDate(a.summerBooks, b.summerBooks)
             .filter(bk => !deletedSigs.has(_bookSig(bk)));
         merged.joinedSummerChallenge = !!(a.joinedSummerChallenge || b.joinedSummerChallenge);
+        // Union seen-question memory so dedup survives cross-device sync.
+        // Keep insertion order (oldest first) and cap to the rolling window.
+        merged.seenQuestions = [...new Set([...(a.seenQuestions || []), ...(b.seenQuestions || [])])].slice(-1000);
         merged.name = a.name || b.name;
         merged.grade = a.grade || b.grade;
         if (a.lastPlayedDate && b.lastPlayedDate) {
@@ -1379,14 +1382,16 @@
             ]);
         }
 
-        // Collect seen question hashes for dedup
-        const seenHashes = new Set(state.player.seenQuestions || []);
+        // Collect seen question hashes for dedup. Pass the ordered array (not a
+        // Set) so the API can bring back oldest-seen questions first if needed.
+        const seenList = Array.isArray(state.player.seenQuestions) ? state.player.seenQuestions : [];
+        const seenHashes = new Set(seenList);
 
         let questions;
         try {
             // Use QuestionAPI — 3s timeout so quiz doesn't hang on slow external APIs
             if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
-                questions = await withTimeout(QuestionAPI.getQuestions(state.player.grade, category, count, seenHashes), 3000);
+                questions = await withTimeout(QuestionAPI.getQuestions(state.player.grade, category, count, seenList), 3000);
             } else {
                 questions = getQuestions(state.player.grade, category, count);
             }
@@ -1815,8 +1820,8 @@
                 const h = hashFn(q.q);
                 if (!p.seenQuestions.includes(h)) p.seenQuestions.push(h);
             });
-            // Keep only last 300 to avoid localStorage bloat
-            if (p.seenQuestions.length > 300) p.seenQuestions = p.seenQuestions.slice(-300);
+            // Keep a generous rolling window so repeats are pushed far out
+            if (p.seenQuestions.length > 1000) p.seenQuestions = p.seenQuestions.slice(-1000);
         }
 
         checkAchievements();

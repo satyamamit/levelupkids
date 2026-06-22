@@ -1774,7 +1774,12 @@ const QuestionAPI = (function () {
     grade = parseInt(grade) || 4;
     category = category || 'mixed';
     count = count || 10;
-    const seen = seenHashes instanceof Set ? seenHashes : new Set(seenHashes || []);
+    // Accept either a Set or an ordered array. Keep the order (oldest-seen
+    // first) so that, when repeats are unavoidable, we bring back the
+    // questions seen longest ago — maximally spacing any repeat.
+    const seenArr = seenHashes instanceof Set ? [...seenHashes] : (Array.isArray(seenHashes) ? seenHashes : []);
+    const seen = new Set(seenArr);
+    const seenRank = new Map(seenArr.map((h, i) => [h, i])); // lower = seen longer ago
 
     let questions = [];
 
@@ -1830,9 +1835,14 @@ const QuestionAPI = (function () {
       if (unseen.length >= count) {
         questions = unseen;
       } else {
-        // Use all unseen + fill remainder from seen (least-repeat is still better)
-        const seenOnes = questions.filter(q => seen.has(hashQ(q.q)));
-        questions = [...unseen, ...shuffle(seenOnes)];
+        // Pool exhausted: fill remainder with the questions seen LONGEST ago,
+        // so any repeat is pushed as far into the future as possible.
+        const seenOnes = questions
+          .filter(q => seen.has(hashQ(q.q)))
+          .sort((a, b) => (seenRank.get(hashQ(a.q)) ?? 0) - (seenRank.get(hashQ(b.q)) ?? 0));
+        questions = [...shuffle(unseen), ...seenOnes];
+        // Don't re-shuffle below — order is intentional (fresh first, oldest-seen next)
+        return questions.slice(0, count);
       }
     }
 
