@@ -1551,6 +1551,14 @@ const QuestionAPI = (function () {
   const ENGLISH_CATS = ['vocabulary', 'grammar', 'reading', 'spelling'];
   const ENGLISH_EXAM_CATS = ['fb_reading', 'spelling_bee', 'sat_english', 'act_english', 'ap_english', 'isee_verbal', 'ssat_verbal', 'wordly_wise', 'sba_ela'];
 
+  // Prefer harder questions: return medium/hard first, then easy only to
+  // fill the remaining slots. Each tier is shuffled for variety.
+  function _hardFirst(pool, count) {
+    const harder = shuffle(pool.filter(q => q.difficulty === 'hard' || q.difficulty === 'medium'));
+    const easier = shuffle(pool.filter(q => q.difficulty !== 'hard' && q.difficulty !== 'medium'));
+    return harder.concat(easier).slice(0, count);
+  }
+
   function getLocalQuestions(grade, category, count) {
     const pool = [];
 
@@ -1567,7 +1575,7 @@ const QuestionAPI = (function () {
           }
         }
       }
-      return shuffle(pool).slice(0, count);
+      return _hardFirst(pool, count);
     }
 
     // spelling_bee = heavy on spelling, supplemented with vocabulary
@@ -1582,7 +1590,7 @@ const QuestionAPI = (function () {
           }
         }
       }
-      return shuffle(pool).slice(0, count);
+      return _hardFirst(pool, count);
     }
 
     // English subcategories → use ENGLISH_QUESTIONS bank
@@ -1596,7 +1604,7 @@ const QuestionAPI = (function () {
           }
         }
       }
-      return shuffle(pool).slice(0, count);
+      return _hardFirst(pool, count);
     }
 
     // Singapore Math → pull Singapore Math tagged questions
@@ -1770,24 +1778,29 @@ const QuestionAPI = (function () {
 
     let questions = [];
 
-    // 1) Start with local curated bank (50% of count — competition-quality questions)
-    const localCount = Math.ceil(count * 0.5);
+    // English categories don't have math generators or external APIs,
+    // so pull a large pool from the local bank to give dedup room to
+    // serve fresh, non-repeating questions.
+    const isEnglish = ENGLISH_CATS.includes(category) || ENGLISH_EXAM_CATS.includes(category);
+
+    // 1) Start with local curated bank.
+    //    Math: ~50% of count (rest is generated/API).
+    //    English: pull a wide pool (count x4) so unseen questions remain.
+    const localCount = isEnglish ? Math.max(count * 4, 30) : Math.ceil(count * 0.5);
     const localQs = getLocalQuestions(grade, category, localCount);
     questions.push(...localQs);
 
     // 1b) For FastBridge, also pull from dedicated FastBridge question engine
     if (category === 'fastbridge' && typeof getFastBridgeMathQuestions === 'function') {
       try {
-        const fbQs = await getFastBridgeMathQuestions(grade, 'fb_math_mixed', localCount);
+        const fbCount = Math.ceil(count * 0.5);
+        const fbQs = await getFastBridgeMathQuestions(grade, 'fb_math_mixed', fbCount);
         if (fbQs && fbQs.length > 0) {
           const existing = new Set(questions.map(q => q.q));
           fbQs.forEach(q => { if (!existing.has(q.q)) questions.push(q); });
         }
       } catch (e) { /* non-critical */ }
     }
-
-    // English categories don't have math generators or external APIs
-    const isEnglish = ENGLISH_CATS.includes(category) || ENGLISH_EXAM_CATS.includes(category);
 
     if (!isEnglish) {
       // 2) Generate dynamic questions (30% of count — grade-pushed generators)
