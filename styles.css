@@ -1171,6 +1171,58 @@ body {
     border-radius: var(--radius-sm);
 }
 
+/* Reading passage panel (SBA / FastBridge passage sets) */
+.reading-passage {
+    text-align: left;
+    background: var(--bg-input, #f7f7fb);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-left: 4px solid var(--primary, #6C63FF);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.reading-passage-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.reading-passage-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--primary, #6C63FF);
+}
+
+.reading-passage-type {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 50px;
+    background: var(--primary, #6C63FF);
+    color: #fff;
+    white-space: nowrap;
+}
+
+.reading-passage-body p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text-primary, #222);
+    margin: 0 0 12px 0;
+    font-weight: 400;
+}
+
+.reading-passage-body p:last-child {
+    margin-bottom: 0;
+}
+
 .answers-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

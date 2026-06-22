@@ -315,6 +315,14 @@
 
             <!-- Question Area -->
             <div class="question-area">
+                <!-- Reading passage panel (shown only for passage-based questions) -->
+                <div class="reading-passage" id="reading-passage" style="display:none;">
+                    <div class="reading-passage-header">
+                        <span class="reading-passage-title" id="reading-passage-title"></span>
+                        <span class="reading-passage-type" id="reading-passage-type"></span>
+                    </div>
+                    <div class="reading-passage-body" id="reading-passage-body"></div>
+                </div>
                 <div class="question-header">
                     <div class="question-number" id="question-number">Question 1</div>
                     <div class="source-badge" id="source-badge" title="Question source"></div>
@@ -891,6 +899,7 @@
     <script src="english-questions.js"></script>
     <script src="fastbridge-questions-g5-english.js"></script>
     <script src="english-questions-hard.js"></script>
+    <script src="reading-passages.js"></script>
     <script src="question-api.js"></script>
     <script src="firebase-config.js"></script>
     <script src="gemini-questions.js"></script>

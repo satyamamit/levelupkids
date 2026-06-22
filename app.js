@@ -93,6 +93,7 @@
         vocabulary: '📚 Vocabulary',
         grammar: '✏️ Grammar',
         reading: '📖 Reading',
+        reading_passage: '📜 Reading Passages',
         spelling: '🔤 Spelling',
         sat_english: '📖 SAT Reading & Writing',
         act_english: '📝 ACT English',
@@ -839,6 +840,9 @@
                   diffLabel: '⭐⭐⭐ SSAT', pts: '+20 pts each', tag: 'Entrance Exam' },
             ],
             english: [
+                { cat: 'reading_passage', diff: 'medium', emoji: '📜', name: 'Reading Passages',
+                  desc: isElem ? 'Read a story or article, then answer questions — just like SBA & FastBridge' : 'Literary & informational passages with inference, vocabulary & evidence questions — SBA & FastBridge style',
+                  diffLabel: '⭐⭐ Passages', pts: '+10 pts each', tag: 'School', cssClass: 'challenge-card-english' },
                 { cat: 'sba_ela', diff: 'medium', emoji: '📊', name: 'SBA ELA',
                   desc: isElem ? 'Smarter Balanced: reading comprehension, writing, language conventions — WA state test' : 'Smarter Balanced: literary & informational text, research, writing & language — WA state test',
                   diffLabel: '⭐⭐ State Test', pts: '+10 pts each', tag: 'School', cssClass: 'challenge-card-english' },
@@ -1387,7 +1391,23 @@
         const seenList = Array.isArray(state.player.seenQuestions) ? state.player.seenQuestions : [];
         const seenHashes = new Set(seenList);
 
+        // Reading Passage mode: passage-based sets (SBA/FastBridge style).
+        // Questions stay grouped by passage and must NOT be reshuffled or
+        // mixed with AI questions, so handle it on its own path.
+        const isPassageMode = category === 'reading_passage';
+
         let questions;
+        if (isPassageMode && typeof getReadingPassageQuestions === 'function') {
+            const hashFn = (typeof QuestionAPI !== 'undefined' && QuestionAPI.hashQ) ? QuestionAPI.hashQ : null;
+            // Pull extra so we can drop recently-seen passages where possible
+            let pool = getReadingPassageQuestions(state.player.grade, count * 3) || [];
+            if (hashFn && seenHashes.size > 0) {
+                const fresh = pool.filter(q => !seenHashes.has(hashFn(q.q)));
+                // Keep passage grouping: only swap to fresh pool if it still has full sets
+                if (fresh.length >= count) pool = fresh;
+            }
+            questions = pool.slice(0, count);
+        } else {
         try {
             // Use QuestionAPI — 3s timeout so quiz doesn't hang on slow external APIs
             if (typeof QuestionAPI !== 'undefined' && QuestionAPI.getQuestions) {
@@ -1433,6 +1453,7 @@
                 console.warn('AI question mixing skipped (timeout or error):', e.message);
             }
         }
+        } // end non-passage path
 
         // Last resort: if no questions, fall back to mixed/general pool
         if (!questions || questions.length === 0) {
@@ -1483,6 +1504,32 @@
         $('#question-number').textContent = `Question ${quiz.currentIndex + 1}`;
         $('#quiz-progress').textContent = `${quiz.currentIndex + 1} / ${quiz.questions.length}`;
         $('#question-text').innerHTML = q.q;
+
+        // Reading passage panel (only for passage-based questions)
+        const passageEl = $('#reading-passage');
+        if (passageEl) {
+            if (q.passage) {
+                const titleEl = $('#reading-passage-title');
+                const typeEl = $('#reading-passage-type');
+                const bodyEl = $('#reading-passage-body');
+                if (titleEl) titleEl.textContent = q.passageTitle || 'Reading Passage';
+                if (typeEl) typeEl.textContent = q.passageType || '';
+                if (bodyEl) {
+                    // Split on blank lines into paragraphs; escape to avoid HTML injection
+                    const esc = (s) => String(s).replace(/[&<>"']/g, c => (
+                        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+                    ));
+                    bodyEl.innerHTML = String(q.passage)
+                        .split(/\n\s*\n/)
+                        .map(p => `<p>${esc(p.trim())}</p>`)
+                        .join('');
+                    bodyEl.scrollTop = 0;
+                }
+                passageEl.style.display = 'block';
+            } else {
+                passageEl.style.display = 'none';
+            }
+        }
 
         // Difficulty badge
         const diff = q.difficulty || 'medium';
