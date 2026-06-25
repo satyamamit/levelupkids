@@ -841,15 +841,16 @@
                         <input type="number" id="sf-hours" placeholder="e.g. 30" min="5" max="600" step="5">
                     </div>
                     <div class="form-group sf-report-group">
-                        <label for="sf-report">Book Report <span class="summer-required">(required — at least 200 words, AI gives bonus coins!)</span></label>
-                        <textarea id="sf-report" rows="9" maxlength="4000" placeholder="Write at least 200 words: What was the book about? Who were the main characters? What was your favorite part? What did you learn? Would you recommend it?"></textarea>
-                        <div class="summer-char-count"><span id="sf-char-count">0</span>/200 words</div>
+                        <label for="sf-report">Book Report <span class="summer-required">(required — at least 100 words; AI gives bonus coins + writing tips!)</span></label>
+                        <textarea id="sf-report" rows="9" maxlength="4000" placeholder="Write at least 100 words: What was the book about? Who were the main characters? What was your favorite part? What did you learn? Would you recommend it?"></textarea>
+                        <div class="summer-char-count"><span id="sf-char-count">0</span>/100 words</div>
                     </div>
                 </div>
                 <button id="btn-summer-submit" class="btn-primary btn-large summer-submit-btn">
                     ➕ Add Book &amp; Earn Coins
                 </button>
                 <div id="summer-submit-status" style="display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:0.9rem;"></div>
+                <div id="summer-ai-feedback" class="summer-ai-feedback" style="display:none;"></div>
             </div>
 
             <!-- Book log list -->

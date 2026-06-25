@@ -1417,11 +1417,35 @@
             }
         } catch (e) {
             console.warn('Question fetch error or timeout, using local fallback:', e);
-            questions = typeof QuestionAPI !== 'undefined' && QuestionAPI.getLocalQuestions
-                ? QuestionAPI.getLocalQuestions(state.player.grade, category, count)
-                : (typeof getLocalQuestions === 'function'
-                    ? getLocalQuestions(state.player.grade, category, count)
-                    : getQuestions(state.player.grade, category, count));
+            // Offline/slow fallback. Generators are local + infinite, so prefer
+            // them (filtered against seen) to avoid serving repeats. Top up from
+            // the local bank only if generators can't fill the quiz.
+            questions = [];
+            const hashFn = (typeof QuestionAPI !== 'undefined' && QuestionAPI.hashQ) ? QuestionAPI.hashQ : null;
+            if (typeof QuestionAPI !== 'undefined' && QuestionAPI.generateQuestions) {
+                try {
+                    let pool = QuestionAPI.generateQuestions(state.player.grade, category, count * 4) || [];
+                    if (hashFn && seenHashes.size > 0) {
+                        const fresh = pool.filter(q => !seenHashes.has(hashFn(q.q)));
+                        if (fresh.length >= count) pool = fresh;
+                    }
+                    questions = pool.slice(0, count);
+                } catch (ge) { /* generators not available for this category */ }
+            }
+            if (questions.length < count) {
+                const bankFn = (typeof QuestionAPI !== 'undefined' && QuestionAPI.getLocalQuestions)
+                    ? QuestionAPI.getLocalQuestions
+                    : (typeof getLocalQuestions === 'function' ? getLocalQuestions : null);
+                if (bankFn) {
+                    const bank = bankFn(state.player.grade, category, count * 3) || [];
+                    const have = new Set(questions.map(q => hashFn ? hashFn(q.q) : q.q));
+                    const freshBank = bank.filter(q => {
+                        const h = hashFn ? hashFn(q.q) : q.q;
+                        return !have.has(h) && !(hashFn && seenHashes.has(h));
+                    });
+                    questions = [...questions, ...freshBank, ...bank].slice(0, count);
+                }
+            }
         }
 
         // Mix in AI-generated questions (non-blocking, 2s timeout)
@@ -2902,7 +2926,10 @@
                 el.className = 'summer-book-entry';
                 const dateStr = book.date ? new Date(book.date).toLocaleDateString() : '';
                 const aiSection = book.aiScore ? `
-                    <div class="summer-ai-score">✨ <strong>AI Report Score:</strong> ${book.aiScore}/200 — ${book.aiFeedback || ''}</div>
+                    <div class="summer-ai-score">✨ <strong>AI Report Score:</strong> ${book.aiScore}/200 — ${book.aiFeedback || ''}
+                    ${book.aiStrength ? `<div style="margin-top:4px;"><span class="fb-glow">🌟 Did well:</span> ${book.aiStrength}</div>` : ''}
+                    ${book.aiTip ? `<div style="margin-top:2px;"><span class="fb-grow">🚀 Try next:</span> ${book.aiTip}</div>` : ''}
+                    </div>
                 ` : (book.report ? '<div class="summer-ai-score" style="opacity:0.6;">⏳ Report submitted — no AI key set yet</div>' : '');
                 el.innerHTML = `
                     <button class="summer-book-delete" title="Delete this entry">🗑️</button>
@@ -3011,14 +3038,14 @@
                 };
             }
 
-            // Char + word counter (report requires 200+ words)
+            // Char + word counter (report requires 100+ words)
             if (reportEl) {
                 const updateCount = () => {
                     if (!charCount) return;
                     const words = reportEl.value.trim() ? reportEl.value.trim().split(/\s+/).filter(Boolean).length : 0;
                     charCount.textContent = words;
                     const wrap = charCount.closest('.summer-char-count');
-                    if (wrap) wrap.classList.toggle('summer-words-ok', words >= 200);
+                    if (wrap) wrap.classList.toggle('summer-words-ok', words >= 100);
                 };
                 reportEl.oninput = updateCount;
                 updateCount();
@@ -3035,14 +3062,14 @@
                     const author = (authorEl && authorEl.value.trim()) || '';
                     const report = (reportEl && reportEl.value.trim()) || '';
 
-                    // Book report is mandatory — at least 200 words
+                    // Book report is mandatory — at least 100 words
                     const wordCount = report ? report.split(/\s+/).filter(Boolean).length : 0;
-                    if (wordCount < 200) {
-                        showToast(`Book report is required — write at least 200 words (you have ${wordCount}).`, 'error');
+                    if (wordCount < 100) {
+                        showToast(`Book report is required — write at least 100 words (you have ${wordCount}).`, 'error');
                         if (statusEl) {
                             statusEl.style.display = 'block';
                             statusEl.style.background = 'rgba(255,71,87,0.12)';
-                            statusEl.textContent = `✍️ Your book report needs at least 200 words. You currently have ${wordCount}.`;
+                            statusEl.textContent = `✍️ Your book report needs at least 100 words. You currently have ${wordCount}.`;
                         }
                         if (reportEl) reportEl.focus();
                         return;
@@ -3064,11 +3091,15 @@
                     submitBtn.disabled = true;
                     submitBtn.textContent = '⏳ Saving…';
                     if (statusEl) { statusEl.style.display = 'none'; }
+                    const feedbackEl = $('#summer-ai-feedback');
+                    if (feedbackEl) { feedbackEl.style.display = 'none'; feedbackEl.innerHTML = ''; }
 
                     // Base points: 15 for logging + 1 coin per minute read
                     const basePoints = 15 + minutes;
                     let aiScore = null;
                     let aiFeedback = '';
+                    let aiStrength = '';
+                    let aiTip = '';
                     let reportPoints = 0;
 
                     // Ask Gemini to grade the book report (if report + API key available)
@@ -3082,6 +3113,8 @@
                             const geminiResult = await _gradeBookReportWithGemini(title, author, report, state.player.grade);
                             aiScore = geminiResult.score;
                             aiFeedback = geminiResult.feedback;
+                            aiStrength = geminiResult.strength || '';
+                            aiTip = geminiResult.tip || '';
                             // If the AI flagged the report as fake/off-topic, reject the submission
                             if (geminiResult.valid === false) {
                                 submitBtn.disabled = false;
@@ -3131,6 +3164,7 @@
                         pointsEarned: totalEarned,
                         date: new Date().toISOString(),
                         aiScore, aiFeedback: aiFeedback || null,
+                        aiStrength: aiStrength || null, aiTip: aiTip || null,
                         quizCorrect, quizTotal
                     };
 
@@ -3164,8 +3198,21 @@
                         if (reportPoints > 0) msg += ` + ${reportPoints} report bonus`;
                         if (quizPoints > 0) msg += ` + ${quizPoints} quiz (${quizCorrect}/${quizTotal})`;
                         msg += ')';
-                        if (aiFeedback) msg += ` — AI says: "${aiFeedback}"`;
                         statusEl.textContent = msg;
+                    }
+
+                    // Friendly AI writing feedback the child can read to improve
+                    const feedbackBox = $('#summer-ai-feedback');
+                    if (feedbackBox && (aiStrength || aiTip || aiFeedback)) {
+                        let html = '<div class="summer-ai-feedback-title">✨ Your Writing Coach says:</div>';
+                        if (aiScore) html += `<div class="summer-ai-feedback-score">Report score: <strong>${aiScore}/200</strong></div>`;
+                        if (aiFeedback) html += `<div class="summer-ai-feedback-line">${_escapeHtml(aiFeedback)}</div>`;
+                        if (aiStrength) html += `<div class="summer-ai-feedback-line"><span class="fb-glow">🌟 What you did well:</span> ${_escapeHtml(aiStrength)}</div>`;
+                        if (aiTip) html += `<div class="summer-ai-feedback-line"><span class="fb-grow">🚀 Try next time:</span> ${_escapeHtml(aiTip)}</div>`;
+                        feedbackBox.innerHTML = html;
+                        feedbackBox.style.display = 'block';
+                    } else if (feedbackBox) {
+                        feedbackBox.style.display = 'none';
                     }
 
                     showToast(`📚 "${title}" logged! +${totalEarned} coins earned!`, 'success');
@@ -3384,7 +3431,7 @@ Respond in JSON exactly:
 
         async function _gradeBookReportWithGemini(title, author, report, grade) {
             const gradeLevel = grade <= 2 ? 'K-2' : grade <= 5 ? '3-5' : grade <= 8 ? '6-8' : '9-12';
-            const prompt = `You are a fair but kind teacher grading a book report written by a Grade ${grade} student (level ${gradeLevel}).
+            const prompt = `You are a warm, encouraging writing teacher giving feedback to a Grade ${grade} student (level ${gradeLevel}) on their book report. Speak directly to the child using "you", in simple words they can understand.
 
     Book: "${title}"${author ? ` by ${author}` : ''}
 
@@ -3406,15 +3453,21 @@ Respond in JSON exactly:
     A genuine on-topic report earns at least 100; outstanding reports earn up to 200.
     If INVALID, set valid=false and score=0.
 
+    STEP 3 — Give friendly writing feedback the child can use to improve:
+    - "strength": one specific thing they did well (1 sentence, name what was good).
+    - "tip": one concrete, easy thing to try next time to make their writing better
+      (e.g. add a favorite quote, describe a character's feelings, give an example). 1 sentence.
+    Keep both kind, positive, and at a Grade ${grade} reading level. If INVALID, set strength to "" and put gentle guidance in tip.
+
     Respond in JSON exactly:
-    {"valid": <true|false>, "score": <number 0, or 100-200>, "feedback": "<one encouraging sentence of 10-20 words; if invalid, gently tell them to write a real report about the book>"}`;
+    {"valid": <true|false>, "score": <number 0, or 100-200>, "feedback": "<one cheerful sentence, 10-18 words>", "strength": "<what you did well>", "tip": "<one tip to improve>"}`;
 
             const url = `${GeminiQuestionEngine._getApiUrl ? GeminiQuestionEngine._getApiUrl() : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'}?key=${GeminiQuestionEngine.getApiKey()}`;
             const body = {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
-                    temperature: 0.3,
-                    maxOutputTokens: 250,
+                    temperature: 0.4,
+                    maxOutputTokens: 400,
                     responseMimeType: 'application/json',
                     thinkingConfig: { thinkingBudget: 0 }
                 }
@@ -3427,7 +3480,13 @@ Respond in JSON exactly:
             const parsed = JSON.parse(text);
             const valid = parsed.valid !== false;
             const score = valid ? Math.min(200, Math.max(100, parseInt(parsed.score) || 100)) : 0;
-            return { valid, score, feedback: (parsed.feedback || '').slice(0, 150) };
+            return {
+                valid,
+                score,
+                feedback: (parsed.feedback || '').slice(0, 150),
+                strength: (parsed.strength || '').slice(0, 200),
+                tip: (parsed.tip || '').slice(0, 200)
+            };
         }
 
         // ===================== TOASTS =====================

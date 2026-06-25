@@ -4898,6 +4898,32 @@ body {
     padding: 6px 10px;
     border-left: 3px solid var(--primary);
 }
+.summer-ai-feedback {
+    margin-top: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(46,213,115,0.08));
+    border: 1px solid rgba(108,99,255,0.25);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+}
+.summer-ai-feedback-title {
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 6px;
+}
+.summer-ai-feedback-score {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+.summer-ai-feedback-line {
+    margin-bottom: 6px;
+}
+.summer-ai-feedback-line:last-child { margin-bottom: 0; }
+.summer-ai-feedback .fb-glow { font-weight: 700; color: #2ED573; }
+.summer-ai-feedback .fb-grow { font-weight: 700; color: #FF9F43; }
 .summer-empty {
     text-align: center;
     color: var(--text-dim);

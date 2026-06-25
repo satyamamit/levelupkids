@@ -21,8 +21,20 @@ const QuestionAPI = (function () {
     h2 = Math.imul(h2 ^ (h2 >>> 13), 3266489909);
     return ((h2 >>> 0) * 4294967296 + (h1 >>> 0)).toString(36);
   }
-  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; }
-  function lcm(a, b) { return Math.abs(a * b) / gcd(a, b); }
+  // Remove duplicate questions from a pool (by question text), keeping order.
+  function dedupByHash(arr) {
+    const localSeen = new Set();
+    const out = [];
+    for (const q of (arr || [])) {
+      if (!q || !q.q) continue;
+      const h = hashQ(q.q);
+      if (localSeen.has(h)) continue;
+      localSeen.add(h);
+      out.push(q);
+    }
+    return out;
+  }
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; }  function lcm(a, b) { return Math.abs(a * b) / gcd(a, b); }
   function isPrime(n) { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; }
   function nthPrime(n) { let c = 0, k = 1; while (c < n) { k++; if (isPrime(k)) c++; } return k; }
   function factorial(n) { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; }
@@ -1808,25 +1820,41 @@ const QuestionAPI = (function () {
     }
 
     if (!isEnglish) {
-      // 2) Generate dynamic questions (30% of count — grade-pushed generators)
-      const genCount = Math.ceil(count * 0.3);
-      const genQs = generateQuestions(grade, category, genCount);
+      // 2) Generate a LARGE over-pool of dynamic questions. Math generators
+      //    produce mostly-unique questions, so a big pool gives the dedup step
+      //    plenty of fresh (unseen) options — this is the main defense against
+      //    repeats. Without this, the candidate pool was barely larger than
+      //    `count`, so dedup had nothing to choose from and reused seen ones.
+      const overGen = Math.max(count * 4, 30);
+      const genQs = generateQuestions(grade, category, overGen);
       questions.push(...genQs);
 
-      // 3) Try external APIs for remaining (20% of count)
-      const apiCount = Math.max(2, count - questions.length);
-      try {
-        const diff = grade <= 2 ? 'easy' : grade <= 5 ? 'medium' : 'hard';
-        const apiQs = await fetchOpenTDB(apiCount, diff);
-        questions.push(...apiQs);
-      } catch (e) { /* API failed, no problem */ }
+      // De-duplicate the pool against itself so the same question can't appear
+      // twice within one quiz.
+      questions = dedupByHash(questions);
+
+      // 3) Only hit the external API if we still don't have enough UNSEEN
+      //    questions. This keeps quizzes fast and avoids slow-network fallbacks
+      //    that would otherwise bypass dedup and cause repeats.
+      const unseenSoFar = questions.filter(q => !seen.has(hashQ(q.q)));
+      if (unseenSoFar.length < count) {
+        const apiCount = Math.max(2, count - unseenSoFar.length);
+        try {
+          const diff = grade <= 2 ? 'easy' : grade <= 5 ? 'medium' : 'hard';
+          const apiQs = await fetchOpenTDB(apiCount, diff);
+          questions = dedupByHash([...questions, ...apiQs]);
+        } catch (e) { /* API failed, no problem */ }
+      }
 
       // 4) If still short, generate more
       while (questions.length < count) {
         const extra = generateQuestions(grade, category, count - questions.length);
-        questions.push(...extra);
         if (extra.length === 0) break; // safety valve
+        questions = dedupByHash([...questions, ...extra]);
       }
+    } else {
+      // English pools are finite; still drop any accidental duplicates.
+      questions = dedupByHash(questions);
     }
 
     // Deduplicate: prefer unseen questions, fall back to seen if pool is too small
