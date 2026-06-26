@@ -3102,8 +3102,8 @@
                     let aiTip = '';
                     let reportPoints = 0;
 
-                    // Ask Gemini to grade the book report (if report + API key available)
-                    if (report && typeof GeminiQuestionEngine !== 'undefined' && GeminiQuestionEngine.hasApiKey()) {
+                    // Ask Gemini to grade the book report (if report + AI available via proxy or device key)
+                    if (report && typeof GeminiQuestionEngine !== 'undefined' && GeminiQuestionEngine.hasAI()) {
                         try {
                             if (statusEl) {
                                 statusEl.style.display = 'block';
@@ -3347,8 +3347,8 @@
             const container = $('#sf-quiz-container');
             if (!title) { showToast('Enter a book title first!', 'error'); return; }
             if (!container) return;
-            if (typeof GeminiQuestionEngine === 'undefined' || !GeminiQuestionEngine.hasApiKey()) {
-                showToast('Book quiz needs the AI key (ask your parent to set it in Admin).', 'info');
+            if (typeof GeminiQuestionEngine === 'undefined' || !GeminiQuestionEngine.hasAI()) {
+                showToast('Book quiz needs AI — sign in (or set the key in Admin).', 'info');
                 return;
             }
             btn.disabled = true;
@@ -3406,21 +3406,13 @@
 
 Respond in JSON exactly:
 {"questions":[{"q":"<question>","options":["<a>","<b>","<c>","<d>"],"answer":<index 0-3>}]}`;
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GeminiQuestionEngine.MODEL || 'gemini-2.5-flash-lite'}:generateContent?key=${GeminiQuestionEngine.getApiKey()}`;
-            const body = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.6,
-                    maxOutputTokens: 700,
-                    responseMimeType: 'application/json',
-                    thinkingConfig: { thinkingBudget: 0 }
-                }
-            };
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!res.ok) throw new Error('Gemini ' + res.status);
-            const data = await res.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) throw new Error('Empty Gemini response');
+            const text = await GeminiQuestionEngine.callAI(prompt, {
+                temperature: 0.6,
+                maxOutputTokens: 700,
+                responseMimeType: 'application/json',
+                thinkingConfig: { thinkingBudget: 0 }
+            });
+            if (!text) throw new Error('Empty AI response');
             const parsed = JSON.parse(text);
             const out = (parsed.questions || []).filter(q =>
                 q && typeof q.q === 'string' && Array.isArray(q.options) && q.options.length === 4
@@ -3462,21 +3454,13 @@ Respond in JSON exactly:
     Respond in JSON exactly:
     {"valid": <true|false>, "score": <number 0, or 100-200>, "feedback": "<one cheerful sentence, 10-18 words>", "strength": "<what you did well>", "tip": "<one tip to improve>"}`;
 
-            const url = `${GeminiQuestionEngine._getApiUrl ? GeminiQuestionEngine._getApiUrl() : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'}?key=${GeminiQuestionEngine.getApiKey()}`;
-            const body = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.4,
-                    maxOutputTokens: 400,
-                    responseMimeType: 'application/json',
-                    thinkingConfig: { thinkingBudget: 0 }
-                }
-            };
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!res.ok) throw new Error(`Gemini ${res.status}`);
-            const data = await res.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) throw new Error('Empty Gemini response');
+            const text = await GeminiQuestionEngine.callAI(prompt, {
+                temperature: 0.4,
+                maxOutputTokens: 400,
+                responseMimeType: 'application/json',
+                thinkingConfig: { thinkingBudget: 0 }
+            });
+            if (!text) throw new Error('Empty AI response');
             const parsed = JSON.parse(text);
             const valid = parsed.valid !== false;
             const score = valid ? Math.min(200, Math.max(100, parseInt(parsed.score) || 100)) : 0;

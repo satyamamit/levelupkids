@@ -114,6 +114,56 @@ const GeminiQuestionEngine = (function () {
         return _apiKey && _apiKey.length > 10;
     }
 
+    // ─── Shared AI access (proxy → per-device key) ──────────
+    // Returns true if AI is reachable somehow: either the user is signed in
+    // (so the Cloud Function proxy with the shared key can be used) OR this
+    // device has its own API key configured.
+    function _isSignedIn() {
+        try {
+            return typeof firebase !== 'undefined' && firebase.auth && !!firebase.auth().currentUser;
+        } catch (e) { return false; }
+    }
+
+    function hasAI() {
+        return _isSignedIn() || hasApiKey();
+    }
+
+    // Call Gemini for a single prompt. Tries the server-side proxy first
+    // (shared key, no per-device setup) and falls back to this device's key.
+    // Throws only if NEITHER path is available/working — callers should catch
+    // and degrade gracefully.
+    async function callAI(prompt, generationConfig) {
+        const cfg = generationConfig || { temperature: 0.4, maxOutputTokens: 800, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } };
+
+        // 1) Server proxy (shared key) — only when signed in and Functions SDK present
+        if (_isSignedIn() && typeof firebase !== 'undefined' && firebase.functions) {
+            try {
+                const fn = firebase.functions().httpsCallable('geminiProxy');
+                const result = await fn({ prompt, generationConfig: cfg });
+                const text = result && result.data && result.data.text;
+                if (text) return text;
+                throw new Error('Empty proxy response');
+            } catch (e) {
+                console.warn('AI proxy unavailable, trying device key:', e && e.message);
+                // fall through to device key
+            }
+        }
+
+        // 2) Per-device key fallback
+        if (hasApiKey()) {
+            const url = `${GEMINI_API_URL}?key=${_apiKey}`;
+            const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: cfg };
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!res.ok) throw new Error('Gemini ' + res.status);
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error('Empty Gemini response');
+            return text;
+        }
+
+        throw new Error('No AI available (no proxy, no device key)');
+    }
+
     // ─── Stats Management ───────────────────────────────────
     function _loadStats() {
         try {
@@ -956,6 +1006,8 @@ Return ONLY valid JSON.`;
         getLastError() { return _lastError; },
         clearCooldown: _clearCooldown,
         hasApiKey,
+        hasAI,
+        callAI,
         generateQuestions,
         getUniqueQuestions,
         getStats,
